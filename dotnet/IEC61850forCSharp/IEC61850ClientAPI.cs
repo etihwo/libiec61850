@@ -1151,13 +1151,57 @@ namespace IEC61850
                 handle.Free();
             }
 
-			/// <summary>
-			/// Abort (close) the connection.
-			/// </summary>
-			/// <description>This function will send an abort request to the server. This will immediately interrupt the
-			/// connection.</description>
-			/// <exception cref="IedConnectionException">This exception is thrown if there is a connection or service error</exception>
-			public void Abort ()
+            /// <summary>
+            /// Detele a file at the server
+            /// </summary>
+            /// <param name="fileName"></param>
+            public void DeleteFile(string fileName)
+            {
+                int error;
+
+                IedConnection_deleteFile(connection, out error, fileName);
+
+                if (error != 0)
+                    throw new IedConnectionException("Error deleting file", error);
+            }
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void IedConnection_setFile(IntPtr self, out int error, string sourceFilename, string destinationFilename);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void IedConnection_setFilestoreBasepath(IntPtr self, string basepath);
+
+            /// <summary>
+            /// Set the virtual filestore basepath for the setFile service. 
+            /// </summary>
+            /// <param name="basepath">the new virtual filestore basepath </param>
+            public void SetFilestoreBasepath(string basepath)
+            {
+                IedConnection_setFilestoreBasepath(connection, basepath);
+            }
+
+            /// <summary>
+            /// Upload a file to the server. The file has to be available in the local VMD filestore.
+            /// </summary>
+            /// <param name="sourceFilename">the filename of the local (client side) file </param>
+            /// <param name="destinationFilename">the filename of the remote (service side) file </param>
+            public void SetFile(string sourceFilename, string destinationFilename)
+            {
+                int error;
+
+                IedConnection_setFile(connection, out error, sourceFilename, destinationFilename);
+
+                if (error != 0)
+                    throw new IedConnectionException("Error setting file", error);
+            }
+
+            /// <summary>
+            /// Abort (close) the connection.
+            /// </summary>
+            /// <description>This function will send an abort request to the server. This will immediately interrupt the
+            /// connection.</description>
+            /// <exception cref="IedConnectionException">This exception is thrown if there is a connection or service error</exception>
+            public void Abort ()
 			{
 				int error;
 
