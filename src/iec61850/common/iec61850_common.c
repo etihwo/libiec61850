@@ -100,42 +100,46 @@ Dbpos_toMmsValue(MmsValue* mmsValue, Dbpos dbpos)
 char*
 FunctionalConstraint_toString(FunctionalConstraint fc) {
     switch (fc) {
-    case IEC61850_FC_ST:
+	case IEC61850_FC_MX:
+		return "MX"; 
+	case IEC61850_FC_ST:
         return "ST";
-    case IEC61850_FC_MX:
-        return "MX";
+	case IEC61850_FC_CO:
+		return "CO";
+	case IEC61850_FC_CF:
+		return "CF";
+	case IEC61850_FC_DC:
+		return "DC";
     case IEC61850_FC_SP:
         return "SP";
+	case IEC61850_FC_SG:
+		return "SG";
+	case IEC61850_FC_RP:
+		return "RP";
+	case IEC61850_FC_LG:
+		return "LG";
+	case IEC61850_FC_BR:
+		return "BR";
+	case IEC61850_FC_GO:
+		return "GO";
+	case IEC61850_FC_GS:
+		return "GS";
     case IEC61850_FC_SV:
-        return "SV";
-    case IEC61850_FC_CF:
-        return "CF";
-    case IEC61850_FC_DC:
-        return "DC";
-    case IEC61850_FC_SG:
-        return "SG";
+        return "SV"; 
     case IEC61850_FC_SE:
         return "SE";
+	case IEC61850_FC_MS:
+		return "MS";
+	case IEC61850_FC_US:
+		return "US";
+	case IEC61850_FC_EX:
+		return "EX";
     case IEC61850_FC_SR:
         return "SR";
     case IEC61850_FC_OR:
         return "OR";
     case IEC61850_FC_BL:
         return "BL";
-    case IEC61850_FC_EX:
-        return "EX";
-    case IEC61850_FC_CO:
-        return "CO";
-    case IEC61850_FC_US:
-        return "US";
-    case IEC61850_FC_MS:
-        return "MS";
-    case IEC61850_FC_RP:
-        return "RP";
-    case IEC61850_FC_BR:
-        return "BR";
-    case IEC61850_FC_LG:
-        return "LG";
     default:
         return NULL;
     }
@@ -220,6 +224,14 @@ FunctionalConstraint_fromString(const char* fcString)
             return IEC61850_FC_LG;
         return IEC61850_FC_NONE;
     }
+
+	if (fcString[0] == 'G') {
+		if (fcString[1] == 'O')
+			return IEC61850_FC_GO;
+		if (fcString[1] == 'S')
+			return IEC61850_FC_GS;
+		return IEC61850_FC_NONE;
+	}
 
     return IEC61850_FC_NONE;
 }

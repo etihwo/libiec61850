@@ -236,6 +236,10 @@ typedef enum eFunctionalConstraint {
     IEC61850_FC_BR = 16,
     /** Log control blocks */
     IEC61850_FC_LG = 17,
+	/** Goose control blocks */
+	IEC61850_FC_GO = 18,
+	/** Gsse control blocks */
+	IEC61850_FC_GS = 19,
 
     /** All FCs - wildcard value */
     IEC61850_FC_ALL = 99,
