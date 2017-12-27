@@ -24,18 +24,20 @@
 #ifndef GOOSE_RECEIVER_H_
 #define GOOSE_RECEIVER_H_
 
-#include <goose_subscriber.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#include <stdbool.h>
+
+typedef struct sEthernetSocket* EthernetSocket;
 
 /**
  * \addtogroup goose_api_group
  */
 /**@{*/
 
+typedef struct sGooseSubscriber* GooseSubscriber;
 
 typedef struct sGooseReceiver* GooseReceiver;
 
@@ -115,7 +117,7 @@ GooseReceiver_destroy(GooseReceiver self);
 /***************************************
  * Functions for non-threaded operation
  ***************************************/
-void
+EthernetSocket
 GooseReceiver_startThreadless(GooseReceiver self);
 
 void

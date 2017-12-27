@@ -27,6 +27,7 @@ using System.Collections.Generic;
 using System.Collections;
 
 using IEC61850.Common;
+using IEC61850.TLS;
 
 /// <summary>
 /// IEC 61850 API for the libiec61850 .NET wrapper library
@@ -276,6 +277,9 @@ namespace IEC61850
 			[DllImport ("iec61850", CallingConvention=CallingConvention.Cdecl)]
 			static extern IntPtr IedConnection_create ();
 
+			[DllImport ("iec61850", CallingConvention=CallingConvention.Cdecl)]
+			static extern IntPtr IedConnection_createWithTlsSupport (IntPtr tlsConfig);
+
             [DllImport ("iec61850", CallingConvention=CallingConvention.Cdecl)]
             static extern void IedConnection_destroy (IntPtr self);
 
@@ -405,9 +409,21 @@ namespace IEC61850
 			private InternalConnectionClosedHandler connectionClosedHandler;
 			private ConnectionClosedHandler userProvidedHandler = null;
 
+			/// <summary>
+			/// Initializes a new instance of the <see cref="IEC61850.Client.IedConnection"/> class.
+			/// </summary>
 			public IedConnection ()
 			{
 				connection = IedConnection_create ();
+			}
+
+			/// <summary>
+			/// Initializes a new instance of the <see cref="IEC61850.Client.IedConnection"/> class.
+			/// </summary>
+			/// <param name="tlsConfig">TLS configuration to use</param>
+			public IedConnection (TLSConfiguration tlsConfig)
+			{
+				connection = IedConnection_createWithTlsSupport (tlsConfig.GetNativeInstance ());
 			}
 
 			/// <summary>
@@ -504,7 +520,7 @@ namespace IEC61850
 			/// <exception cref="IedConnectionException">This exception is thrown if there is a connection or service error.</exception>
 			public void Connect (string hostname)
 			{
-				Connect (hostname, 102);
+				Connect (hostname, -1);
 			}
 
 			/// <exception cref="IedConnectionException">This exception is thrown if there is a connection or service error</exception>
@@ -1135,13 +1151,57 @@ namespace IEC61850
                 handle.Free();
             }
 
-			/// <summary>
-			/// Abort (close) the connection.
-			/// </summary>
-			/// <description>This function will send an abort request to the server. This will immediately interrupt the
-			/// connection.</description>
-			/// <exception cref="IedConnectionException">This exception is thrown if there is a connection or service error</exception>
-			public void Abort ()
+            /// <summary>
+            /// Detele a file at the server
+            /// </summary>
+            /// <param name="fileName"></param>
+            public void DeleteFile(string fileName)
+            {
+                int error;
+
+                IedConnection_deleteFile(connection, out error, fileName);
+
+                if (error != 0)
+                    throw new IedConnectionException("Error deleting file", error);
+            }
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void IedConnection_setFile(IntPtr self, out int error, string sourceFilename, string destinationFilename);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void IedConnection_setFilestoreBasepath(IntPtr self, string basepath);
+
+            /// <summary>
+            /// Set the virtual filestore basepath for the setFile service. 
+            /// </summary>
+            /// <param name="basepath">the new virtual filestore basepath </param>
+            public void SetFilestoreBasepath(string basepath)
+            {
+                IedConnection_setFilestoreBasepath(connection, basepath);
+            }
+
+            /// <summary>
+            /// Upload a file to the server. The file has to be available in the local VMD filestore.
+            /// </summary>
+            /// <param name="sourceFilename">the filename of the local (client side) file </param>
+            /// <param name="destinationFilename">the filename of the remote (service side) file </param>
+            public void SetFile(string sourceFilename, string destinationFilename)
+            {
+                int error;
+
+                IedConnection_setFile(connection, out error, sourceFilename, destinationFilename);
+
+                if (error != 0)
+                    throw new IedConnectionException("Error setting file", error);
+            }
+
+            /// <summary>
+            /// Abort (close) the connection.
+            /// </summary>
+            /// <description>This function will send an abort request to the server. This will immediately interrupt the
+            /// connection.</description>
+            /// <exception cref="IedConnectionException">This exception is thrown if there is a connection or service error</exception>
+            public void Abort ()
 			{
 				int error;
 

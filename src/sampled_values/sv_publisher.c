@@ -42,9 +42,9 @@
 
 #define SV_MAX_MESSAGE_SIZE 1518
 
-struct sSV_ASDU {
-    char* svID;
-    char* datset;
+struct sSVPublisher_ASDU {
+    const char* svID;
+    const char* datset;
     int dataSize;
 
     bool hasRefrTm;
@@ -63,12 +63,12 @@ struct sSV_ASDU {
 
     uint8_t* smpCntBuf;
 
-    SV_ASDU _next;
+    SVPublisher_ASDU _next;
 };
 
 
 
-struct sSampledValuesPublisher {
+struct sSVPublisher {
     uint8_t* buffer;
     uint16_t appId;
     EthernetSocket ethernetSocket;
@@ -79,14 +79,14 @@ struct sSampledValuesPublisher {
     int payloadLength; /* length of payload buffer */
 
     int asduCount; /* number of ASDUs in the APDU */
-    SV_ASDU asduLIst;
+    SVPublisher_ASDU asduLIst;
 
 
 };
 
 
 static void
-preparePacketBuffer(SampledValuesPublisher self, CommParameters* parameters, const char* interfaceID)
+preparePacketBuffer(SVPublisher self, CommParameters* parameters, const char* interfaceID)
 {
     uint8_t srcAddr[6];
 
@@ -283,10 +283,10 @@ encodeUtcTime(uint64_t timeval, uint8_t* buffer, int bufPos)
     return bufPos + 8;
 }
 
-SampledValuesPublisher
-SampledValuesPublisher_create(CommParameters* parameters, const char* interfaceId)
+SVPublisher
+SVPublisher_create(CommParameters* parameters, const char* interfaceId)
 {
-    SampledValuesPublisher self = (SampledValuesPublisher) GLOBAL_CALLOC(1, sizeof(struct sSampledValuesPublisher));
+    SVPublisher self = (SVPublisher) GLOBAL_CALLOC(1, sizeof(struct sSVPublisher));
 
     self->asduLIst = NULL;
 
@@ -295,10 +295,10 @@ SampledValuesPublisher_create(CommParameters* parameters, const char* interfaceI
     return self;
 }
 
-SV_ASDU
-SampledValuesPublisher_addASDU(SampledValuesPublisher self, char* svID, char* datset, uint32_t confRev)
+SVPublisher_ASDU
+SVPublisher_addASDU(SVPublisher self, const char* svID, const char* datset, uint32_t confRev)
 {
-    SV_ASDU newAsdu = (SV_ASDU) GLOBAL_CALLOC(1, sizeof(struct sSV_ASDU));
+    SVPublisher_ASDU newAsdu = (SVPublisher_ASDU) GLOBAL_CALLOC(1, sizeof(struct sSVPublisher_ASDU));
 
     newAsdu->svID = svID;
     newAsdu->datset = datset;
@@ -310,7 +310,7 @@ SampledValuesPublisher_addASDU(SampledValuesPublisher self, char* svID, char* da
     if (self->asduLIst == NULL)
         self->asduLIst = newAsdu;
     else {
-        SV_ASDU lastAsdu = self->asduLIst;
+        SVPublisher_ASDU lastAsdu = self->asduLIst;
 
         while (lastAsdu->_next != NULL)
             lastAsdu = lastAsdu->_next;
@@ -322,7 +322,7 @@ SampledValuesPublisher_addASDU(SampledValuesPublisher self, char* svID, char* da
 }
 
 static int
-SV_ASDU_getEncodedSize(SV_ASDU self)
+SVPublisher_ASDU_getEncodedSize(SVPublisher_ASDU self)
 {
     int encodedSize = 0;
 
@@ -362,9 +362,9 @@ SV_ASDU_getEncodedSize(SV_ASDU self)
 }
 
 static int
-SV_ASDU_encodeToBuffer(SV_ASDU self, uint8_t* buffer, int bufPos)
+SVPublisher_ASDU_encodeToBuffer(SVPublisher_ASDU self, uint8_t* buffer, int bufPos)
 {
-    int encodedSize = SV_ASDU_getEncodedSize(self);
+    int encodedSize = SVPublisher_ASDU_getEncodedSize(self);
 
     /* tag and length field */
     bufPos = BerEncoder_encodeTL(0x30, encodedSize, buffer, bufPos);
@@ -398,8 +398,10 @@ SV_ASDU_encodeToBuffer(SV_ASDU self, uint8_t* buffer, int bufPos)
     buffer[bufPos++] = self->smpSynch;
 
     /* SmpRate */
-    bufPos = BerEncoder_encodeTL(0x86, 2, buffer, bufPos);
-    bufPos = encodeUInt16FixedSize(self->smpRate, buffer, bufPos);
+    if (self->hasSmpRate) {
+        bufPos = BerEncoder_encodeTL(0x86, 2, buffer, bufPos);
+        bufPos = encodeUInt16FixedSize(self->smpRate, buffer, bufPos);
+    }
 
     /* Sample */
     bufPos = BerEncoder_encodeTL(0x87, self->dataSize, buffer, bufPos);
@@ -410,7 +412,7 @@ SV_ASDU_encodeToBuffer(SV_ASDU self, uint8_t* buffer, int bufPos)
     
     /* SmpMod */
     if (self->hasSmpMod) {
-        bufPos = BerEncoder_encodeTL(0x88, 4, buffer, bufPos);
+        bufPos = BerEncoder_encodeTL(0x88, 2, buffer, bufPos);
         bufPos = encodeUInt16FixedSize(self->smpMod, buffer, bufPos);
     }
 
@@ -418,17 +420,17 @@ SV_ASDU_encodeToBuffer(SV_ASDU self, uint8_t* buffer, int bufPos)
 }
 
 void
-SampledValuesPublisher_setupComplete(SampledValuesPublisher self)
+SVPublisher_setupComplete(SVPublisher self)
 {
     int numberOfAsdu = 0;
 
     /* determine number of ASDUs and length of all ASDUs */
-    SV_ASDU nextAsdu = self->asduLIst;
+    SVPublisher_ASDU nextAsdu = self->asduLIst;
     int totalASDULength = 0;
 
     while (nextAsdu != NULL) {
         numberOfAsdu++;
-        int asduLength = SV_ASDU_getEncodedSize(nextAsdu);
+        int asduLength = SVPublisher_ASDU_getEncodedSize(nextAsdu);
 
         /* tag and length field */
         asduLength += BerEncoder_determineLengthSize(asduLength);
@@ -457,7 +459,7 @@ SampledValuesPublisher_setupComplete(SampledValuesPublisher self)
     nextAsdu = self->asduLIst;
 
     while (nextAsdu != NULL) {
-        bufPos = SV_ASDU_encodeToBuffer(nextAsdu, buffer, bufPos);
+        bufPos = SVPublisher_ASDU_encodeToBuffer(nextAsdu, buffer, bufPos);
 
         nextAsdu = nextAsdu->_next;
     }
@@ -478,7 +480,7 @@ SampledValuesPublisher_setupComplete(SampledValuesPublisher self)
 
 
 void
-SampledValuesPublisher_publish(SampledValuesPublisher self)
+SVPublisher_publish(SVPublisher self)
 {
     if (DEBUG_SV_PUBLISHER)
         printf("SV_PUBLISHER: send SV message\n");
@@ -489,21 +491,21 @@ SampledValuesPublisher_publish(SampledValuesPublisher self)
 
 
 void
-SampledValuesPublisher_destroy(SampledValuesPublisher self)
+SVPublisher_destroy(SVPublisher self)
 {
     GLOBAL_FREEMEM(self->buffer);
 }
 
 
 void
-SV_ASDU_resetBuffer(SV_ASDU self)
+SVPublisher_ASDU_resetBuffer(SVPublisher_ASDU self)
 {
     self->dataSize = 0;
 }
 
 
 int
-SV_ASDU_addINT8(SV_ASDU self)
+SVPublisher_ASDU_addINT8(SVPublisher_ASDU self)
 {
     int index = self->dataSize;
 
@@ -513,13 +515,13 @@ SV_ASDU_addINT8(SV_ASDU self)
 }
 
 void
-SV_ASDU_setINT8(SV_ASDU self, int index, int8_t value)
+SVPublisher_ASDU_setINT8(SVPublisher_ASDU self, int index, int8_t value)
 {
     self->_dataBuffer[index] = value;
 }
 
 int
-SV_ASDU_addINT32(SV_ASDU self)
+SVPublisher_ASDU_addINT32(SVPublisher_ASDU self)
 {
     int index = self->dataSize;
 
@@ -529,13 +531,13 @@ SV_ASDU_addINT32(SV_ASDU self)
 }
 
 void
-SV_ASDU_setINT32(SV_ASDU self, int index, int32_t value)
+SVPublisher_ASDU_setINT32(SVPublisher_ASDU self, int index, int32_t value)
 {
     encodeInt32FixedSize(value, self->_dataBuffer, index);
 }
 
 int
-SV_ASDU_addINT64(SV_ASDU self)
+SVPublisher_ASDU_addINT64(SVPublisher_ASDU self)
 {
     int index = self->dataSize;
 
@@ -545,13 +547,13 @@ SV_ASDU_addINT64(SV_ASDU self)
 }
 
 void
-SV_ASDU_setINT64(SV_ASDU self, int index, int64_t value)
+SVPublisher_ASDU_setINT64(SVPublisher_ASDU self, int index, int64_t value)
 {
     encodeInt64FixedSize(value, self->_dataBuffer, index);
 }
 
 int
-SV_ASDU_addFLOAT(SV_ASDU self)
+SVPublisher_ASDU_addFLOAT(SVPublisher_ASDU self)
 {
     int index = self->dataSize;
 
@@ -561,7 +563,7 @@ SV_ASDU_addFLOAT(SV_ASDU self)
 }
 
 void
-SV_ASDU_setFLOAT(SV_ASDU self, int index, float value)
+SVPublisher_ASDU_setFLOAT(SVPublisher_ASDU self, int index, float value)
 {
     uint8_t* buf = (uint8_t*) &value;
 
@@ -580,7 +582,7 @@ SV_ASDU_setFLOAT(SV_ASDU self, int index, float value)
 
 
 int
-SV_ASDU_addFLOAT64(SV_ASDU self)
+SVPublisher_ASDU_addFLOAT64(SVPublisher_ASDU self)
 {
     int index = self->dataSize;
     self->dataSize += 8;
@@ -588,7 +590,7 @@ SV_ASDU_addFLOAT64(SV_ASDU self)
 }
 
 void
-SV_ASDU_setFLOAT64(SV_ASDU self, int index, double value)
+SVPublisher_ASDU_setFLOAT64(SVPublisher_ASDU self, int index, double value)
 {
     uint8_t* buf = (uint8_t*) &value;
 
@@ -606,13 +608,13 @@ SV_ASDU_setFLOAT64(SV_ASDU self, int index, double value)
 }
 
 uint16_t
-SV_ASDU_getSmpCnt(SV_ASDU self)
+SVPublisher_ASDU_getSmpCnt(SVPublisher_ASDU self)
 {
     return self->smpCnt;
 }
 
 void
-SV_ASDU_setSmpCnt(SV_ASDU self, uint16_t value)
+SVPublisher_ASDU_setSmpCnt(SVPublisher_ASDU self, uint16_t value)
 {
     self->smpCnt = value;
 
@@ -620,7 +622,7 @@ SV_ASDU_setSmpCnt(SV_ASDU self, uint16_t value)
 }
 
 void
-SV_ASDU_increaseSmpCnt(SV_ASDU self)
+SVPublisher_ASDU_increaseSmpCnt(SVPublisher_ASDU self)
 {
     self->smpCnt++;
 
@@ -628,21 +630,21 @@ SV_ASDU_increaseSmpCnt(SV_ASDU self)
 }
 
 void
-SV_ASDU_setRefrTm(SV_ASDU self, uint64_t refrTm)
+SVPublisher_ASDU_setRefrTm(SVPublisher_ASDU self, uint64_t refrTm)
 {
     self->hasRefrTm = true;
     self->refrTm = refrTm;
 }
 
 void
-SV_ASDU_setSmpMod(SV_ASDU self, uint8_t smpMod)
+SVPublisher_ASDU_setSmpMod(SVPublisher_ASDU self, uint8_t smpMod)
 {
     self->hasSmpMod = true;
     self->smpMod = smpMod;
 }
 
 void
-SV_ASDU_setSmpRate(SV_ASDU self, uint16_t smpRate)
+SVPublisher_ASDU_setSmpRate(SVPublisher_ASDU self, uint16_t smpRate)
 {
     self->hasSmpRate = true;
     self->smpRate = smpRate;

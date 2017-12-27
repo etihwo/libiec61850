@@ -179,6 +179,21 @@ IedConnection
 IedConnection_create(void);
 
 /**
+ * \brief create a new IedConnection instance that has support for TLS
+ *
+ * This function creates a new IedConnection instance that is used to handle a connection to an IED.
+ * It allocated all required resources. The new connection is in the "idle" state. Before it can be used
+ * the connect method has to be called. The connection will use TLS when a TLSConfiguration object is
+ * provided.
+ *
+ * \param tlsConfig the TLS configuration to be used
+ *
+ * \return the new IedConnection instance
+ */
+IedConnection
+IedConnection_createWithTlsSupport(TLSConfiguration tlsConfig);
+
+/**
  * \brief destroy an IedConnection instance.
  *
  * The connection will be closed if it is in "connected" state. All allocated resources of the connection
@@ -1689,7 +1704,8 @@ typedef enum {
     ACSI_CLASS_GoCB,
     ACSI_CLASS_GsCB,
     ACSI_CLASS_MSVCB,
-    ACSI_CLASS_USVCB
+    ACSI_CLASS_USVCB,
+	ALL_EXCEPT_DATASET_LOG
 } ACSIClass;
 
 /**

@@ -360,8 +360,11 @@ namespace IEC61850
 			/** multicast sampled values control blocks */
 			ACSI_CLASS_MSVCB,
 			/** unicast sampled values control blocks */
-			ACSI_CLASS_USVCB
-		}
+			ACSI_CLASS_USVCB,
+            /** All class except dataset and log class */
+            ALL_EXCEPT_DATASET_LOG
+
+        }
 
 		public enum FunctionalConstraint
 		{
@@ -401,9 +404,13 @@ namespace IEC61850
 			BR = 16,
 			/** Log control blocks */
 			LG = 17,
+            /** Goose control blocks */
+            GO = 18,
+            /** Gsse control blocks */
+            GS = 19,
 
-			/** All FCs - wildcard value */
-			ALL = 99,
+            /** All FCs - wildcard value */
+            ALL = 99,
 			NONE = -1
 		}
 

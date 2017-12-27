@@ -67,21 +67,21 @@ struct sSVSubscriber {
     void* listenerParameter;
 };
 
-struct sSVClientASDU {
+struct sSVSubscriber_ASDU {
 
     char* svId;
+    char* datSet;
 
     uint8_t* smpCnt;
     uint8_t* confRev;
     uint8_t* refrTm;
     uint8_t* smpSynch;
-
+    uint8_t* smpMod;
+    uint8_t* smpRate;
 
     int dataBufferLength;
     uint8_t* dataBuffer;
 };
-
-
 
 
 SVReceiver
@@ -208,7 +208,7 @@ SVReceiver_destroy(SVReceiver self)
     GLOBAL_FREEMEM(self);
 }
 
-void
+EthernetSocket
 SVReceiver_startThreadless(SVReceiver self)
 {
     if (self->interfaceId == NULL)
@@ -219,6 +219,8 @@ SVReceiver_startThreadless(SVReceiver self)
     Ethernet_setProtocolFilter(self->ethSocket, ETH_P_SV);
 
     self->running = true;
+    
+    return self->ethSocket;
 }
 
 void
@@ -229,17 +231,15 @@ SVReceiver_stopThreadless(SVReceiver self)
     self->running = false;
 }
 
-
 static void
 parseASDU(SVReceiver self, SVSubscriber subscriber, uint8_t* buffer, int length)
 {
     int bufPos = 0;
-
-    struct sSVClientASDU asdu;
-    memset(&asdu, 0, sizeof(struct sSVClientASDU));
-
     int svIdLength = 0;
+    int datSetLength = 0;
 
+    struct sSVSubscriber_ASDU asdu;
+    memset(&asdu, 0, sizeof(struct sSVSubscriber_ASDU));
 
     while (bufPos < length) {
         int elementLength;
@@ -247,12 +247,21 @@ parseASDU(SVReceiver self, SVSubscriber subscriber, uint8_t* buffer, int length)
         uint8_t tag = buffer[bufPos++];
 
         bufPos = BerDecoder_decodeLength(buffer, &elementLength, bufPos, length);
+        if (bufPos < 0) {
+            if (DEBUG_SV_SUBSCRIBER) printf("SV_SUBSCRIBER: Malformed message: failed to decode BER length tag!\n");
+            return;
+        }
 
         switch (tag) {
 
         case 0x80:
             asdu.svId = (char*) (buffer + bufPos);
             svIdLength = elementLength;
+            break;
+
+        case 0x81:
+            asdu.datSet = (char*) (buffer + bufPos);
+            datSetLength = elementLength;
             break;
 
         case 0x82:
@@ -271,12 +280,21 @@ parseASDU(SVReceiver self, SVSubscriber subscriber, uint8_t* buffer, int length)
             asdu.smpSynch = buffer + bufPos;
             break;
 
+        case 0x86:
+            asdu.smpRate = buffer + bufPos;
+            break;
+
         case 0x87:
             asdu.dataBuffer = buffer + bufPos;
             asdu.dataBufferLength = elementLength;
             break;
 
+        case 0x88:
+            asdu.smpMod = buffer + bufPos;
+            break;
+
         default: /* ignore unknown tag */
+            if (DEBUG_SV_SUBSCRIBER) printf("SV_SUBSCRIBER: found unknown tag %02x\n", tag);
             break;
         }
 
@@ -285,6 +303,25 @@ parseASDU(SVReceiver self, SVSubscriber subscriber, uint8_t* buffer, int length)
 
     if (asdu.svId != NULL)
         asdu.svId[svIdLength] = 0;
+    if (asdu.datSet != NULL)
+        asdu.datSet[datSetLength] = 0;
+    
+    if (DEBUG_SV_SUBSCRIBER) {
+        printf("SV_SUBSCRIBER:   SV ASDU: ----------------\n");
+        printf("SV_SUBSCRIBER:     DataLength: %d\n", asdu.dataBufferLength);
+        printf("SV_SUBSCRIBER:     SvId: %s\n", asdu.svId);
+        printf("SV_SUBSCRIBER:     SmpCnt: %d\n", SVSubscriber_ASDU_getSmpCnt(&asdu));
+        printf("SV_SUBSCRIBER:     ConfRev: %d\n", SVSubscriber_ASDU_getConfRev(&asdu));
+        
+        if (SVSubscriber_ASDU_hasDatSet(&asdu))
+            printf("SV_SUBSCRIBER:     DatSet: %s\n", asdu.datSet);
+        if (SVSubscriber_ASDU_hasRefrTm(&asdu))
+            printf("SV_SUBSCRIBER:     RefrTm: %lu\n", SVSubscriber_ASDU_getRefrTmAsMs(&asdu));
+        if (SVSubscriber_ASDU_hasSmpMod(&asdu))
+            printf("SV_SUBSCRIBER:     SmpMod: %d\n", SVSubscriber_ASDU_getSmpMod(&asdu));
+        if (SVSubscriber_ASDU_hasSmpRate(&asdu))
+            printf("SV_SUBSCRIBER:     SmpRate: %d\n", SVSubscriber_ASDU_getSmpRate(&asdu));
+    }
 
     /* Call callback handler */
     if (subscriber->listener != NULL)
@@ -302,6 +339,10 @@ parseSequenceOfASDU(SVReceiver self, SVSubscriber subscriber, uint8_t* buffer, i
         uint8_t tag = buffer[bufPos++];
 
         bufPos = BerDecoder_decodeLength(buffer, &elementLength, bufPos, length);
+        if (bufPos < 0) {
+            if (DEBUG_SV_SUBSCRIBER) printf("SV_SUBSCRIBER: Malformed message: failed to decode BER length tag!\n");
+            return;
+        }
 
         switch (tag) {
         case 0x30:
@@ -309,6 +350,7 @@ parseSequenceOfASDU(SVReceiver self, SVSubscriber subscriber, uint8_t* buffer, i
             break;
 
         default: /* ignore unknown tag */
+            if (DEBUG_SV_SUBSCRIBER) printf("SV_SUBSCRIBER: found unknown tag %02x\n", tag);
             break;
         }
 
@@ -325,6 +367,10 @@ parseSVPayload(SVReceiver self, SVSubscriber subscriber, uint8_t* buffer, int ap
         int elementLength;
 
         bufPos = BerDecoder_decodeLength(buffer, &elementLength, bufPos, apduLength);
+        if (bufPos < 0) {
+            if (DEBUG_SV_SUBSCRIBER) printf("SV_SUBSCRIBER: Malformed message: failed to decode BER length tag!\n");
+            return;
+        }
 
         int svEnd = bufPos + elementLength;
 
@@ -332,6 +378,10 @@ parseSVPayload(SVReceiver self, SVSubscriber subscriber, uint8_t* buffer, int ap
             uint8_t tag = buffer[bufPos++];
 
             bufPos = BerDecoder_decodeLength(buffer, &elementLength, bufPos, svEnd);
+            if (bufPos < 0) {
+                if (DEBUG_SV_SUBSCRIBER) printf("SV_SUBSCRIBER: Malformed message: failed to decode BER length tag!\n");
+                return;
+            }
 
             if (bufPos + elementLength > apduLength) {
                 if (DEBUG_SV_SUBSCRIBER)
@@ -353,6 +403,7 @@ parseSVPayload(SVReceiver self, SVSubscriber subscriber, uint8_t* buffer, int ap
                 break;
 
             default: /* ignore unknown tag */
+                if (DEBUG_SV_SUBSCRIBER) printf("SV_SUBSCRIBER: found unknown tag %02x\n", tag);
                 break;
             }
 
@@ -519,7 +570,7 @@ SVSubscriber_setListener(SVSubscriber self,  SVUpdateListener listener, void* pa
 }
 
 uint16_t
-SVClientASDU_getSmpCnt(SVClientASDU self)
+SVSubscriber_ASDU_getSmpCnt(SVSubscriber_ASDU self)
 {
     uint16_t retVal;
     uint8_t* valBytes = (uint8_t*) &retVal;
@@ -564,7 +615,7 @@ decodeUtcTime(uint8_t* buffer, uint8_t* timeQuality)
 }
 
 uint64_t
-SVClientASDU_getRefrTmAsMs(SVClientASDU self)
+SVSubscriber_ASDU_getRefrTmAsMs(SVSubscriber_ASDU self)
 {
     uint64_t msTime = 0;
 
@@ -575,20 +626,43 @@ SVClientASDU_getRefrTmAsMs(SVClientASDU self)
 }
 
 bool
-SVClientASDU_hasRefrTm(SVClientASDU self)
+SVSubscriber_ASDU_hasRefrTm(SVSubscriber_ASDU self)
 {
     return (self->refrTm != NULL);
 }
 
+bool
+SVSubscriber_ASDU_hasDatSet(SVSubscriber_ASDU self)
+{
+    return (self->datSet != NULL);
+}
+
+bool
+SVSubscriber_ASDU_hasSmpRate(SVSubscriber_ASDU self)
+{
+    return (self->smpRate != NULL);
+}
+
+bool
+SVSubscriber_ASDU_hasSmpMod(SVSubscriber_ASDU self)
+{
+    return (self->smpMod != NULL);
+}
 
 const char*
-SVClientASDU_getSvId(SVClientASDU self)
+SVSubscriber_ASDU_getSvId(SVSubscriber_ASDU self)
 {
     return self->svId;
 }
 
+const char*
+SVSubscriber_ASDU_getDatSet(SVSubscriber_ASDU self)
+{
+    return self->datSet;
+}
+
 uint32_t
-SVClientASDU_getConfRev(SVClientASDU self)
+SVSubscriber_ASDU_getConfRev(SVSubscriber_ASDU self)
 {
     uint32_t retVal = *((uint32_t*) (self->confRev));
 
@@ -601,8 +675,30 @@ SVClientASDU_getConfRev(SVClientASDU self)
     return retVal;
 }
 
+uint8_t
+SVSubscriber_ASDU_getSmpMod(SVSubscriber_ASDU self)
+{
+    uint8_t retVal = *((uint8_t*) (self->smpMod));
+
+    return retVal;
+}
+
+uint16_t
+SVSubscriber_ASDU_getSmpRate(SVSubscriber_ASDU self)
+{
+    uint16_t retVal = *((uint16_t*) (self->smpRate));
+
+#if (ORDER_LITTLE_ENDIAN == 1)
+    uint8_t* buf = (uint8_t*) (&retVal);
+
+    BerEncoder_revertByteOrder(buf, 2);
+#endif
+
+    return retVal;
+}
+
 int8_t
-SVClientASDU_getINT8(SVClientASDU self, int index)
+SVSubscriber_ASDU_getINT8(SVSubscriber_ASDU self, int index)
 {
     int8_t retVal = *((int8_t*) (self->dataBuffer + index));
 
@@ -610,7 +706,7 @@ SVClientASDU_getINT8(SVClientASDU self, int index)
 }
 
 int16_t
-SVClientASDU_getINT16(SVClientASDU self, int index)
+SVSubscriber_ASDU_getINT16(SVSubscriber_ASDU self, int index)
 {
     int16_t retVal = *((int16_t*) (self->dataBuffer + index));
 
@@ -624,7 +720,7 @@ SVClientASDU_getINT16(SVClientASDU self, int index)
 }
 
 int32_t
-SVClientASDU_getINT32(SVClientASDU self, int index)
+SVSubscriber_ASDU_getINT32(SVSubscriber_ASDU self, int index)
 {
     int32_t retVal = *((int32_t*) (self->dataBuffer + index));
 
@@ -638,7 +734,7 @@ SVClientASDU_getINT32(SVClientASDU self, int index)
 }
 
 int64_t
-SVClientASDU_getINT64(SVClientASDU self, int index)
+SVSubscriber_ASDU_getINT64(SVSubscriber_ASDU self, int index)
 {
     int64_t retVal = *((int64_t*) (self->dataBuffer + index));
 
@@ -652,7 +748,7 @@ SVClientASDU_getINT64(SVClientASDU self, int index)
 }
 
 uint8_t
-SVClientASDU_getINT8U(SVClientASDU self, int index)
+SVSubscriber_ASDU_getINT8U(SVSubscriber_ASDU self, int index)
 {
     uint8_t retVal = *((uint8_t*) (self->dataBuffer + index));
 
@@ -660,7 +756,7 @@ SVClientASDU_getINT8U(SVClientASDU self, int index)
 }
 
 uint16_t
-SVClientASDU_getINT16U(SVClientASDU self, int index)
+SVSubscriber_ASDU_getINT16U(SVSubscriber_ASDU self, int index)
 {
     uint16_t retVal = *((uint16_t*) (self->dataBuffer + index));
 
@@ -674,7 +770,7 @@ SVClientASDU_getINT16U(SVClientASDU self, int index)
 }
 
 uint32_t
-SVClientASDU_getINT32U(SVClientASDU self, int index)
+SVSubscriber_ASDU_getINT32U(SVSubscriber_ASDU self, int index)
 {
     uint32_t retVal = *((uint32_t*) (self->dataBuffer + index));
 
@@ -688,7 +784,7 @@ SVClientASDU_getINT32U(SVClientASDU self, int index)
 }
 
 uint64_t
-SVClientASDU_getINT64U(SVClientASDU self, int index)
+SVSubscriber_ASDU_getINT64U(SVSubscriber_ASDU self, int index)
 {
     uint64_t retVal = *((uint64_t*) (self->dataBuffer + index));
 
@@ -702,7 +798,7 @@ SVClientASDU_getINT64U(SVClientASDU self, int index)
 }
 
 float
-SVClientASDU_getFLOAT32(SVClientASDU self, int index)
+SVSubscriber_ASDU_getFLOAT32(SVSubscriber_ASDU self, int index)
 {
     float retVal = *((float*) (self->dataBuffer + index));
 
@@ -716,7 +812,7 @@ SVClientASDU_getFLOAT32(SVClientASDU self, int index)
 }
 
 double
-SVClientASDU_getFLOAT64(SVClientASDU self, int index)
+SVSubscriber_ASDU_getFLOAT64(SVSubscriber_ASDU self, int index)
 {
     double retVal = *((double*) (self->dataBuffer + index));
 
@@ -731,7 +827,7 @@ SVClientASDU_getFLOAT64(SVClientASDU self, int index)
 
 
 int
-SVClientASDU_getDataSize(SVClientASDU self)
+SVSubscriber_ASDU_getDataSize(SVSubscriber_ASDU self)
 {
     return self->dataBufferLength;
 }

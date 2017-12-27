@@ -470,25 +470,42 @@ informationReportHandler(void* parameter, char* domainName,
     MmsValue_delete(value);
 }
 
-IedConnection
-IedConnection_create()
+static IedConnection
+createNewConnectionObject(TLSConfiguration tlsConfig)
 {
     IedConnection self = (IedConnection) GLOBAL_CALLOC(1, sizeof(struct sIedConnection));
 
-    self->enabledReports = LinkedList_create();
-    self->logicalDevices = NULL;
-    self->clientControls = LinkedList_create();
+    if (self) {
+        self->enabledReports = LinkedList_create();
+        self->logicalDevices = NULL;
+        self->clientControls = LinkedList_create();
 
-    self->connection = MmsConnection_create();
+        if (tlsConfig)
+            self->connection = MmsConnection_createSecure(tlsConfig);
+        else
+            self->connection = MmsConnection_create();
 
-    self->state = IED_STATE_IDLE;
+        self->state = IED_STATE_IDLE;
 
-    self->stateMutex = Semaphore_create(1);
-    self->reportHandlerMutex = Semaphore_create(1);
+        self->stateMutex = Semaphore_create(1);
+        self->reportHandlerMutex = Semaphore_create(1);
 
-    self->connectionTimeout = DEFAULT_CONNECTION_TIMEOUT;
+        self->connectionTimeout = DEFAULT_CONNECTION_TIMEOUT;
+    }
 
     return self;
+}
+
+IedConnection
+IedConnection_create()
+{
+    return createNewConnectionObject(NULL);
+}
+
+IedConnection
+IedConnection_createWithTlsSupport(TLSConfiguration tlsConfig)
+{
+    return createNewConnectionObject(tlsConfig);
 }
 
 void
@@ -1539,6 +1556,9 @@ IedConnection_getLogicalNodeDirectory(IedConnection self, IedClientError* error,
                     if (memcmp(fcPos + 1, "GO", 2) == 0)
                         goto next_element;
 
+					if (memcmp(fcPos + 1, "LG", 2) == 0)
+						goto next_element;
+
                     int lnNameLen = fcPos - variableName;
 
                     if (strncmp(variableName, logicalNodeName, lnNameLen) == 0) {
@@ -1594,6 +1614,39 @@ IedConnection_getLogicalNodeDirectory(IedConnection self, IedClientError* error,
     case ACSI_CLASS_LCB:
         addVariablesWithFc("LG", logicalNodeName, ld->variables, lnDirectory);
         break;
+
+	case ALL_EXCEPT_DATASET_LOG:
+	{
+		LinkedList variable = LinkedList_getNext(ld->variables);
+
+		while (variable != NULL) {
+			char* variableName = (char*)variable->data;
+
+			char* fcPos = strchr(variableName, '$');
+
+			if (fcPos != NULL) {
+				int lnNameLen = fcPos - variableName;
+
+				if (strncmp(variableName, logicalNodeName, lnNameLen) == 0) {
+					char* fcEndPos = strchr(fcPos + 1, '$');
+
+					if (fcEndPos != NULL) {
+						char* nameEndPos = strchr(fcEndPos + 1, '$');
+
+						if (nameEndPos == NULL) {
+							char* dataObjectName = StringUtils_copyString(fcEndPos + 1);
+
+							if (!addToStringSet(lnDirectory, dataObjectName))
+								GLOBAL_FREEMEM(dataObjectName);
+						}
+					}
+				}
+			}
+
+			variable = LinkedList_getNext(variable);
+		}
+	}
+	break;
 
     default:
         if (DEBUG_IED_CLIENT)
