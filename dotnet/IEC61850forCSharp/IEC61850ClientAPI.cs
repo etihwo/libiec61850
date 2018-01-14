@@ -1134,21 +1134,23 @@ namespace IEC61850
 			/// <param name='parameter'>
 			/// User provided parameter that is passed to the callback handler
 			/// </param>
-            public void GetFile(string fileName, GetFileHandler handler, object parameter)
+            public uint GetFile(string fileName, GetFileHandler handler, object parameter)
             {
                 int error;
+                
 
                 GetFileCallback getFileCallback = new GetFileCallback(handler, parameter);
 
                 GCHandle handle = GCHandle.Alloc(getFileCallback);
 
-                IedConnection_getFile(connection, out error, fileName, new InternalIedClientGetFileHandler(iedClientGetFileHandler), 
+                uint byteReceived = IedConnection_getFile(connection, out error, fileName, new InternalIedClientGetFileHandler(iedClientGetFileHandler), 
                     GCHandle.ToIntPtr(handle));
 
                 if (error != 0)
                     throw new IedConnectionException("Error reading file", error);
 
                 handle.Free();
+                return byteReceived;
             }
 
             /// <summary>
