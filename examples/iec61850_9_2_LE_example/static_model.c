@@ -18,6 +18,15 @@ extern DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda4;
 extern DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda5;
 extern DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda6;
 extern DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda7;
+extern DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda8;
+extern DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda9;
+extern DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda10;
+extern DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda11;
+extern DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda12;
+extern DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda13;
+extern DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda14;
+extern DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda15;
+
 
 DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda0 = {
   "MUnn",
@@ -32,7 +41,7 @@ DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda0 = {
 DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda1 = {
   "MUnn",
   false,
-  "TCTR2$MX$Amp$instMag$i",
+  "TCTR1$MX$Amp$q",
   -1,
   NULL,
   NULL,
@@ -42,7 +51,7 @@ DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda1 = {
 DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda2 = {
   "MUnn",
   false,
-  "TCTR3$MX$Amp$instMag$i",
+  "TCTR2$MX$Amp$instMag$i",
   -1,
   NULL,
   NULL,
@@ -52,7 +61,7 @@ DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda2 = {
 DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda3 = {
   "MUnn",
   false,
-  "TCTR4$MX$Amp$instMag$i",
+  "TCTR2$MX$Amp$q",
   -1,
   NULL,
   NULL,
@@ -62,7 +71,7 @@ DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda3 = {
 DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda4 = {
   "MUnn",
   false,
-  "TVTR1$MX$Vol$instMag$i",
+  "TCTR3$MX$Amp$instMag$i",
   -1,
   NULL,
   NULL,
@@ -72,7 +81,7 @@ DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda4 = {
 DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda5 = {
   "MUnn",
   false,
-  "TVTR2$MX$Vol$instMag$i",
+  "TCTR3$MX$Amp$q",
   -1,
   NULL,
   NULL,
@@ -82,7 +91,7 @@ DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda5 = {
 DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda6 = {
   "MUnn",
   false,
-  "TVTR3$MX$Vol$instMag$i",
+  "TCTR4$MX$Amp$instMag$i",
   -1,
   NULL,
   NULL,
@@ -92,17 +101,97 @@ DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda6 = {
 DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda7 = {
   "MUnn",
   false,
-  "TVTR4$MX$Vol$instMag$i",
+  "TCTR4$MX$Amp$q",
   -1,
   NULL,
   NULL,
-  NULL
+  &iedModelds_MUnn_LLN0_PhsMeas1_fcda8
+};
+
+DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda8 = {
+	"MUnn",
+	false,
+	"TVTR1$MX$Vol$instMag$i",
+	-1,
+	NULL,
+	NULL,
+	&iedModelds_MUnn_LLN0_PhsMeas1_fcda9
+};
+
+DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda9 = {
+	"MUnn",
+	false,
+	"TVTR1$MX$Vol$q",
+	-1,
+	NULL,
+	NULL,
+	&iedModelds_MUnn_LLN0_PhsMeas1_fcda10
+};
+
+DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda10 = {
+	"MUnn",
+	false,
+	"TVTR2$MX$Vol$instMag$i",
+	-1,
+	NULL,
+	NULL,
+	&iedModelds_MUnn_LLN0_PhsMeas1_fcda11
+};
+
+DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda11 = {
+	"MUnn",
+	false,
+	"TVTR2$MX$Vol$q",
+	-1,
+	NULL,
+	NULL,
+	&iedModelds_MUnn_LLN0_PhsMeas1_fcda12
+};
+
+DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda12 = {
+	"MUnn",
+	false,
+	"TVTR3$MX$Vol$instMag$i",
+	-1,
+	NULL,
+	NULL,
+	&iedModelds_MUnn_LLN0_PhsMeas1_fcda13
+};
+
+DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda13 = {
+	"MUnn",
+	false,
+	"TVTR3$MX$Vol$q",
+	-1,
+	NULL,
+	NULL,
+	&iedModelds_MUnn_LLN0_PhsMeas1_fcda14
+};
+
+DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda14 = {
+	"MUnn",
+	false,
+	"TVTR4$MX$Vol$instMag$i",
+	-1,
+	NULL,
+	NULL,
+	&iedModelds_MUnn_LLN0_PhsMeas1_fcda15
+};
+
+DataSetEntry iedModelds_MUnn_LLN0_PhsMeas1_fcda15 = {
+	"MUnn",
+	false,
+	"TVTR4$MX$Vol$q",
+	-1,
+	NULL,
+	NULL,
+	NULL
 };
 
 DataSet iedModelds_MUnn_LLN0_PhsMeas1 = {
   "MUnn",
   "LLN0$PhsMeas1",
-  8,
+  16,
   &iedModelds_MUnn_LLN0_PhsMeas1_fcda0,
   NULL
 };

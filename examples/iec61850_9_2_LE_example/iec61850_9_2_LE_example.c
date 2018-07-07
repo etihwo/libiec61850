@@ -132,7 +132,7 @@ main(int argc, char** argv)
         IedServer_updateInt32AttributeValue(iedServer, IEDMODEL_MUnn_TCTR1_Amp_instMag_i, current);
         IedServer_updateInt32AttributeValue(iedServer, IEDMODEL_MUnn_TCTR2_Amp_instMag_i, current);
         IedServer_updateInt32AttributeValue(iedServer, IEDMODEL_MUnn_TCTR3_Amp_instMag_i, current);
-        IedServer_updateInt32AttributeValue(iedServer, IEDMODEL_MUnn_TCTR3_Amp_instMag_i, current);
+        IedServer_updateInt32AttributeValue(iedServer, IEDMODEL_MUnn_TCTR4_Amp_instMag_i, current);
 
         IedServer_updateInt32AttributeValue(iedServer, IEDMODEL_MUnn_TVTR1_Vol_instMag_i, voltage);
         IedServer_updateInt32AttributeValue(iedServer, IEDMODEL_MUnn_TVTR2_Vol_instMag_i, voltage);
