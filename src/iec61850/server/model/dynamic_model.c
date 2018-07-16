@@ -590,6 +590,15 @@ DataAttribute_create(const char* name, ModelNode* parent, DataAttributeType type
     return self;
 }
 
+bool
+DataAttribute_setValue(DataAttribute* self, MmsValue* value) {
+	if (self->mmsValue != NULL )
+		return false;
+	
+	self->mmsValue = value;
+	return true;
+}
+
 DataSet*
 DataSet_create(const char* name, LogicalNode* parent)
 {

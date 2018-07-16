@@ -685,3 +685,4 @@ EXPORTS
 	ClientGooseControlBlock_setDstAddress_vid
 	ClientGooseControlBlock_getDstAddress_appid
 	ClientGooseControlBlock_setDstAddress_appid
+	DataAttribute_setValue

@@ -138,6 +138,17 @@ DataAttribute_create(const char* name, ModelNode* parent, DataAttributeType type
         uint8_t triggerOptions, int arrayElements, uint32_t sAddr);
 
 /**
+* \brief Set the MMS Value
+*
+* The parent model node has to be of type LogicalNode or DataObject
+*
+*
+* \return true if the assignement is ok
+*/
+bool
+DataAttribute_setValue(DataAttribute* self, MmsValue* value);
+
+/**
  * \brief create a new report control block (RCB)
  *
  * Create a new report control block (RCB) and add it to the given logical node (LN).

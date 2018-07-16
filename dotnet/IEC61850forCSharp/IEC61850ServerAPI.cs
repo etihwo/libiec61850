@@ -377,7 +377,10 @@ namespace IEC61850
 			static extern IntPtr DataAttribute_create(string name, IntPtr parent, int type, int fc,
 				byte triggerOptions, int arrayElements, UInt32 sAddr);
 
-			internal DataAttribute(IntPtr self) : base(self)
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern bool DataAttribute_setValue(IntPtr self, IntPtr MmsValue);
+
+            internal DataAttribute(IntPtr self) : base(self)
 			{
 			}
 
@@ -387,54 +390,70 @@ namespace IEC61850
 				self = DataAttribute_create (name, parent.self, (int)type, (int)fc, (byte)trgOps, arrayElements, sAddr);
 			}
 
-		}
+            public bool SetValue(MmsValue value)
+            {
+                return DataAttribute_setValue(self, value.valueReference);
+            }
+        }
 
-		public class ModelNode
-		{
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern IntPtr ModelNode_getChild(IntPtr self, string name);
+        public class ModelNode
+        {
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern IntPtr ModelNode_getChild(IntPtr self, string name);
 
-			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern int ModelNode_getType(IntPtr self);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern int ModelNode_getType(IntPtr self);
 
-			public IntPtr self;
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern IntPtr ModelNode_getObjectReference(IntPtr self, IntPtr objectReference);
 
-			internal ModelNode()
-			{
-			}
+            public IntPtr self;
 
-			public ModelNode(IntPtr self)
-			{
-				this.self = self;
-			}
+            internal ModelNode()
+            {
+            }
 
-			public ModelNode GetChild(string name)
-			{
-				IntPtr childPtr = ModelNode_getChild(self, name);
+            public ModelNode(IntPtr self)
+            {
+                this.self = self;
+            }
 
-				if (childPtr == IntPtr.Zero)
-					return null;
+            public ModelNode GetChild(string name)
+            {
+                IntPtr childPtr = ModelNode_getChild(self, name);
 
-				int nodeType = ModelNode_getType (childPtr);
+                if (childPtr == IntPtr.Zero)
+                    return null;
 
-				switch (nodeType) {
-				case 0:
-					return new LogicalDevice (childPtr);
+                int nodeType = ModelNode_getType(childPtr);
 
-				case 1:
-					return new LogicalNode (childPtr);
+                switch (nodeType) {
+                    case 0:
+                        return new LogicalDevice(childPtr);
 
-				case 2:
-					return new DataObject (childPtr);
+                    case 1:
+                        return new LogicalNode(childPtr);
 
-				case 3:
-					return new DataAttribute (childPtr);
+                    case 2:
+                        return new DataObject(childPtr);
 
-				default:
-					return new ModelNode (childPtr);
-				}
+                    case 3:
+                        return new DataAttribute(childPtr);
 
-			}
+                    default:
+                        return new ModelNode(childPtr);
+                }
+
+            }
+
+            public string GetObjectReference()
+            {
+                IntPtr ptr = ModelNode_getObjectReference(self, IntPtr.Zero);
+
+                string returnString = Marshal.PtrToStringAnsi(ptr);
+
+                return returnString;
+            }
 		}
 
 
@@ -622,13 +641,13 @@ namespace IEC61850
 			private delegate int InternalControlHandler (IntPtr parameter, IntPtr ctlVal, bool test);
 
 			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern void IedServer_setWaitForExecutionHandler(IntPtr self, IntPtr node, InternalControlWaitForExecutionHandler handler, IntPtr parameter);
+			static extern bool IedServer_setWaitForExecutionHandler(IntPtr self, IntPtr node, InternalControlWaitForExecutionHandler handler, IntPtr parameter);
 
 			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern void IedServer_setPerformCheckHandler(IntPtr self, IntPtr node, InternalControlPerformCheckHandler handler, IntPtr parameter);
+			static extern bool IedServer_setPerformCheckHandler(IntPtr self, IntPtr node, InternalControlPerformCheckHandler handler, IntPtr parameter);
 
 			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern void IedServer_setControlHandler (IntPtr self, IntPtr node, InternalControlHandler handler, IntPtr parameter);
+			static extern bool IedServer_setControlHandler (IntPtr self, IntPtr node, InternalControlHandler handler, IntPtr parameter);
 
 			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
 			static extern void IedServer_setWriteAccessPolicy(IntPtr self, FunctionalConstraint fc, AccessPolicy policy);
@@ -879,7 +898,7 @@ namespace IEC61850
 				return info;
 			}
 
-			public void SetControlHandler (DataObject controlObject, ControlHandler handler, object parameter)
+			public bool SetControlHandler (DataObject controlObject, ControlHandler handler, object parameter)
 			{
 				ControlHandlerInfo info = GetControlHandlerInfo (controlObject);
 
@@ -889,10 +908,10 @@ namespace IEC61850
 				if (internalControlHandlerRef == null)
 					internalControlHandlerRef = new InternalControlHandler (internalControlHandler);
 
-				IedServer_setControlHandler(self, controlObject.self, internalControlHandlerRef, GCHandle.ToIntPtr(info.handle));
+				return IedServer_setControlHandler(self, controlObject.self, internalControlHandlerRef, GCHandle.ToIntPtr(info.handle));
 			}
 
-			public void SetCheckHandler (DataObject controlObject, CheckHandler handler, object parameter)
+			public bool SetCheckHandler (DataObject controlObject, CheckHandler handler, object parameter)
 			{
 				ControlHandlerInfo info = GetControlHandlerInfo (controlObject);
 
@@ -902,10 +921,10 @@ namespace IEC61850
 				if (internalControlPerformCheckHandlerRef == null)
 					internalControlPerformCheckHandlerRef = new InternalControlPerformCheckHandler (internalCheckHandler);
 
-				IedServer_setPerformCheckHandler(self, controlObject.self, internalControlPerformCheckHandlerRef, GCHandle.ToIntPtr(info.handle));
+				return IedServer_setPerformCheckHandler(self, controlObject.self, internalControlPerformCheckHandlerRef, GCHandle.ToIntPtr(info.handle));
 			}
 
-			public void SetWaitForExecutionHandler (DataObject controlObject, ControlWaitForExecutionHandler handler, object parameter)
+			public bool SetWaitForExecutionHandler (DataObject controlObject, ControlWaitForExecutionHandler handler, object parameter)
 			{
 				ControlHandlerInfo info = GetControlHandlerInfo (controlObject);
 
@@ -915,7 +934,7 @@ namespace IEC61850
 				if (internalControlWaitForExecutionHandlerRef == null)
 					internalControlWaitForExecutionHandlerRef = new InternalControlWaitForExecutionHandler (internalControlWaitForExecutionHandler);
 
-				IedServer_setWaitForExecutionHandler(self, controlObject.self, internalControlWaitForExecutionHandlerRef, GCHandle.ToIntPtr(info.handle));
+				return IedServer_setWaitForExecutionHandler(self, controlObject.self, internalControlWaitForExecutionHandlerRef, GCHandle.ToIntPtr(info.handle));
 			}
 				
 			public void HandleWriteAccess (DataAttribute dataAttr, WriteAccessHandler handler, object parameter)

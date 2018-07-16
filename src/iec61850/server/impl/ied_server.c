@@ -696,7 +696,7 @@ lookupControlObject(IedServer self, DataObject* node)
     return controlObject;
 }
 
-void
+bool
 IedServer_setControlHandler(
         IedServer self,
         DataObject* node,
@@ -709,29 +709,39 @@ IedServer_setControlHandler(
         ControlObject_installListener(controlObject, listener, parameter);
         if (DEBUG_IED_SERVER)
             printf("IED_SERVER: Installed control handler for %s!\n", node->name);
+		return true;
     }
-    else
-        if (DEBUG_IED_SERVER)
-            printf("IED_SERVER: Failed to install control handler!\n");
+	else {
+		if (DEBUG_IED_SERVER)
+			printf("IED_SERVER: Failed to install control handler!\n");
+		return false;
+	}
 }
-
-void
+bool
 IedServer_setPerformCheckHandler(IedServer self, DataObject* node, ControlPerformCheckHandler handler, void* parameter)
 {
     ControlObject* controlObject = lookupControlObject(self, node);
 
-    if (controlObject != NULL)
-        ControlObject_installCheckHandler(controlObject, handler, parameter);
+	if (controlObject != NULL) {
+		ControlObject_installCheckHandler(controlObject, handler, parameter);
+		return true;
+	}
+	else
+		return false;
 }
 
-void
+bool
 IedServer_setWaitForExecutionHandler(IedServer self, DataObject* node, ControlWaitForExecutionHandler handler,
         void* parameter)
 {
     ControlObject* controlObject = lookupControlObject(self, node);
 
-    if (controlObject != NULL)
-        ControlObject_installWaitForExecutionHandler(controlObject, handler, parameter);
+	if (controlObject != NULL) {
+		ControlObject_installWaitForExecutionHandler(controlObject, handler, parameter);
+		return true;
+	}
+	else
+		return false;
 }
 #endif /* (CONFIG_IEC61850_CONTROL_SERVICE == 1) */
 

@@ -920,8 +920,10 @@ typedef ControlHandlerResult (*ControlHandler) (void* parameter, MmsValue* ctlVa
  * \param node the controllable data object handle
  * \param handler a callback function of type ControlHandler
  * \param parameter a user provided parameter that is passed to the control handler.
+ *
+ * \return true if installation is ok
  */
-void
+bool
 IedServer_setControlHandler(IedServer self, DataObject* node, ControlHandler handler, void* parameter);
 
 /**
@@ -937,8 +939,9 @@ IedServer_setControlHandler(IedServer self, DataObject* node, ControlHandler han
  * \param handler a callback function of type ControlHandler
  * \param parameter a user provided parameter that is passed to the control handler.
  *
+ * \return true if installation is ok
  */
-void
+bool
 IedServer_setPerformCheckHandler(IedServer self, DataObject* node, ControlPerformCheckHandler handler, void* parameter);
 
 /**
@@ -955,8 +958,9 @@ IedServer_setPerformCheckHandler(IedServer self, DataObject* node, ControlPerfor
  * \param handler a callback function of type ControlHandler
  * \param parameter a user provided parameter that is passed to the control handler.
  *
+ * \return true if installation is ok
  */
-void
+bool
 IedServer_setWaitForExecutionHandler(IedServer self, DataObject* node, ControlWaitForExecutionHandler handler, void* parameter);
 
 /**@}*/
