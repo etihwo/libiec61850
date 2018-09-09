@@ -4,7 +4,7 @@ PROJECT_BINARY_NAME = server_example_basic_io
 PROJECT_SOURCES = server_example_basic_io.c
 PROJECT_SOURCES += static_model.c
 
-PROJECT_ICD_FILE = simpleIO_direct_control.icd
+PROJECT_ICD_FILE = simpleIO_direct_control.cid
 
 include $(LIBIEC_HOME)/make/target_system.mk
 include $(LIBIEC_HOME)/make/stack_includes.mk
@@ -22,6 +22,7 @@ model:	$(PROJECT_ICD_FILE)
 
 $(PROJECT_BINARY_NAME):	$(PROJECT_SOURCES) $(LIB_NAME)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROJECT_BINARY_NAME) $(PROJECT_SOURCES) $(INCLUDES) $(LIB_NAME) $(LDLIBS)
+	mkdir -p vmd-filestore
 	$(CP) $(PROJECT_BINARY_NAME) vmd-filestore/IEDSERVER.BIN
 
 clean:

@@ -3,7 +3,7 @@
  *
  *  Copyright 2013 Michael Zillgith
  *
- *	This file is part of libIEC61850.
+ *  This file is part of libIEC61850.
  *
  *  libIEC61850 is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 
 #include "iec61850_model.h"
 
+#include "stack_config.h"
 #include "libiec61850_platform_includes.h"
 
 static void
@@ -75,12 +76,12 @@ IedModel_setAttributeValuesToNull(IedModel* iedModel)
 
 
 int
-IedModel_getLogicalDeviceCount(IedModel* iedModel)
+IedModel_getLogicalDeviceCount(IedModel* self)
 {
-	if (iedModel->firstChild == NULL)
+	if (self->firstChild == NULL)
 		return 0;
 
-	LogicalDevice* logicalDevice = iedModel->firstChild;
+	LogicalDevice* logicalDevice = self->firstChild;
 
 	int ldCount = 1;
 
@@ -160,6 +161,27 @@ IedModel_getDeviceByInst(IedModel* self, const char* ldInst)
           return device;
 
       device = (LogicalDevice*) device->sibling;
+    }
+
+    return NULL;
+}
+
+
+LogicalDevice*
+IedModel_getDeviceByIndex(IedModel* self, int index)
+{
+    LogicalDevice* logicalDevice = self->firstChild;
+
+    int currentIndex = 0;
+
+    while (logicalDevice) {
+
+        if (currentIndex == index)
+            return logicalDevice;
+
+        currentIndex++;
+
+        logicalDevice = (LogicalDevice*) logicalDevice->sibling;
     }
 
     return NULL;
@@ -280,14 +302,15 @@ IedModel_getModelNodeByObjectReference(IedModel* model, const char* objectRefere
 
     char* separator = strchr(objRef, '/');
 
-    if (separator == NULL)
-        return NULL;
-
-    *separator = 0;
+    if (separator != NULL)
+        *separator = 0;
 
     LogicalDevice* ld = IedModel_getDevice(model, objRef);
 
     if (ld == NULL) return NULL;
+
+    if ((separator == NULL) || (*(separator + 1) == 0))
+        return (ModelNode*) ld;
 
     return ModelNode_getChild((ModelNode*) ld, separator + 1);
 }
@@ -328,10 +351,8 @@ IedModel_getModelNodeByShortObjectReference(IedModel* model, const char* objectR
 
     char* separator = strchr(objRef, '/');
 
-    if (separator == NULL)
-        return NULL;
-
-    *separator = 0;
+    if (separator != NULL)
+        *separator = 0;
 
     char ldName[65];
     strcpy(ldName, model->name);
@@ -340,6 +361,9 @@ IedModel_getModelNodeByShortObjectReference(IedModel* model, const char* objectR
     LogicalDevice* ld = IedModel_getDevice(model, ldName);
 
     if (ld == NULL) return NULL;
+
+    if ((separator == NULL) || (*(separator + 1) == 0))
+        return (ModelNode*) ld;
 
     return ModelNode_getChild((ModelNode*) ld, separator + 1);
 }

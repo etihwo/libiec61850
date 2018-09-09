@@ -532,22 +532,18 @@ EXPORTS
     SVSubscriber_create
     SVSubscriber_setListener
     SVSubscriber_destroy
-    SVSubscriber_ASDU_getSmpCnt
-    SVSubscriber_ASDU_getSvId
-    SVSubscriber_ASDU_getConfRev
-	SVSubscriber_ASDU_hasRefrTm
-    SVSubscriber_ASDU_getRefrTmAsMs
-    SVSubscriber_ASDU_getINT8
-    SVSubscriber_ASDU_getINT16
-    SVSubscriber_ASDU_getINT32
-	SVSubscriber_ASDU_getINT64
-    SVSubscriber_ASDU_getINT8U
-    SVSubscriber_ASDU_getINT16U
-    SVSubscriber_ASDU_getINT32U
-	SVSubscriber_ASDU_getINT64U
-    SVSubscriber_ASDU_getFLOAT32
-    SVSubscriber_ASDU_getFLOAT64
-    SVSubscriber_ASDU_getDataSize
+    SVClientASDU_getSmpCnt
+    SVClientASDU_getSvId
+    SVClientASDU_getConfRev
+    SVClientASDU_getINT8
+    SVClientASDU_getINT16
+    SVClientASDU_getINT32
+    SVClientASDU_getINT8U
+    SVClientASDU_getINT16U
+    SVClientASDU_getINT32U
+    SVClientASDU_getFLOAT32
+    SVClientASDU_getFLOAT64
+    SVClientASDU_getDataSize
     ClientSVControlBlock_create
     ClientSVControlBlock_destroy
     ClientSVControlBlock_isMulticast
@@ -578,28 +574,22 @@ EXPORTS
     GooseReceiver_startThreadless
     GooseReceiver_stopThreadless
     GooseReceiver_tick
-    SVPublisher_create
-    SVPublisher_addASDU
-    SVPublisher_setupComplete
-    SVPublisher_publish
-    SVPublisher_destroy
-    SVPublisher_ASDU_resetBuffer
-    SVPublisher_ASDU_addINT8
-    SVPublisher_ASDU_setINT8
-    SVPublisher_ASDU_addINT32
-    SVPublisher_ASDU_setINT32
-	SVPublisher_ASDU_addINT64
-	SVPublisher_ASDU_setINT64
-    SVPublisher_ASDU_addFLOAT
-    SVPublisher_ASDU_setFLOAT
-	SVPublisher_ASDU_addFLOAT64
-	SVPublisher_ASDU_setFLOAT64
-    SVPublisher_ASDU_setSmpCnt
-	SVPublisher_ASDU_getSmpCnt
-    SVPublisher_ASDU_increaseSmpCnt
-    SVPublisher_ASDU_setRefrTm
-    SVPublisher_ASDU_setSmpMod
-	SVPublisher_ASDU_setSmpRate
+    SampledValuesPublisher_create
+    SampledValuesPublisher_addASDU
+    SampledValuesPublisher_setupComplete
+    SampledValuesPublisher_publish
+    SampledValuesPublisher_destroy
+    SV_ASDU_resetBuffer
+    SV_ASDU_addINT8
+    SV_ASDU_setINT8
+    SV_ASDU_addINT32
+    SV_ASDU_setINT32
+    SV_ASDU_addFLOAT
+    SV_ASDU_setFLOAT
+    SV_ASDU_setSmpCnt
+    SV_ASDU_increaseSmpCnt
+    SV_ASDU_setRefrTm
+    SV_ASDU_setSmpMod
     MmsValue_printToBuffer
     CDC_CTE_create
     CDC_SPV_create
@@ -631,6 +621,8 @@ EXPORTS
 	IedConnection_queryLogByTime
 	IedConnection_queryLogAfter
     CDC_DPL_create
+	SV_ASDU_addFLOAT64
+    SV_ASDU_setFLOAT64
     MmsConnection_setRawMessageHandler
     ModelNode_getType
     ControlObjectClient_setTestMode
@@ -655,6 +647,8 @@ EXPORTS
     GooseReceiver_isRunning
     IedModel_getDeviceByInst
     MmsConnection_writeNamedVariableList
+    SVClientASDU_hasRefrTm
+    SVClientASDU_getRefrTmAsMs
     IedConnection_writeDataSetValues
     MmsVariableSpecification_isValueOfType
     IedServer_udpateDbposValue
@@ -662,27 +656,96 @@ EXPORTS
     MmsServer_isRunning
     IedServer_createWithTlsSupport
     IedConnection_createWithTlsSupport
-	ClientGooseControlBlock_create
-	ClientGooseControlBlock_destroy
-	IedConnection_getGoCBValues
-	IedConnection_setGoCBValues
-	ClientGooseControlBlock_getGoEna
-	ClientGooseControlBlock_setGoEna
-	ClientGooseControlBlock_getDatSet
-	ClientGooseControlBlock_setDatSet
-	ClientGooseControlBlock_getGoID
-	ClientGooseControlBlock_setGoID
-	ClientGooseControlBlock_getConfRev
-	ClientGooseControlBlock_getNdsComm
-	ClientGooseControlBlock_getMinTime
-	ClientGooseControlBlock_getMaxTime
-	ClientGooseControlBlock_getFixedOffs
-	ClientGooseControlBlock_getDstAddress_addr
-	ClientGooseControlBlock_setDstAddress_addr
-	ClientGooseControlBlock_getDstAddress_priority
-	ClientGooseControlBlock_setDstAddress_priority
-	ClientGooseControlBlock_getDstAddress_vid
-	ClientGooseControlBlock_setDstAddress_vid
-	ClientGooseControlBlock_getDstAddress_appid
-	ClientGooseControlBlock_setDstAddress_appid
-	DataAttribute_setValue
+    ClientGooseControlBlock_getDstAddress
+    ClientGooseControlBlock_setDstAddress
+    SVPublisher_create
+    SVPublisher_addASDU
+    SVPublisher_setupComplete
+    SVPublisher_publish
+    SVPublisher_destroy
+    SVPublisher_ASDU_resetBuffer
+    SVPublisher_ASDU_addINT8
+    SVPublisher_ASDU_setINT8
+    SVPublisher_ASDU_addINT32
+    SVPublisher_ASDU_setINT32
+    SVPublisher_ASDU_addINT64
+    SVPublisher_ASDU_setINT64
+    SVPublisher_ASDU_addFLOAT
+    SVPublisher_ASDU_setFLOAT
+    SVPublisher_ASDU_addFLOAT64
+    SVPublisher_ASDU_setFLOAT64
+    SVPublisher_ASDU_setSmpCnt
+    SVPublisher_ASDU_getSmpCnt
+    SVPublisher_ASDU_increaseSmpCnt
+    SVPublisher_ASDU_setRefrTm
+    SVPublisher_ASDU_setSmpMod
+    SVPublisher_ASDU_setSmpRate
+    SVSubscriber_ASDU_getSmpCnt
+    SVSubscriber_ASDU_getSvId
+    SVSubscriber_ASDU_getConfRev
+    SVSubscriber_ASDU_hasRefrTm
+    SVSubscriber_ASDU_getRefrTmAsMs
+    SVSubscriber_ASDU_getINT8
+    SVSubscriber_ASDU_getINT16
+    SVSubscriber_ASDU_getINT32
+    SVSubscriber_ASDU_getINT64
+    SVSubscriber_ASDU_getINT8U
+    SVSubscriber_ASDU_getINT16U
+    SVSubscriber_ASDU_getINT32U
+    SVSubscriber_ASDU_getINT64U
+    SVSubscriber_ASDU_getFLOAT32
+    SVSubscriber_ASDU_getFLOAT64
+    SVSubscriber_ASDU_getDataSize
+    CDC_VSS_create
+    CDC_VSG_create
+    SVReceiver_isRunning
+    SVSubscriber_ASDU_getTimestamp
+    SVPublisher_ASDU_addTimestamp
+    SVPublisher_ASDU_setTimestamp
+    SVSubscriber_ASDU_getQuality
+    SVPublisher_ASDU_addQuality
+    SVPublisher_ASDU_setQuality
+    Timestamp_createFromByteArray
+    IedModel_getDeviceByIndex
+    SVReceiver_enableDestAddrCheck
+    IedServerConfig_create
+    IedServerConfig_destroy
+    IedServerConfig_setReportBufferSize
+    IedServerConfig_getReportBufferSize
+    IedServer_createWithConfig
+    IedServerConfig_setFileServiceBasePath
+    IedServerConfig_getFileServiceBasePath
+    ClientGooseControlBlock_create
+    ClientGooseControlBlock_destroy
+    IedConnection_getGoCBValues
+    IedConnection_setGoCBValues
+    ClientGooseControlBlock_getGoEna
+    ClientGooseControlBlock_setGoEna
+    ClientGooseControlBlock_getGoID
+    ClientGooseControlBlock_setGoID
+    ClientGooseControlBlock_getDatSet
+    ClientGooseControlBlock_setDatSet
+    ClientGooseControlBlock_getConfRev
+    ClientGooseControlBlock_getNdsComm
+    ClientGooseControlBlock_getMinTime
+    ClientGooseControlBlock_getMaxTime
+    ClientGooseControlBlock_getFixedOffs
+    ControlObjectClient_getCtlValType
+    SVPublisher_ASDU_setSmpCntWrap
+    IedServerConfig_enableFileService
+    IedServerConfig_isFileServiceEnabled
+    IedServerConfig_enableDynamicDataSetService
+    IedServerConfig_isDynamicDataSetServiceEnabled
+    IedServerConfig_enableLogService
+    IedServerConfig_isLogServiceEnabled
+    IedServerConfig_setEdition
+    IedServerConfig_getEdition
+    IedServerConfig_setMaxMmsConnections
+    IedServerConfig_getMaxMmsConnections
+    IedServerConfig_setMaxDataSetEntries
+    IedServerConfig_getMaxDatasSetEntries
+    IedServerConfig_setMaxAssociationSpecificDataSets
+    IedServerConfig_getMaxAssociationSpecificDataSets
+    IedServerConfig_setMaxDomainSpecificDataSets
+    IedServerConfig_getMaxDomainSpecificDataSets
+    IedServer_setReadAccessHandler

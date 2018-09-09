@@ -151,6 +151,12 @@
 /* include support for IEC 61850 log services */
 #cmakedefine01 CONFIG_IEC61850_LOG_SERVICE
 
+/* allow user to control read access by callback */
+#cmakedefine01 CONFIG_IEC61850_SUPPORT_USER_READ_ACCESS_CONTROL
+
+/* Force memory alignment - required for some platforms (required more memory for buffered reporting) */
+#define CONFIG_IEC61850_FORCE_MEMORY_ALIGNMENT 1
+
 /* default results for MMS identify service */
 #define CONFIG_DEFAULT_MMS_VENDOR_NAME "libiec61850.com"
 #define CONFIG_DEFAULT_MMS_MODEL_NAME "LIBIEC61850"
@@ -195,11 +201,6 @@
 #define MMS_OBTAIN_FILE_SERVICE 1
 #endif /* MMS_DEFAULT_PROFILE */
 
-#if (MMS_WRITE_SERVICE != 1)
-#undef CONFIG_IEC61850_CONTROL_SERVICE
-#define CONFIG_IEC61850_CONTROL_SERVICE 0
-#endif
-
 /* Sort getNameList response according to the MMS specified collation order - this is required by the standard
  * Set to 0 only for performance reasons and when no certification is required! */
 #define CONFIG_MMS_SORT_NAME_LIST 1
@@ -216,5 +217,43 @@
  * MmsServer_setFilestoreBasepath function
  */
 #define CONFIG_SET_FILESTORE_BASEPATH_AT_RUNTIME 1
+
+/* enable to configure MmsServer at runtime */
+#define CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME 1
+
+/************************************************************************************
+ * Check configuration for consistency - DO NOT MODIFY THIS PART!
+ ************************************************************************************/
+
+#if (MMS_JOURNAL_SERVICE != 1)
+
+#if (CONFIG_IEC61850_LOG_SERVICE == 1)
+#warning "Invalid configuration: CONFIG_IEC61850_LOG_SERVICE requires MMS_JOURNAL_SERVICE!"
+#endif
+
+#undef CONFIG_IEC61850_LOG_SERVICE
+#define CONFIG_IEC61850_LOG_SERVICE 0
+
+#endif
+
+#if (MMS_WRITE_SERVICE != 1)
+
+#if (CONFIG_IEC61850_CONTROL_SERVICE == 1)
+#warning "Invalid configuration: CONFIG_IEC61850_CONTROL_SERVICE requires MMS_WRITE_SERVICE!"
+#endif
+
+#undef CONFIG_IEC61850_CONTROL_SERVICE
+#define CONFIG_IEC61850_CONTROL_SERVICE 0
+#endif
+
+#if (MMS_FILE_SERVICE != 1)
+
+#if (MMS_OBTAIN_FILE_SERVICE == 1)
+#warning "Invalid configuration: MMS_OBTAIN_FILE_SERVICE requires MMS_FILE_SERVICE!"
+#endif
+
+#undef MMS_OBTAIN_FILE_SERVICE
+#define MMS_OBTAIN_FILE_SERVICE 0
+#endif
 
 #endif /* STACK_CONFIG_H_ */

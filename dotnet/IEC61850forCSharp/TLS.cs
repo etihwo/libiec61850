@@ -54,40 +54,53 @@ namespace IEC61850
 			static extern void TLSConfiguration_destroy(IntPtr self);
 
 			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern void TLSConfiguration_setAllowOnlyKnownCertificates(IntPtr self, bool value);
+			static extern void TLSConfiguration_setAllowOnlyKnownCertificates(IntPtr self, [MarshalAs(UnmanagedType.I1)] bool value);
 
 			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			static extern void TLSConfiguration_setChainValidation (IntPtr self, bool value);
+			static extern void TLSConfiguration_setChainValidation (IntPtr self, [MarshalAs(UnmanagedType.I1)] bool value);
 
 			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
 			static extern void TLSConfiguration_setClientMode(IntPtr self);
 
 			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+			[return: MarshalAs(UnmanagedType.I1)]
 			static extern bool TLSConfiguration_setOwnCertificate(IntPtr self, byte[] certificate, int certLen);
 
 			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+			[return: MarshalAs(UnmanagedType.I1)]
 			static extern bool TLSConfiguration_setOwnCertificateFromFile(IntPtr self, string filename);
 
 			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+			[return: MarshalAs(UnmanagedType.I1)]
 			static extern bool TLSConfiguration_setOwnKey(IntPtr self, byte[] key, int keyLen, string keyPassword);
 
 			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+			[return: MarshalAs(UnmanagedType.I1)]
 			static extern bool TLSConfiguration_setOwnKeyFromFile (IntPtr self, string filename, string keyPassword);
 
 			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+			[return: MarshalAs(UnmanagedType.I1)]
 			static extern bool TLSConfiguration_addAllowedCertificate(IntPtr self, byte[] certificate, int certLen);
 
 			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+			[return: MarshalAs(UnmanagedType.I1)]
 			static extern bool TLSConfiguration_addAllowedCertificateFromFile(IntPtr self, string filename);
 
 			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+			[return: MarshalAs(UnmanagedType.I1)]
 			static extern bool TLSConfiguration_addCACertificate(IntPtr self, byte[] certificate, int certLen);
 
 			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+			[return: MarshalAs(UnmanagedType.I1)]
 			static extern bool TLSConfiguration_addCACertificateFromFile(IntPtr self, string filename);
 
 			public TLSConfiguration() {
 				self = TLSConfiguration_create ();
+			}
+
+			~TLSConfiguration() 
+			{
+				Dispose ();
 			}
 
 			internal IntPtr GetNativeInstance()
@@ -126,7 +139,6 @@ namespace IEC61850
 			public void SetOwnCertificate(string filename)
 			{
 				if (TLSConfiguration_setOwnCertificateFromFile (self, filename) == false) {
-					Console.WriteLine ("Failed to read certificate from file!");
 					throw new CryptographicException ("Failed to read certificate from file");
 				}
 			}
@@ -136,7 +148,6 @@ namespace IEC61850
 				byte[] certBytes = cert.GetRawCertData ();
 
 				if (TLSConfiguration_setOwnCertificate (self, certBytes, certBytes.Length) == false) {
-					Console.WriteLine ("Failed to set certificate!");
 					throw new CryptographicException ("Failed to set certificate");
 				}
 			}
@@ -144,7 +155,6 @@ namespace IEC61850
 			public void AddAllowedCertificate(string filename)
 			{
 				if (TLSConfiguration_addAllowedCertificateFromFile (self, filename) == false) {
-					Console.WriteLine ("Failed to read allowed certificate from file!");
 					throw new CryptographicException ("Failed to read allowed certificate from file");
 				}
 			}
@@ -154,7 +164,6 @@ namespace IEC61850
 				byte[] certBytes = cert.GetRawCertData ();
 
 				if (TLSConfiguration_addAllowedCertificate (self, certBytes, certBytes.Length) == false) {
-					Console.WriteLine ("Failed to add allowed certificate!");
 					throw new CryptographicException ("Failed to add allowed certificate");
 				}
 			}
@@ -162,7 +171,6 @@ namespace IEC61850
 			public void AddCACertificate(string filename)
 			{
 				if (TLSConfiguration_addCACertificateFromFile (self, filename) == false) {
-					Console.WriteLine ("Failed to read CA certificate from file!");
 					throw new CryptographicException ("Failed to read CA certificate from file");
 				}
 			}
@@ -172,7 +180,6 @@ namespace IEC61850
 				byte[] certBytes = cert.GetRawCertData ();
 
 				if (TLSConfiguration_addCACertificate (self, certBytes, certBytes.Length) == false) {
-					Console.WriteLine ("Failed to add CA certificate!");
 					throw new CryptographicException ("Failed to add CA certificate");
 				}
 			}
@@ -180,7 +187,6 @@ namespace IEC61850
 			public void SetOwnKey (string filename, string password)
 			{
 				if (TLSConfiguration_setOwnKeyFromFile (self, filename, password) == false) {
-					Console.WriteLine ("Failed to read own key from file!");
 					throw new CryptographicException ("Failed to read own key from file");
 				}
 			}
@@ -190,14 +196,18 @@ namespace IEC61850
 				byte[] certBytes = key.Export (X509ContentType.Pkcs12);
 
 				if (TLSConfiguration_setOwnKey (self, certBytes, certBytes.Length, password) == false) {
-					Console.WriteLine ("Failed to set own key!");
 					throw new CryptographicException ("Failed to set own key");
 				}
 			}
 
 			public void Dispose()
 			{
-				TLSConfiguration_destroy (self);
+				lock (this) {
+					if (self != IntPtr.Zero) {
+						TLSConfiguration_destroy (self);
+						self = IntPtr.Zero;
+					}
+				}
 			}
 
 		}

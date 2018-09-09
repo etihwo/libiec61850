@@ -1,7 +1,7 @@
 /*
  *  mms_mapping_internal.h
  *
- *  Copyright 2013-2016 Michael Zillgith
+ *  Copyright 2013-2018 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -54,6 +54,11 @@ struct sMmsMapping {
 
     LinkedList attributeAccessHandlers;
 
+#if (CONFIG_IEC61850_SUPPORT_USER_READ_ACCESS_CONTROL == 1)
+    ReadAccessHandler readAccessHandler;
+    void* readAccessHandlerParameter;
+#endif
+
 #if (CONFIG_IEC61850_SETTING_GROUPS == 1)
     LinkedList settingGroups;
 #endif
@@ -63,6 +68,9 @@ struct sMmsMapping {
     bool reportThreadFinished;
     Thread reportWorkerThread;
 #endif
+
+    /* flag indicates if data model is locked --> prevents reports to be sent */
+    bool isModelLocked;
 
     IedServer iedServer;
 

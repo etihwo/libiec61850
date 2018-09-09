@@ -80,7 +80,7 @@ typedef struct {
     Semaphore createNotificationsMutex;  /* { covered by mutex } */
 #endif
 
-    ReportInclusionFlag* inclusionFlags; /* { covered by mutex } */
+    uint8_t* inclusionFlags; /* { covered by mutex } */
     bool triggered;                      /* { covered by mutex } */
     uint64_t reportTime;                 /* { covered by mutex } */
 
@@ -94,16 +94,18 @@ typedef struct {
 
     ReportBuffer* reportBuffer;
     MmsValue* timeOfEntry;
+
+    IedServer server;
 } ReportControl;
 
 ReportControl*
-ReportControl_create(bool buffered, LogicalNode* parentLN);
+ReportControl_create(bool buffered, LogicalNode* parentLN, int reportBufferSize, IedServer server);
 
 void
 ReportControl_destroy(ReportControl* self);
 
 void
-ReportControl_valueUpdated(ReportControl* self, int dataSetEntryIndex, ReportInclusionFlag flag);
+ReportControl_valueUpdated(ReportControl* self, int dataSetEntryIndex, int flag, bool modelLocked);
 
 MmsValue*
 ReportControl_getRCBValue(ReportControl* rc, char* elementName);
@@ -123,8 +125,13 @@ Reporting_RCBWriteAccessHandler(MmsMapping* self, ReportControl* rc, char* eleme
 void
 Reporting_activateBufferedReports(MmsMapping* self);
 
+/* periodic check if reports have to be sent */
 void
 Reporting_processReportEvents(MmsMapping* self, uint64_t currentTimeInMs);
+
+/* check if report have to be sent after data model update */
+void
+Reporting_processReportEventsAfterUnlock(MmsMapping* self);
 
 void
 Reporting_deactivateReportsForConnection(MmsMapping* self, MmsServerConnection connection);

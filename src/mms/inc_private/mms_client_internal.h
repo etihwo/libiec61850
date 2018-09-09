@@ -79,8 +79,12 @@ struct sMmsConnection {
 	uint32_t connectTimeout;
 
 	IsoClientConnection isoClient;
-	AssociationState associationState;
-	ConnectionState connectionState;
+
+	volatile AssociationState associationState;
+	Semaphore associationStateLock;
+
+	volatile ConnectionState connectionState;
+	Semaphore connectionStateLock;
 
 	MmsConnectionParameters parameters;
 	IsoConnectionParameters isoParameters;
@@ -97,7 +101,8 @@ struct sMmsConnection {
 #endif
 
 	/* state of an active connection conclude/release process */
-	int concludeState;
+	volatile int concludeState;
+	Semaphore concludeStateLock;
 
 #if (MMS_OBTAIN_FILE_SERVICE == 1)
     int32_t nextFrsmId;
@@ -158,6 +163,10 @@ mmsClient_createReadRequest(uint32_t invokeId, const char* domainId, const char*
 int
 mmsClient_createReadRequestAlternateAccessIndex(uint32_t invokeId, const char* domainId, const char* itemId,
 		uint32_t index, uint32_t elementCount, ByteBuffer* writeBuffer);
+
+int
+mmsClient_createReadRequestAlternateAccessSingleIndexComponent(uint32_t invokeId, const char* domainId, const char* itemId,
+        uint32_t index, const char* component, ByteBuffer* writeBuffer);
 
 int
 mmsClient_createReadRequestMultipleValues(uint32_t invokeId, const char* domainId, LinkedList /*<char*>*/ items,

@@ -164,6 +164,16 @@ struct sMmsServer {
     char* filestoreBasepath;
 #endif
 
+#if (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1)
+    int maxConnections;
+    bool fileServiceEnabled;
+    bool dynamicVariableListServiceEnabled;
+    int maxDataSetEntries;
+    bool journalServiceEnabled;
+    int maxAssociationSpecificDataSets;
+    int maxDomainSpecificDataSets;
+#endif /* (CONFIG_SET_FILESTORE_BASEPATH_AT_RUNTIME == 1) */
+
 };
 
 struct sMmsServerConnection {

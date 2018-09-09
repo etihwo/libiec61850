@@ -35,22 +35,31 @@ main(int argc, char** argv)
 
     int float1 = SVPublisher_ASDU_addFLOAT(asdu1);
     int float2 = SVPublisher_ASDU_addFLOAT(asdu1);
+    int ts1 = SVPublisher_ASDU_addTimestamp(asdu1);
 
     SVPublisher_ASDU asdu2 = SVPublisher_addASDU(svPublisher, "svpub2", NULL, 1);
 
     int float3 = SVPublisher_ASDU_addFLOAT(asdu2);
     int float4 = SVPublisher_ASDU_addFLOAT(asdu2);
+    int ts2 = SVPublisher_ASDU_addTimestamp(asdu2);
 
     SVPublisher_setupComplete(svPublisher);
 
     float fVal1 = 1234.5678f;
     float fVal2 = 0.12345f;
 
-    int i;
-
     while (running) {
+        Timestamp ts;
+        Timestamp_clearFlags(&ts);
+        Timestamp_setTimeInMilliseconds(&ts, Hal_getTimeInMs());
+
         SVPublisher_ASDU_setFLOAT(asdu1, float1, fVal1);
         SVPublisher_ASDU_setFLOAT(asdu1, float2, fVal2);
+        SVPublisher_ASDU_setTimestamp(asdu1, ts1, ts);
+
+        SVPublisher_ASDU_setFLOAT(asdu2, float3, fVal1 * 2);
+        SVPublisher_ASDU_setFLOAT(asdu2, float4, fVal2 * 2);
+        SVPublisher_ASDU_setTimestamp(asdu2, ts2, ts);
 
         SVPublisher_ASDU_increaseSmpCnt(asdu1);
         SVPublisher_ASDU_increaseSmpCnt(asdu2);

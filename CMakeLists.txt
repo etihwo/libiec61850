@@ -11,7 +11,7 @@ project(libiec61850)
 ENABLE_TESTING()
 
 set(LIB_VERSION_MAJOR "1")
-set(LIB_VERSION_MINOR "2")
+set(LIB_VERSION_MINOR "3")
 set(LIB_VERSION_PATCH "0")
 set(LIB_VERSION "${LIB_VERSION_MAJOR}.${LIB_VERSION_MINOR}.${LIB_VERSION_PATCH}")
 
@@ -42,7 +42,7 @@ option(CONFIG_IEC61850_REPORT_SERVICE "Build with support for IEC 61850 reportin
 option(CONFIG_IEC61850_LOG_SERVICE "Build with support for IEC 61850 logging services" ON)
 option(CONFIG_IEC61850_SETTING_GROUPS "Build with support for IEC 61850 setting group services" ON)
 
-set(CONFIG_REPORTING_DEFAULT_REPORT_BUFFER_SIZE "8000" CACHE STRING "Default buffer size for buffered reports in byte" )
+set(CONFIG_REPORTING_DEFAULT_REPORT_BUFFER_SIZE "65536" CACHE STRING "Default buffer size for buffered reports in byte" )
 
 # advanced options
 option(DEBUG "Enable debugging mode (include assertions)" OFF)
@@ -60,48 +60,32 @@ option(DEBUG_SV_SUBSCRIBER "Enable Sampled Values subscriber debugging" ${DEBUG}
 option(DEBUG_SV_PUBLISHER "Enable Sampled Values publisher debugging" ${DEBUG})
 option(DEBUG_HAL_ETHERNET "Enable Ethernet HAL printf debugging" ${DEBUG})
 
-#mark_as_advanced(
-#    DEBUG_SOCKET
-#    DEBUG_COTP
-#    DEBUG_ISO_SERVER
-#    DEBUG_ISO_CLIENT
-#    DEBUG_IED_SERVER
-#    DEBUG_IED_CLIENT
-#    DEBUG_MMS_SERVER
-#    DEBUG_MMS_CLIENT
-#    DEBUG_GOOSE_SUBSCRIBER
-#    DEBUG_GOOSE_PUBLISHER
-#    DEBUG_SV_SUBSCRIBER
-#    DEBUG_SV_PUBLISHER
-#    DEBUG_HAL_ETHERNET
-#)
-
 include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}/config
-    src/common/inc
-    src/goose
-    src/sampled_values
-    src/hal/inc
-    src/iec61850/inc
-    src/iec61850/inc_private
-    src/mms/inc
-    src/mms/inc_private
-    src/mms/iso_mms/asn1c
-    src/logging
-    src/tls
+    ${CMAKE_CURRENT_LIST_DIR}/src/common/inc
+    ${CMAKE_CURRENT_LIST_DIR}/src/goose
+    ${CMAKE_CURRENT_LIST_DIR}/src/sampled_values
+    ${CMAKE_CURRENT_LIST_DIR}/src/hal/inc
+    ${CMAKE_CURRENT_LIST_DIR}/src/iec61850/inc
+    ${CMAKE_CURRENT_LIST_DIR}/src/iec61850/inc_private
+    ${CMAKE_CURRENT_LIST_DIR}/src/mms/inc
+    ${CMAKE_CURRENT_LIST_DIR}/src/mms/inc_private
+    ${CMAKE_CURRENT_LIST_DIR}/src/mms/iso_mms/asn1c
+    ${CMAKE_CURRENT_LIST_DIR}/src/logging
 )
 
-set(API_HEADERS 
-    src/hal/inc/hal_time.h 
-    src/hal/inc/hal_thread.h
-    src/hal/inc/hal_filesystem.h 
-    src/hal/inc/hal_ethernet.h
-    src/hal/inc/platform_endian.h
+set(API_HEADERS
+    hal/inc/hal_time.h
+    hal/inc/hal_thread.h
+    hal/inc/hal_filesystem.h
+    hal/inc/hal_ethernet.h
+    hal/inc/tls_config.h
+    hal/inc/platform_endian.h
+    hal/inc/lib_memory.h
     src/common/inc/libiec61850_common_api.h
     src/common/inc/libiec61850_platform_includes.h
     src/common/inc/linked_list.h
     src/common/inc/byte_buffer.h
-    src/common/inc/lib_memory.h
     src/common/inc/string_utilities.h
     src/iec61850/inc/iec61850_client.h
     src/iec61850/inc/iec61850_common.h
@@ -127,16 +111,13 @@ set(API_HEADERS
     src/goose/goose_publisher.h
     src/sampled_values/sv_subscriber.h
     src/sampled_values/sv_publisher.h
-    src/sampled_values/sv_publisher_deprecated.h
-    src/sampled_values/sv_subscriber_deprecated.h
     src/logging/logging_api.h
-    src/tls/tls_api.h
     ${CMAKE_CURRENT_BINARY_DIR}/config/stack_config.h
 )
 
 if(MSVC)
     include_directories(
-        src/vs
+        ${CMAKE_CURRENT_LIST_DIR}/src/vs
     )
 endif(MSVC)
 
@@ -145,15 +126,8 @@ set(WITH_MBEDTLS 1)
 endif(EXISTS ${CMAKE_CURRENT_LIST_DIR}/third_party/mbedtls/mbedtls-2.6.0)
 
 if(WITH_MBEDTLS)
-include_directories(
-    src/tls/mbedtls
-    third_party/mbedtls/mbedtls-2.6.0/include
-)
-
-file(GLOB tls_SRCS ${CMAKE_CURRENT_LIST_DIR}/third_party/mbedtls/mbedtls-2.6.0/library/*.c)
 
 add_definitions(-DCONFIG_MMS_SUPPORT_TLS=1)
-add_definitions(-DMBEDTLS_CONFIG_FILE="mbedtls_config.h")
 
 endif(WITH_MBEDTLS)
 
@@ -163,8 +137,14 @@ configure_file(
     ${CMAKE_CURRENT_BINARY_DIR}/config/stack_config.h
 )
 
+include_directories(
+	${CMAKE_CURRENT_LIST_DIR}/hal/inc
+)
+
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/hal")
+
 if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
+    add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/examples)
 endif(BUILD_EXAMPLES)
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/src)

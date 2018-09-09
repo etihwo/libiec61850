@@ -3,6 +3,7 @@
  *
  *  - How to use simple control models
  *  - How to serve analog measurement data
+ *  - Using the IedServerConfig object to configure stack features
  */
 
 #include "iec61850_server.h"
@@ -12,7 +13,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "../server_example_basic_io/static_model.h"
+#include "static_model.h"
 
 /* import IEC 61850 device model created from SCL-File */
 extern IedModel iedModel;
@@ -83,11 +84,34 @@ main(int argc, char** argv)
 {
     printf("Using libIEC61850 version %s\n", LibIEC61850_getVersionString());
 
-    iedServer = IedServer_create(&iedModel);
+    /* Create new server configuration object */
+    IedServerConfig config = IedServerConfig_create();
+
+    /* Set buffer size for buffered report control blocks to 200000 bytes */
+    IedServerConfig_setReportBufferSize(config, 200000);
+
+    /* Set stack compliance to a specific edition of the standard (WARNING: data model has also to be checked for compliance) */
+    IedServerConfig_setEdition(config, IEC_61850_EDITION_2);
 
     /* Set the base path for the MMS file services */
-    MmsServer mmsServer = IedServer_getMmsServer(iedServer);
-    MmsServer_setFilestoreBasepath(mmsServer, "./vmd-filestore/");
+    IedServerConfig_setFileServiceBasePath(config, "./vmd-filestore/");
+
+    /* disable MMS file service */
+    IedServerConfig_enableFileService(config, false);
+
+    /* disable dynamic data set service */
+    IedServerConfig_enableDynamicDataSetService(config, false);
+
+    IedServerConfig_enableLogService(config, true);
+
+    /* set maximum number of clients */
+    IedServerConfig_setMaxMmsConnections(config, 2);
+
+    /* Create a new IEC 61850 server instance */
+    iedServer = IedServer_createWithConfig(&iedModel, NULL, config);
+
+    /* configuration object is no longer required */
+    IedServerConfig_destroy(config);
 
     /* Install handler for operate command */
     IedServer_setControlHandler(iedServer, IEDMODEL_GenericIO_GGIO1_SPCSO1,
@@ -108,11 +132,11 @@ main(int argc, char** argv)
 
     IedServer_setConnectionIndicationHandler(iedServer, (IedConnectionIndicationHandler) connectionHandler, NULL);
 
-    /* MMS server will be instructed to start listening to client connections. */
+    /* MMS server will be instructed to start listening for client connections. */
     IedServer_start(iedServer, 102);
 
     if (!IedServer_isRunning(iedServer)) {
-        printf("Starting server failed! Exit.\n");
+        printf("Starting server failed (maybe need root permissions or another server is already using the port)! Exit.\n");
         IedServer_destroy(iedServer);
         exit(-1);
     }
@@ -133,8 +157,6 @@ main(int argc, char** argv)
         float an3 = sinf(t + 2.f);
         float an4 = sinf(t + 3.f);
 
-        IedServer_lockDataModel(iedServer);
-
         Timestamp iecTimestamp;
 
         Timestamp_clearFlags(&iecTimestamp);
@@ -144,6 +166,8 @@ main(int argc, char** argv)
         /* toggle clock-not-synchronized flag in timestamp */
         if (((int) t % 2) == 0)
             Timestamp_setClockNotSynchronized(&iecTimestamp, true);
+
+        IedServer_lockDataModel(iedServer);
 
         IedServer_updateTimestampAttributeValue(iedServer, IEDMODEL_GenericIO_GGIO1_AnIn1_t, &iecTimestamp);
         IedServer_updateFloatAttributeValue(iedServer, IEDMODEL_GenericIO_GGIO1_AnIn1_mag_f, an1);

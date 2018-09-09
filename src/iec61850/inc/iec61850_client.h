@@ -1,7 +1,7 @@
 /*
  *  iec61850_client.h
  *
- *  Copyright 2013, 2014, 2015 Michael Zillgith
+ *  Copyright 2013-2018 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -33,6 +33,14 @@ extern "C" {
 #include "mms_value.h"
 #include "mms_client_connection.h"
 #include "linked_list.h"
+
+#ifndef DEPRECATED
+#if defined(__GNUC__) || defined(__clang__)
+  #define DEPRECATED __attribute__((deprecated))
+#else
+  #define DEPRECATED
+#endif
+#endif
 
 /**
  *  * \defgroup iec61850_client_api_group IEC 61850/MMS client API
@@ -344,6 +352,12 @@ IedConnection_getMmsConnection(IedConnection self);
 /** SV ASDU contains attribute Security */
 #define IEC61850_SV_OPT_SECURITY 16
 
+#define IEC61850_SV_SMPMOD_SAMPLES_PER_PERIOD 0
+
+#define IEC61850_SV_SMPMOD_SAMPLES_PER_SECOND 1
+
+#define IEC61850_SV_SMPMOD_SECONDS_PER_SAMPLE 2
+
 
 /** an opaque handle to the instance data of a ClientSVControlBlock object */
 typedef struct sClientSVControlBlock* ClientSVControlBlock;
@@ -385,13 +399,13 @@ ClientSVControlBlock_getLastComError(ClientSVControlBlock self);
 
 
 bool
-ClientSVControlBlock_setSvEna(ClientSVControlBlock self, bool svEna);
+ClientSVControlBlock_setSvEna(ClientSVControlBlock self, bool value);
 
 bool
 ClientSVControlBlock_getSvEna(ClientSVControlBlock self);
 
 bool
-ClientSVControlBlock_setResv(ClientSVControlBlock self, bool svEna);
+ClientSVControlBlock_setResv(ClientSVControlBlock self, bool value);
 
 bool
 ClientSVControlBlock_getResv(ClientSVControlBlock self);
@@ -539,28 +553,34 @@ ClientGooseControlBlock_getMaxTime(ClientGooseControlBlock self);
 bool
 ClientGooseControlBlock_getFixedOffs(ClientGooseControlBlock self);
 
-MmsValue* /* MMS_OCTET_STRING */
+PhyComAddress
+ClientGooseControlBlock_getDstAddress(ClientGooseControlBlock self);
+
+void
+ClientGooseControlBlock_setDstAddress(ClientGooseControlBlock self, PhyComAddress value);
+
+DEPRECATED MmsValue* /* MMS_OCTET_STRING */
 ClientGooseControlBlock_getDstAddress_addr(ClientGooseControlBlock self);
 
-void
+DEPRECATED void
 ClientGooseControlBlock_setDstAddress_addr(ClientGooseControlBlock self, MmsValue* macAddr);
 
-uint8_t
+DEPRECATED uint8_t
 ClientGooseControlBlock_getDstAddress_priority(ClientGooseControlBlock self);
 
-void
+DEPRECATED void
 ClientGooseControlBlock_setDstAddress_priority(ClientGooseControlBlock self, uint8_t priorityValue);
 
-uint16_t
+DEPRECATED uint16_t
 ClientGooseControlBlock_getDstAddress_vid(ClientGooseControlBlock self);
 
-void
+DEPRECATED void
 ClientGooseControlBlock_setDstAddress_vid(ClientGooseControlBlock self, uint16_t vidValue);
 
-uint16_t
+DEPRECATED uint16_t
 ClientGooseControlBlock_getDstAddress_appid(ClientGooseControlBlock self);
 
-void
+DEPRECATED void
 ClientGooseControlBlock_setDstAddress_appid(ClientGooseControlBlock self, uint16_t appidValue);
 
 
@@ -821,7 +841,7 @@ void
 IedConnection_uninstallReportHandler(IedConnection self, const char* rcbReference);
 
 /**
- * \brief Trigger a general interrogation (GI) report for the specified report control block (RCB)
+ * \brief trigger a general interrogation (GI) report for the specified report control block (RCB)
  *
  * The RCB must have been enabled and GI set as trigger option before this command can be performed.
  *
@@ -839,7 +859,7 @@ IedConnection_triggerGIReport(IedConnection self, IedClientError* error, const c
  ****************************************/
 
 /**
- * \brief Get the name of the report data set
+ * \brief get the name of the report data set
  *
  * NOTE: the returned string is only valid as long as the ClientReport instance exists!
  *
@@ -851,6 +871,10 @@ ClientReport_getDataSetName(ClientReport self);
 
 /**
  * \brief return the received data set values of the report
+ *
+ * NOTE: The returned MmsValue instance is handled by the library and only valid as long as the
+ * ClientReport instance exists! It should not be used outside the report callback handler to
+ * avoid concurrency issues.
  *
  * \param self the ClientReport instance
  * \return an MmsValue array instance containing the data set values
@@ -909,26 +933,72 @@ ClientReport_getEntryId(ClientReport self);
 bool
 ClientReport_hasTimestamp(ClientReport self);
 
+/**
+ * \brief determine if the last received report contains a sequence number
+ *
+ * \param self the ClientReport instance
+ *
+ * \return true if the report contains a sequence number, false otherwise
+ */
 bool
 ClientReport_hasSeqNum(ClientReport self);
 
+/**
+ * \brief get the value of the sequence number
+ *
+ * NOTE: The returned value is undefined if the sequence number is not present in report
+ *
+ * \param self the ClientReport instance
+ *
+ * \returns the number of the sequence number when present
+ */
 uint16_t
 ClientReport_getSeqNum(ClientReport self);
 
+/**
+ * \brief determine if the last received report contains the data set name
+ *
+ * \param self the ClientReport instance
+ *
+ * \return true if the report contains the data set name, false otherwise
+ */
 bool
 ClientReport_hasDataSetName(ClientReport self);
 
+/**
+ * \brief determine if the last received report contains reason-for-inclusion information
+ *
+ * \param self the ClientReport instance
+ *
+ * \return true if the report contains reason-for-inclusion information, false otherwise
+ */
 bool
 ClientReport_hasReasonForInclusion(ClientReport self);
 
+/**
+ * \brief determine if the last received report contains the configuration revision
+ *
+ * \param self the ClientReport instance
+ *
+ * \return true if the report contains the configuration revision, false otherwise
+ */
 bool
 ClientReport_hasConfRev(ClientReport self);
 
+/**
+ * \brief get the value of the configuration revision
+ *
+ * NOTE: The returned value is undefined if configuration revision is not present in report
+ *
+ * \param self the ClientReport instance
+ *
+ * \returns the number of the configuration revision
+ */
 uint32_t
 ClientReport_getConfRev(ClientReport self);
 
 /**
- * \brief Indicates if the report contains the bufOvfl (buffer overflow) flag
+ * \brief indicates if the report contains the bufOvfl (buffer overflow) flag
  *
  * \param self the ClientReport instance
  *
@@ -938,7 +1008,7 @@ bool
 ClientReport_hasBufOvfl(ClientReport self);
 
 /**
- * \brief Get the value of the bufOvfl flag
+ * \brief get the value of the bufOvfl flag
  *
  * \param self the ClientReport instance
  *
@@ -948,7 +1018,7 @@ bool
 ClientReport_getBufOvfl(ClientReport self);
 
 /**
- * \brief Indicates if the report contains data references for the reported data set members
+ * \brief indicates if the report contains data references for the reported data set members
  *
  * \param self the ClientReport instance
  *
@@ -1526,6 +1596,19 @@ ControlModel
 ControlObjectClient_getControlModel(ControlObjectClient self);
 
 /**
+ * \brief Get the type of ctlVal.
+ *
+ * This type is required for the ctlVal parameter of the \ref ControlObjectClient_operate
+ * and \ref  ControlObjectClient_selectWithValue functions.
+ *
+ * \param self the control object instance to use
+ *
+ * \return MmsType required for the ctlVal value.
+ */
+MmsType
+ControlObjectClient_getCtlValType(ControlObjectClient self);
+
+/**
  * \brief Send an operate command to the server
  *
  * \param self the control object instance to use
@@ -1537,11 +1620,24 @@ ControlObjectClient_getControlModel(ControlObjectClient self);
 bool
 ControlObjectClient_operate(ControlObjectClient self, MmsValue* ctlVal, uint64_t operTime);
 
+/**
+ * \brief Send a select command to the server
+ *
+ * The select command is only used for the control model "select-before-operate with normal security"
+ * (CONTROL_MODEL_SBO_NORMAL). The select command has to be sent before the operate command can be used.
+ *
+ * \param self the control object instance to use
+ *
+ * \return true if operation has been successful, false otherwise.
+ */
 bool
 ControlObjectClient_select(ControlObjectClient self);
 
 /**
  * \brief Send an select with value command to the server
+ *
+ * The select-with-value command is only used for the control model "select-before-operate with enhanced security"
+ * (CONTROL_MODEL_SBO_ENHANCED). The select-with-value command has to be sent before the operate command can be used.
  *
  * \param self the control object instance to use
  * \param ctlVal the control value (for APC the value may be either AnalogueValue (MMS_STRUCT) or MMS_FLOAT/MMS_INTEGER
@@ -1551,6 +1647,16 @@ ControlObjectClient_select(ControlObjectClient self);
 bool
 ControlObjectClient_selectWithValue(ControlObjectClient self, MmsValue* ctlVal);
 
+/**
+ * \brief Send a cancel command to the server
+ *
+ * The cancel command can be used to stop an ongoing operation (when the server and application
+ * support this) and to cancel a former select command.
+ *
+ * \param self the control object instance to use
+ *
+ * \return true if operation has been successful, false otherwise.
+ */
 bool
 ControlObjectClient_cancel(ControlObjectClient self);
 
@@ -1560,9 +1666,25 @@ ControlObjectClient_setLastApplError(ControlObjectClient self, LastApplError las
 LastApplError
 ControlObjectClient_getLastApplError(ControlObjectClient self);
 
+/**
+ * \brief Send commands in test mode.
+ *
+ * When the server supports test mode the commands that are sent with the test flag set
+ * are not executed (will have no effect on the attached physical process).
+ *
+ * \param self the control object instance to use
+ * \param value value if the test flag (true = test mode).
+ */
 void
 ControlObjectClient_setTestMode(ControlObjectClient self, bool value);
 
+/**
+ * \brief Set the origin parameter for control commands
+ *
+ * The origin parameter is used to identify the client/application that sent a control
+ * command. It is intended for later analysis.
+ *
+ */
 void
 ControlObjectClient_setOrigin(ControlObjectClient self, const char* orIdent, int orCat);
 
@@ -1804,6 +1926,8 @@ IedConnection_getDataDirectoryByFC(IedConnection self, IedClientError* error, co
  * This function can be used to get the MMS variable type specification for an IEC 61850 data attribute. It is an extension
  * of the ACSI that may be required by generic client applications.
  *
+ * NOTE: API user is responsible to free the resources (see \ref MmsVariableSpecification_destroy)
+ *
  * \param self the connection object
  * \param error the error code if an error occurs
  * \param dataAttributeReference string that represents the DA reference
@@ -1878,18 +2002,49 @@ IedConnection_queryLogAfter(IedConnection self, IedClientError* error, const cha
 
 typedef struct sFileDirectoryEntry* FileDirectoryEntry;
 
+/**
+ * @deprecated Will be removed from API
+ */
 FileDirectoryEntry
 FileDirectoryEntry_create(const char* fileName, uint32_t fileSize, uint64_t lastModified);
 
+/**
+ * \brief Destroy a FileDirectoryEntry object (free all resources)
+ *
+ * NOTE: Usually is called as a parameter of the \ref LinkedList_destroyDeep function.
+ *
+ * \param self the FileDirectoryEntry object
+ */
 void
 FileDirectoryEntry_destroy(FileDirectoryEntry self);
 
-char*
+/**
+ * \brief Get the name of the file
+ *
+ * \param self the FileDirectoryEntry object
+ *
+ * \return name of the file as null terminated string
+ */
+const char*
 FileDirectoryEntry_getFileName(FileDirectoryEntry self);
 
+/**
+ * \brief Get the file size in bytes
+ *
+ * \param self the FileDirectoryEntry object
+ *
+ * \return size of the file in bytes, or 0 if file size is unknown
+ */
 uint32_t
 FileDirectoryEntry_getFileSize(FileDirectoryEntry self);
 
+/**
+ * \brief Get the timestamp of last modification of the file
+ *
+ * \param self the FileDirectoryEntry object
+ *
+ * \return UTC timestamp in milliseconds
+ */
 uint64_t
 FileDirectoryEntry_getLastModified(FileDirectoryEntry self);
 

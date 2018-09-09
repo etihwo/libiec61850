@@ -60,4 +60,9 @@
       <Name>IEC61850.NET</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="model.cfg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

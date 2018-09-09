@@ -26,6 +26,7 @@
 #define LIBIEC61850_SRC_SAMPLED_VALUES_SV_PUBLISHER_H_
 
 #include "libiec61850_platform_includes.h"
+#include "iec61850_common.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -187,7 +188,7 @@ void
 SVPublisher_ASDU_setINT64(SVPublisher_ASDU self, int index, int64_t value);
 
 /**
- * \brief Reserve memory for a single precission floating point number in the ASDU.
+ * \brief Reserve memory for a single precision floating point number in the ASDU.
  *
  * \param[in] self the Sampled Values ASDU instance.
  * \return the offset in bytes of the new element within the ASDU data block.
@@ -196,7 +197,7 @@ int
 SVPublisher_ASDU_addFLOAT(SVPublisher_ASDU self);
 
 /**
- * \brief Set the value of a single precission floating point number in the ASDU.
+ * \brief Set the value of a single precision floating point number in the ASDU.
  *
  * \param[in] self the Sampled Values ASDU instance.
  * \param[in] index The offset within the data block of the ASDU in bytes.
@@ -206,7 +207,7 @@ void
 SVPublisher_ASDU_setFLOAT(SVPublisher_ASDU self, int index, float value);
 
 /**
- * \brief Reserve memory for a double precission floating point number in the ASDU.
+ * \brief Reserve memory for a double precision floating point number in the ASDU.
  *
  * \param[in] self the Sampled Values ASDU instance.
  * \return the offset in bytes of the new element within the ASDU data block.
@@ -215,7 +216,7 @@ int
 SVPublisher_ASDU_addFLOAT64(SVPublisher_ASDU self);
 
 /**
- * \brief Set the value of a double precission floating pointer number in the ASDU.
+ * \brief Set the value of a double precision floating pointer number in the ASDU.
  *
  * \param[in] self the Sampled Values ASDU instance.
  * \param[in] index The offset within the data block of the ASDU in bytes.
@@ -223,6 +224,46 @@ SVPublisher_ASDU_addFLOAT64(SVPublisher_ASDU self);
  */
 void
 SVPublisher_ASDU_setFLOAT64(SVPublisher_ASDU self, int index, double value);
+
+/**
+ * \brief Reserve memory for a 64 bit time stamp in the ASDU
+ *
+ * \param[in] self the Sampled Values ASDU instance.
+ * \return the offset in bytes of the new element within the ASDU data block.
+ */
+int
+SVPublisher_ASDU_addTimestamp(SVPublisher_ASDU self);
+
+/**
+ * \brief Set the value of a 64 bit time stamp in the ASDU.
+ *
+ * \param[in] self the Sampled Values ASDU instance.
+ * \param[in] index The offset within the data block of the ASDU in bytes.
+ * \param[in] value The value which should be set.
+ */
+void
+SVPublisher_ASDU_setTimestamp(SVPublisher_ASDU self, int index, Timestamp value);
+
+/**
+ * \brief Reserve memory for a quality value in the ASDU
+ *
+ * NOTE: Quality is encoded as BITSTRING (4 byte)
+ *
+ * \param[in] self the Sampled Values ASDU instance.
+ * \return the offset in bytes of the new element within the ASDU data block.
+ */
+int
+SVPublisher_ASDU_addQuality(SVPublisher_ASDU self);
+
+/**
+ * \brief Set the value of a quality attribute in the ASDU.
+ *
+ * \param[in] self the Sampled Values ASDU instance.
+ * \param[in] index The offset within the data block of the ASDU in bytes.
+ * \param[in] value The value which should be set.
+ */
+void
+SVPublisher_ASDU_setQuality(SVPublisher_ASDU self, int index, Quality value);
 
 /**
  * \brief Set the sample count attribute of the ASDU.
@@ -252,6 +293,16 @@ SVPublisher_ASDU_getSmpCnt(SVPublisher_ASDU self);
  */
 void
 SVPublisher_ASDU_increaseSmpCnt(SVPublisher_ASDU self);
+
+/**
+ * \brief Set the roll-over (wrap) limit for the sample counter. When reaching the limit the
+ *        sample counter will be reset to 0 (default is no limit)
+ *
+ * \param[in] self the Sampled Values ASDU instance.
+ * \param[in] value the new sample counter limit
+ */
+void
+SVPublisher_ASDU_setSmpCntWrap(SVPublisher_ASDU self, uint16_t value);
 
 /**
  * \brief Set the refresh time attribute of the ASDU.
@@ -287,10 +338,95 @@ SVPublisher_ASDU_setSmpRate(SVPublisher_ASDU self, uint16_t smpRate);
 
 /**@} @}*/
 
+#ifndef DEPRECATED
+#if defined(__GNUC__) || defined(__clang__)
+  #define DEPRECATED __attribute__((deprecated))
+#else
+  #define DEPRECATED
+#endif
+#endif
+
+/**
+ * \addtogroup sv_publisher_deprecated_api_group Deprecated API
+ * \ingroup sv_publisher_api_group IEC 61850 Sampled Values (SV) publisher API
+ * \deprecated
+ * @{
+ */
+
+typedef struct sSVPublisher* SampledValuesPublisher;
+
+typedef struct sSV_ASDU* SV_ASDU;
+
+DEPRECATED SVPublisher
+SampledValuesPublisher_create(CommParameters* parameters, const char* interfaceId);
+
+DEPRECATED SVPublisher_ASDU
+SampledValuesPublisher_addASDU(SVPublisher self, char* svID, char* datset, uint32_t confRev);
+
+DEPRECATED void
+SampledValuesPublisher_setupComplete(SVPublisher self);
+
+DEPRECATED void
+SampledValuesPublisher_publish(SVPublisher self);
+
+DEPRECATED void
+SampledValuesPublisher_destroy(SVPublisher self);
+
+DEPRECATED void
+SV_ASDU_resetBuffer(SVPublisher_ASDU self);
+
+DEPRECATED int
+SV_ASDU_addINT8(SVPublisher_ASDU self);
+
+DEPRECATED void
+SV_ASDU_setINT8(SVPublisher_ASDU self, int index, int8_t value);
+
+DEPRECATED int
+SV_ASDU_addINT32(SVPublisher_ASDU self);
+
+DEPRECATED void
+SV_ASDU_setINT32(SVPublisher_ASDU self, int index, int32_t value);
+
+DEPRECATED int
+SV_ASDU_addINT64(SVPublisher_ASDU self);
+
+DEPRECATED void
+SV_ASDU_setINT64(SVPublisher_ASDU self, int index, int64_t value);
+
+DEPRECATED int
+SV_ASDU_addFLOAT(SVPublisher_ASDU self);
+
+DEPRECATED void
+SV_ASDU_setFLOAT(SVPublisher_ASDU self, int index, float value);
+
+DEPRECATED int
+SV_ASDU_addFLOAT64(SVPublisher_ASDU self);
+
+DEPRECATED void
+SV_ASDU_setFLOAT64(SVPublisher_ASDU self, int index, double value);
+
+void DEPRECATED
+SV_ASDU_setSmpCnt(SVPublisher_ASDU self, uint16_t value);
+
+DEPRECATED uint16_t
+SV_ASDU_getSmpCnt(SVPublisher_ASDU self);
+
+DEPRECATED void
+SV_ASDU_increaseSmpCnt(SVPublisher_ASDU self);
+
+DEPRECATED void
+SV_ASDU_setRefrTm(SVPublisher_ASDU self, uint64_t refrTm);
+
+DEPRECATED void
+SV_ASDU_setSmpMod(SVPublisher_ASDU self, uint8_t smpMod);
+
+DEPRECATED void
+SV_ASDU_setSmpRate(SVPublisher_ASDU self, uint16_t smpRate);
+
+/**@}*/
+
 #ifdef __cplusplus
 }
 #endif
-
-#include "sv_publisher_deprecated.h"
 
 #endif /* LIBIEC61850_SRC_SAMPLED_VALUES_SV_PUBLISHER_H_ */

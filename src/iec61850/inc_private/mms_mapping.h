@@ -1,7 +1,7 @@
 /*
  *  mms_mapping.h
  *
- *  Copyright 2013-2016 Michael Zillgith
+ *  Copyright 2013-2018 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -28,12 +28,11 @@
 #include "mms_device_model.h"
 #include "control.h"
 
-typedef enum {
-    REPORT_CONTROL_NONE,
-    REPORT_CONTROL_VALUE_UPDATE,
-    REPORT_CONTROL_VALUE_CHANGED,
-    REPORT_CONTROL_QUALITY_CHANGED
-} ReportInclusionFlag;
+#define REPORT_CONTROL_NONE 0U
+#define REPORT_CONTROL_VALUE_UPDATE 1U
+#define REPORT_CONTROL_VALUE_CHANGED 2U
+#define REPORT_CONTROL_QUALITY_CHANGED 4U
+#define REPORT_CONTROL_NOT_UPDATED 8U
 
 typedef enum {
     LOG_CONTROL_NONE,
@@ -45,10 +44,13 @@ typedef enum {
 typedef struct sMmsMapping MmsMapping;
 
 MmsMapping*
-MmsMapping_create(IedModel* model);
+MmsMapping_create(IedModel* model, IedServer iedServer);
 
 MmsDevice*
 MmsMapping_getMmsDeviceModel(MmsMapping* mapping);
+
+void
+MmsMapping_initializeControlObjects(MmsMapping* self);
 
 void
 MmsMapping_configureSettingGroups(MmsMapping* self);
@@ -90,7 +92,7 @@ DataSet*
 MmsMapping_createDataSetByNamedVariableList(MmsMapping* self, MmsNamedVariableList variableList);
 
 void
-MmsMapping_triggerReportObservers(MmsMapping* self, MmsValue* value, ReportInclusionFlag flag);
+MmsMapping_triggerReportObservers(MmsMapping* self, MmsValue* value, int flag);
 
 void
 MmsMapping_triggerLogging(MmsMapping* self, MmsValue* value, LogInclusionFlag flag);
@@ -138,9 +140,6 @@ char*
 MmsMapping_varAccessSpecToObjectReference(MmsVariableAccessSpecification* varAccessSpec);
 
 void
-MmsMapping_setIedServer(MmsMapping* self, IedServer iedServer);
-
-void
 MmsMapping_setConnectionIndicationHandler(MmsMapping* self, IedConnectionIndicationHandler handler, void* parameter);
 
 void
@@ -148,6 +147,9 @@ MmsMapping_setLogStorage(MmsMapping* self, const char* logRef, LogStorage logSto
 
 void
 MmsMapping_installWriteAccessHandler(MmsMapping* self, DataAttribute* dataAttribute, WriteAccessHandler handler, void* parameter);
+
+void
+MmsMapping_installReadAccessHandler(MmsMapping* self, ReadAccessHandler handler, void* paramter);
 
 MmsDataAccessError
 Control_writeAccessControlObject(MmsMapping* self, MmsDomain* domain, char* variableIdOrig,

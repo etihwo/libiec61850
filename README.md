@@ -6,16 +6,19 @@ This file is part of the documentation of **libIEC61850**. More documentation ca
 
 Content:
 
-* Overview
-* Building and running the examples
-* Installing the library and the API headers
-* Building on Windows with GOOSE support
-* Building with the cmake build script
-* Using the log service with sqlite
-* C# API
-* Licensing
-* Contributing
-* Third-party contributions
+* [Overview](#overview)
+* [Features](#features)
+* [Building and running the examples](#building-and-running-the-examples-with-the-provided-makefiles)
+* [Building the library with TLS support](#building-the-library-with-tls-support)
+* [Installing the library and the API headers](#installing-the-library-and-the-api-headers)
+* [Building on Windows with GOOSE support](#building-on-windows-with-goose-support)
+* [Building with the cmake build script](#building-with-the-cmake-build-script)
+* [Using the log service with sqlite](#using-the-log-service-with-sqlite)
+* [C# API](#c-api)
+* [Experimental Python bindings](#experimental-python-bindings)
+* [Licensing](#commercial-licenses-and-support)
+* [Contributing](#contributing)
+* [Third-party contributions](#third-party-contributions)
 
 
 ## Overview
@@ -25,9 +28,33 @@ libiec61850 is an open-source (GPLv3) implementation of an IEC 61850 client and 
 
 For commercial projects licenses and support is provided by MZ Automation GmbH. Please contact info@mz-automation.de for more details on licensing options.
 
+
+## Features
+
+The library support the following IEC 61850 protocol features:
+
+* MMS client/server, GOOSE (IEC 61850-8-1)
+* Sampled Values (SV - IEC 61850-9-2)
+* Support for buffered and unbuffered reports
+* Online report control block configuration
+* Data access service (get data, set data)
+* online data model discovery and browsing
+* all data set services (get values, set values, browse)
+* dynamic data set services (create and delete)
+* log service
+** flexible API to connect custom data bases
+** comes with sqlite implementation
+* MMS file services (browse, get file, set file, delete/rename file)
+** required to download COMTRADE files
+* Setting group handling
+* GOOSE and SV control block handling
+* TLS support
+* C and C#/.NET API
+
+
 ## Building and running the examples with the provided makefiles
 
-In the project root directoy type
+In the project root directory type
 
 ```
 make examples
@@ -38,8 +65,8 @@ If the build succeeds you can find a few binary files in the projects root direc
 Run the sample applications in the example folders. E.g.:
 
 ```
-cd examples/server_example1
-sudo ./server_example1
+cd examples/server_example_basic_io
+sudo ./server_example_basic_io
 ```
 
 on the Linux command line.
@@ -54,7 +81,7 @@ In the main libiec61850 folder run
 
 ```
 make WITH_MBEDTLS=1
-``` 
+```
 
 ## Installing the library and the API headers
 

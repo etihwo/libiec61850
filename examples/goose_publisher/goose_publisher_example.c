@@ -16,6 +16,14 @@
 int
 main(int argc, char** argv)
 {
+    char* interface;
+
+    if (argc > 1)
+       interface = argv[1];
+    else
+       interface = "eth0";
+
+    printf("Using interface %s\n", interface);
 
 	LinkedList dataSetValues = LinkedList_create();
 
@@ -41,7 +49,7 @@ main(int argc, char** argv)
 	 * is NULL the interface name as defined with CONFIG_ETHERNET_INTERFACE_ID in
 	 * stack_config.h is used.
 	 */
-	GoosePublisher publisher = GoosePublisher_create(&gooseCommParameters, NULL);
+	GoosePublisher publisher = GoosePublisher_create(&gooseCommParameters, interface);
 
 	GoosePublisher_setGoCbRef(publisher, "simpleIOGenericIO/LLN0$GO$gcbAnalogValues");
 	GoosePublisher_setConfRev(publisher, 1);
@@ -58,6 +66,8 @@ main(int argc, char** argv)
 	}
 
 	GoosePublisher_destroy(publisher);
+
+	LinkedList_destroyDeep(dataSetValues, (LinkedListValueDeleteFunction) MmsValue_delete);
 }
 
 

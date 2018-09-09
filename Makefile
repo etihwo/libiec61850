@@ -31,30 +31,35 @@ LIB_SOURCE_DIRS += src/iec61850/server/model
 LIB_SOURCE_DIRS += src/iec61850/server/mms_mapping
 LIB_SOURCE_DIRS += src/iec61850/server/impl
 ifeq ($(HAL_IMPL), WIN32)
-LIB_SOURCE_DIRS += src/hal/socket/win32
-LIB_SOURCE_DIRS += src/hal/thread/win32
-LIB_SOURCE_DIRS += src/hal/ethernet/win32
-LIB_SOURCE_DIRS += src/hal/filesystem/win32
-LIB_SOURCE_DIRS += src/hal/time/win32
+LIB_SOURCE_DIRS += hal/socket/win32
+LIB_SOURCE_DIRS += hal/thread/win32
+LIB_SOURCE_DIRS += hal/ethernet/win32
+LIB_SOURCE_DIRS += hal/filesystem/win32
+LIB_SOURCE_DIRS += hal/time/win32
+LIB_SOURCE_DIRS += hal/serial/win32
+LIB_SOURCE_DIRS += hal/memory
 else ifeq ($(HAL_IMPL), POSIX)
-LIB_SOURCE_DIRS += src/hal/socket/linux
-LIB_SOURCE_DIRS += src/hal/thread/linux
-LIB_SOURCE_DIRS += src/hal/ethernet/linux
-LIB_SOURCE_DIRS += src/hal/filesystem/linux
-LIB_SOURCE_DIRS += src/hal/time/unix
+LIB_SOURCE_DIRS += hal/socket/linux
+LIB_SOURCE_DIRS += hal/thread/linux
+LIB_SOURCE_DIRS += hal/ethernet/linux
+LIB_SOURCE_DIRS += hal/filesystem/linux
+LIB_SOURCE_DIRS += hal/time/unix
+LIB_SOURCE_DIRS += hal/serial/linux
+LIB_SOURCE_DIRS += hal/memory
 else ifeq ($(HAL_IMPL), BSD)
-LIB_SOURCE_DIRS += src/hal/socket/bsd
-LIB_SOURCE_DIRS += src/hal/thread/bsd
-LIB_SOURCE_DIRS += src/hal/ethernet/bsd
-LIB_SOURCE_DIRS += src/hal/filesystem/linux
-LIB_SOURCE_DIRS += src/hal/time/unix
+LIB_SOURCE_DIRS += hal/socket/bsd
+LIB_SOURCE_DIRS += hal/thread/bsd
+LIB_SOURCE_DIRS += hal/ethernet/bsd
+LIB_SOURCE_DIRS += hal/filesystem/linux
+LIB_SOURCE_DIRS += hal/time/unix
+LIB_SOURCE_DIRS += hal/memory
 endif
 LIB_INCLUDE_DIRS += config
+LIB_INCLUDE_DIRS += hal/inc
 LIB_INCLUDE_DIRS += src/common/inc
 LIB_INCLUDE_DIRS += src/mms/iso_mms/asn1c
 LIB_INCLUDE_DIRS += src/mms/inc
 LIB_INCLUDE_DIRS += src/mms/inc_private
-LIB_INCLUDE_DIRS += src/hal/inc
 LIB_INCLUDE_DIRS += src/goose
 LIB_INCLUDE_DIRS += src/sampled_values
 LIB_INCLUDE_DIRS += src/iec61850/inc
@@ -67,9 +72,9 @@ endif
 
 ifdef WITH_MBEDTLS
 LIB_SOURCE_DIRS += third_party/mbedtls/mbedtls-2.6.0/library
-LIB_SOURCE_DIRS += src/tls/mbedtls
+LIB_SOURCE_DIRS += hal/tls/mbedtls
 LIB_INCLUDE_DIRS += third_party/mbedtls/mbedtls-2.6.0/include
-LIB_INCLUDE_DIRS += src/tls/mbedtls
+LIB_INCLUDE_DIRS += hal/tls/mbedtls
 CFLAGS += -D'MBEDTLS_CONFIG_FILE="mbedtls_config.h"'
 CFLAGS += -D'CONFIG_MMS_SUPPORT_TLS=1'
 endif
@@ -80,9 +85,10 @@ ifndef INSTALL_PREFIX
 INSTALL_PREFIX = ./.install
 endif
 
-LIB_API_HEADER_FILES = src/hal/inc/hal_time.h 
-LIB_API_HEADER_FILES += src/hal/inc/hal_thread.h
-LIB_API_HEADER_FILES += src/hal/inc/hal_filesystem.h 
+LIB_API_HEADER_FILES = hal/inc/hal_time.h 
+LIB_API_HEADER_FILES += hal/inc/hal_thread.h
+LIB_API_HEADER_FILES += hal/inc/hal_filesystem.h
+LIB_API_HEADER_FILES += hal/inc/tls_config.h
 LIB_API_HEADER_FILES += src/common/inc/libiec61850_common_api.h
 LIB_API_HEADER_FILES += src/common/inc/linked_list.h
 LIB_API_HEADER_FILES += src/common/inc/byte_buffer.h
@@ -112,7 +118,6 @@ LIB_API_HEADER_FILES += src/goose/goose_publisher.h
 LIB_API_HEADER_FILES += src/sampled_values/sv_subscriber.h
 LIB_API_HEADER_FILES += src/sampled_values/sv_publisher.h
 LIB_API_HEADER_FILES += src/logging/logging_api.h
-LIB_API_HEADER_FILES += src/tls/tls_api.h
 
 get_sources_from_directory  = $(wildcard $1/*.c)
 get_sources = $(foreach dir, $1, $(call get_sources_from_directory,$(dir)))

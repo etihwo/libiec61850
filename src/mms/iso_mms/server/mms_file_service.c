@@ -1,7 +1,7 @@
 /*
  *  mms_file_service.c
  *
- *  Copyright 2013, 2014 Michael Zillgith
+ *  Copyright 2013-2018 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -250,6 +250,8 @@ mmsServer_handleFileDeleteRequest(
     int length;
 
     bufPos = BerDecoder_decodeLength(buffer, &length, bufPos, maxBufPos);
+    if (bufPos == -1)
+        goto exit_reject_invalid_pdu;
 
     if (length > 255) {
         mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_REQUEST_INVALID_ARGUMENT, response);
@@ -665,7 +667,7 @@ mmsServer_handleObtainFileRequest(
 
                 mmsClient_createFileOpenRequest(task->lastRequestInvokeId, request, sourceFilename, 0);
 
-                IsoConnection_sendMessage(task->connection->isoConnection, request, false);
+                IsoConnection_sendMessage(task->connection->isoConnection, request, true);
 
                 MmsServer_releaseTransmitBuffer(connection->server);
 

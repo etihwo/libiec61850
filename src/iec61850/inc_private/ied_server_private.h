@@ -3,7 +3,7 @@
  *
  *  Library private function definitions for IedServer.
  *
- *  Copyright 2013 Michael Zillgith
+ *  Copyright 2013-2018 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -43,9 +43,19 @@ struct sIedServer
     LinkedList clientConnections;
     uint8_t writeAccessPolicies;
 
+#if (CONFIG_IEC61850_REPORT_SERVICE == 1)
+    int reportBufferSize;
+#endif
+
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
     Semaphore dataModelLock;
 #endif
+
+#if (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1)
+    bool logServiceEnabled;
+#endif
+
+    uint8_t edition;
 
     bool running;
 };

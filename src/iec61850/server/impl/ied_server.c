@@ -1,7 +1,7 @@
 /*
  *  ied_server.c
  *
- *  Copyright 2013-2016 Michael Zillgith
+ *  Copyright 2013-2018 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -59,7 +59,6 @@ createControlObjects(IedServer self, MmsDomain* domain, char* lnName, MmsVariabl
                 strcat(objectName, "$");
             }
 
-            bool isControlObject = false;
             bool hasCancel = false;
             int cancelIndex = 0;
             bool hasSBOw = false;
@@ -72,12 +71,14 @@ createControlObjects(IedServer self, MmsDomain* domain, char* lnName, MmsVariabl
 
                 int coElementCount = coSpec->typeSpec.structure.elementCount;
 
+                MmsVariableSpecification* operSpec = NULL;
+
                 int j;
                 for (j = 0; j < coElementCount; j++) {
                     MmsVariableSpecification* coElementSpec = coSpec->typeSpec.structure.elements[j];
 
                     if (strcmp(coElementSpec->name, "Oper") == 0) {
-                        isControlObject = true;
+                        operSpec = coElementSpec;
                         operIndex = j;
                     }
                     else if (strcmp(coElementSpec->name, "Cancel") == 0) {
@@ -96,14 +97,14 @@ createControlObjects(IedServer self, MmsDomain* domain, char* lnName, MmsVariabl
                     }
                 }
 
-                if (isControlObject) {
+                if (operSpec) {
 
                     strcat(objectName, coSpec->name);
 
                     if (DEBUG_IED_SERVER)
                         printf("IED_SERVER: create control object LN:%s DO:%s\n", lnName, objectName);
 
-                    ControlObject* controlObject = ControlObject_create(self, domain, lnName, objectName);
+                    ControlObject* controlObject = ControlObject_create(self, domain, lnName, objectName, operSpec);
 
                     if (controlObject == NULL)
                         goto exit_function;
@@ -119,18 +120,13 @@ createControlObjects(IedServer self, MmsDomain* domain, char* lnName, MmsVariabl
 
                     ControlObject_setTypeSpec(controlObject, coSpec);
 
-                    MmsValue* operVal = MmsValue_getElement(structure, operIndex);
-                    ControlObject_setOper(controlObject, operVal);
+                    controlObject->oper = MmsValue_getElement(structure, operIndex);
 
-                    if  (hasCancel) {
-                        MmsValue* cancelVal = MmsValue_getElement(structure, cancelIndex);
-                        ControlObject_setCancel(controlObject, cancelVal);
-                    }
+                    if (hasCancel)
+                        controlObject->cancel = MmsValue_getElement(structure, cancelIndex);
 
-                    if (hasSBOw) {
-                        MmsValue* sbowVal = MmsValue_getElement(structure, sBOwIndex);
-                        ControlObject_setSBOw(controlObject, sbowVal);
-                    }
+                    if (hasSBOw)
+                        controlObject->sbow = MmsValue_getElement(structure, sBOwIndex);
 
                     MmsMapping_addControlObject(mapping, controlObject);
                 }
@@ -204,23 +200,19 @@ createMmsServerCache(IedServer self)
 
                    )
                 {
-                    char* variableName = StringUtils_createString(3, lnName, "$", fcName);
+                    char variableName[65];
 
-                    if (variableName == NULL) goto exit_function;
+                    StringUtils_createStringInBuffer(variableName, 3, lnName, "$", fcName);
 
                     MmsValue* defaultValue = MmsValue_newDefaultValue(fcSpec);
 
-                    if (defaultValue == NULL) {
-                        GLOBAL_FREEMEM(variableName);
+                    if (defaultValue == NULL)
                         goto exit_function;
-                    }
 
                     if (DEBUG_IED_SERVER)
                         printf("ied_server.c: Insert into cache %s - %s\n", logicalDevice->domainName, variableName);
 
                     MmsServer_insertIntoCache(self->mmsServer, logicalDevice, variableName, defaultValue);
-
-                    GLOBAL_FREEMEM(variableName);
                 }
             }
         }
@@ -395,8 +387,9 @@ updateDataSetsWithCachedValues(IedServer self)
     }
 }
 
+
 IedServer
-IedServer_createWithTlsSupport(IedModel* dataModel, TLSConfiguration tlsConfiguration)
+IedServer_createWithConfig(IedModel* dataModel, TLSConfiguration tlsConfiguration, IedServerConfig serverConfiguration)
 {
     IedServer self = (IedServer) GLOBAL_CALLOC(1, sizeof(struct sIedServer));
 
@@ -407,21 +400,55 @@ IedServer_createWithTlsSupport(IedModel* dataModel, TLSConfiguration tlsConfigur
         self->running = false;
         self->localIpAddress = NULL;
 
-#if (CONFIG_MMS_THREADLESS_STACK != 1)
-        self->dataModelLock = Semaphore_create(1);
+#if (CONFIG_IEC61850_EDITION_1 == 1)
+        self->edition = IEC_61850_EDITION_1;
+#else
+        self->edition = IEC_61850_EDITION_2;
 #endif
 
-        self->mmsMapping = MmsMapping_create(dataModel);
+#if (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1)
+        self->logServiceEnabled = true;
+
+        if (serverConfiguration) {
+            self->logServiceEnabled = serverConfiguration->enableLogService;
+            self->edition = serverConfiguration->edition;
+        }
+
+#endif /* (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1) */
+
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+        self->dataModelLock = Semaphore_create(1);
+#endif /* (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1) */
+
+#if (CONFIG_IEC61850_REPORT_SERVICE == 1)
+        if (serverConfiguration)
+            self->reportBufferSize = serverConfiguration->reportBufferSize;
+        else
+            self->reportBufferSize = CONFIG_REPORTING_DEFAULT_REPORT_BUFFER_SIZE;
+#endif
+
+        self->mmsMapping = MmsMapping_create(dataModel, self);
 
         self->mmsDevice = MmsMapping_getMmsDeviceModel(self->mmsMapping);
 
         self->mmsServer = MmsServer_create(self->mmsDevice, tlsConfiguration);
 
+#if (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1)
+        if (serverConfiguration) {
+            MmsServer_enableFileService(self->mmsServer, serverConfiguration->enableFileService);
+            MmsServer_enableDynamicNamedVariableListService(self->mmsServer, serverConfiguration->enableDynamicDataSetService);
+            MmsServer_setMaxAssociationSpecificDataSets(self->mmsServer, serverConfiguration->maxAssociationSpecificDataSets);
+            MmsServer_setMaxDomainSpecificDataSets(self->mmsServer, serverConfiguration->maxDomainSpecificDataSets);
+            MmsServer_setMaxDataSetEntries(self->mmsServer, serverConfiguration->maxDataSetEntries);
+            MmsServer_enableJournalService(self->mmsServer, serverConfiguration->enableLogService);
+            MmsServer_setFilestoreBasepath(self->mmsServer, serverConfiguration->fileServiceBasepath);
+            MmsServer_setMaxConnections(self->mmsServer, serverConfiguration->maxMmsConnections);
+        }
+#endif
+
         MmsMapping_setMmsServer(self->mmsMapping, self->mmsServer);
 
         MmsMapping_installHandlers(self->mmsMapping);
-
-        MmsMapping_setIedServer(self->mmsMapping, self);
 
         createMmsServerCache(self);
 
@@ -435,6 +462,8 @@ IedServer_createWithTlsSupport(IedModel* dataModel, TLSConfiguration tlsConfigur
 
         /* default write access policy allows access to SP, SE and SV FCDAs but denies access to DC and CF FCDAs */
         self->writeAccessPolicies = ALLOW_WRITE_ACCESS_SP | ALLOW_WRITE_ACCESS_SV | ALLOW_WRITE_ACCESS_SE;
+
+        MmsMapping_initializeControlObjects(self->mmsMapping);
 
 #if (CONFIG_IEC61850_REPORT_SERVICE == 1)
         Reporting_activateBufferedReports(self->mmsMapping);
@@ -451,7 +480,13 @@ IedServer_createWithTlsSupport(IedModel* dataModel, TLSConfiguration tlsConfigur
 IedServer
 IedServer_create(IedModel* dataModel)
 {
-    return IedServer_createWithTlsSupport(dataModel, NULL);
+    return IedServer_createWithConfig(dataModel, NULL, NULL);
+}
+
+IedServer
+IedServer_createWithTlsSupport(IedModel* dataModel, TLSConfiguration tlsConfiguration)
+{
+    return IedServer_createWithConfig(dataModel, tlsConfiguration, NULL);
 }
 
 void
@@ -653,11 +688,18 @@ void
 IedServer_lockDataModel(IedServer self)
 {
     MmsServer_lockModel(self->mmsServer);
+
+    self->mmsMapping->isModelLocked = true;
 }
 
 void
 IedServer_unlockDataModel(IedServer self)
 {
+    /* check if reports have to be sent! */
+    Reporting_processReportEventsAfterUnlock(self->mmsMapping);
+
+    self->mmsMapping->isModelLocked = false;
+
     MmsServer_unlockModel(self->mmsServer);
 }
 
@@ -1303,6 +1345,12 @@ IedServer_handleWriteAccess(IedServer self, DataAttribute* dataAttribute, WriteA
     }
 
     MmsMapping_installWriteAccessHandler(self->mmsMapping, dataAttribute, handler, parameter);
+}
+
+void
+IedServer_setReadAccessHandler(IedServer self, ReadAccessHandler handler, void* parameter)
+{
+    MmsMapping_installReadAccessHandler(self->mmsMapping, handler, parameter);
 }
 
 void

@@ -1,7 +1,7 @@
 /*
  *  mms_server_connection.c
  *
- *  Copyright 2013-2016 Michael Zillgith
+ *  Copyright 2013-2018 Michael Zillgith
  *
  *	This file is part of libIEC61850.
  *
@@ -83,8 +83,8 @@ mmsMsg_encodeMmsRejectPdu(uint32_t* invokeId, int rejectType, int rejectReason, 
 
     if (invokeId != NULL) {
         /* original invokeId */
-       bufPos = BerEncoder_encodeTL(0x80, invokeIdLength, buffer, bufPos);
-       bufPos = BerEncoder_encodeUInt32(*invokeId, buffer, bufPos);
+        bufPos = BerEncoder_encodeTL(0x80, invokeIdLength, buffer, bufPos);
+        bufPos = BerEncoder_encodeUInt32(*invokeId, buffer, bufPos);
     }
 
     buffer[bufPos++] = (uint8_t) (0x80 + rejectType);
@@ -100,7 +100,8 @@ mmsMsg_createMmsRejectPdu(uint32_t* invokeId, int reason, ByteBuffer* response)
     int rejectType = 0;
     int rejectReason = 0;
 
-    switch (reason) {
+    switch (reason)
+    {
 
     case MMS_ERROR_REJECT_UNRECOGNIZED_SERVICE:
         rejectType = MMS_REJECT_CONFIRMED_REQUEST;
@@ -136,84 +137,168 @@ mmsMsg_createMmsRejectPdu(uint32_t* invokeId, int reason, ByteBuffer* response)
 
 static void
 handleConfirmedRequestPdu(
-		MmsServerConnection self,
-		uint8_t* buffer, int bufPos, int maxBufPos,
-		ByteBuffer* response)
+        MmsServerConnection self,
+        uint8_t* buffer, int bufPos, int maxBufPos,
+        ByteBuffer* response)
 {
-	uint32_t invokeId = 0;
+    uint32_t invokeId = 0;
 
-	while (bufPos < maxBufPos) {
-		uint8_t tag = buffer[bufPos++];
-		int length;
+    while (bufPos < maxBufPos) {
+        uint8_t tag = buffer[bufPos++];
+        int length;
 
-		bool extendedTag = false;
+        bool extendedTag = false;
 
-		if ((tag & 0x1f) == 0x1f) {
-		    extendedTag = true;
-		    tag = buffer[bufPos++];
-		}
-
-		bufPos = BerDecoder_decodeLength(buffer, &length, bufPos, maxBufPos);
-
-		if (bufPos < 0)  {
-			mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_INVALID_PDU, response);
-			return;
+        if ((tag & 0x1f) == 0x1f) {
+            extendedTag = true;
+            tag = buffer[bufPos++];
         }
-        
+
+        bufPos = BerDecoder_decodeLength(buffer, &length, bufPos, maxBufPos);
+
+        if (bufPos < 0) {
+            mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_INVALID_PDU, response);
+            return;
+        }
+
         if (bufPos + length > maxBufPos) {
             mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_INVALID_PDU, response);
             return;
         }
 
-		if (extendedTag) {
-		    switch(tag) {
+        if (extendedTag) {
+            switch (tag)
+            {
 
 #if (MMS_OBTAIN_FILE_SERVICE == 1)
-		    case 0x2e: /* obtain-file */
-		        mmsServer_handleObtainFileRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
-		        break;
+
+
+#if (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1)
+            case 0x2e: /* obtain-file */
+                if (self->server->fileServiceEnabled)
+                    mmsServer_handleObtainFileRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
+                else
+                    mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_UNRECOGNIZED_SERVICE, response);
+                break;
+#else
+            case 0x2e: /* obtain-file */
+                mmsServer_handleObtainFileRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
+                break;
+#endif /* (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1) */
+
+
 #endif /* MMS_OBTAIN_FILE_SERVICE == 1 */
 
 #if (MMS_JOURNAL_SERVICE == 1)
+
+#if (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1)
+            case 0x41: /* read-journal */
+                if (self->server->journalServiceEnabled)
+                    mmsServer_handleReadJournalRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
+                else
+                    mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_UNRECOGNIZED_SERVICE, response);
+                break;
+
+#else
             case 0x41: /* read-journal */
                 mmsServer_handleReadJournalRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
                 break;
+#endif /* (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1) */
+
 #endif /* (MMS_JOURNAL_SERVICE == 1) */
 
 #if (MMS_FILE_SERVICE == 1)
-		    case 0x48: /* file-open-request */
-		        mmsServer_handleFileOpenRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
-		        break;
 
-		    case 0x49: /* file-read-request */
-		        mmsServer_handleFileReadRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
-		        break;
-
-		    case 0x4a: /* file-close-request */
-		        mmsServer_handleFileCloseRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
-		        break;
-
-		    case 0x4b: /* file-rename-request */
-                mmsServer_handleFileRenameRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
+#if (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1)
+            case 0x48: /* file-open-request */
+                if (self->server->fileServiceEnabled)
+                    mmsServer_handleFileOpenRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
+                else
+                    mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_UNRECOGNIZED_SERVICE, response);
                 break;
 
-		    case 0x4c: /* file-delete-request */
-		        mmsServer_handleFileDeleteRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
-		        break;
+#else
+            case 0x48: /* file-open-request */
+                mmsServer_handleFileOpenRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
+                break;
+#endif /* (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1) */
 
-		    case 0x4d: /* file-directory-request */
-		        mmsServer_handleFileDirectoryRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
-		        break;
+#if (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1)
+            case 0x49: /* file-read-request */
+                if (self->server->fileServiceEnabled)
+                    mmsServer_handleFileReadRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
+                else
+                    mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_UNRECOGNIZED_SERVICE, response);
+                break;
+#else
+            case 0x49: /* file-read-request */
+                mmsServer_handleFileReadRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
+                break;
+#endif /* (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1) */
+
+#if (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1)
+            case 0x4a: /* file-close-request */
+                if (self->server->fileServiceEnabled)
+                    mmsServer_handleFileCloseRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
+                else
+                    mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_UNRECOGNIZED_SERVICE, response);
+                break;
+#else
+            case 0x4a: /* file-close-request */
+                mmsServer_handleFileCloseRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
+                break;
+#endif /* (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1) */
+
+#if (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1)
+            case 0x4b: /* file-rename-request */
+                if (self->server->fileServiceEnabled)
+                    mmsServer_handleFileRenameRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
+                else
+                    mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_UNRECOGNIZED_SERVICE, response);
+                break;
+#else
+            case 0x4b: /* file-rename-request */
+                mmsServer_handleFileRenameRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
+                break;
+#endif /* (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1) */
+
+#if (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1)
+            case 0x4c: /* file-delete-request */
+                if (self->server->fileServiceEnabled)
+                    mmsServer_handleFileDeleteRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
+                else
+                    mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_UNRECOGNIZED_SERVICE, response);
+                break;
+#else
+            case 0x4c: /* file-delete-request */
+                mmsServer_handleFileDeleteRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
+                break;
+#endif /* (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1) */
+
+#if (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1)
+            case 0x4d: /* file-directory-request */
+                if (self->server->fileServiceEnabled)
+                    mmsServer_handleFileDirectoryRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
+                else
+                    mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_UNRECOGNIZED_SERVICE, response);
+                break;
+#else
+            case 0x4d: /* file-directory-request */
+                mmsServer_handleFileDirectoryRequest(self, buffer, bufPos, bufPos + length, invokeId, response);
+                break;
+#endif /* (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1) */
+
 #endif /* MMS_FILE_SERVICE == 1 */
 
             default:
                 mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_UNRECOGNIZED_SERVICE, response);
                 return;
                 break;
-		    }
-		}
-		else {
-            switch(tag) {
+            }
+        }
+        else {
+            switch (tag)
+            {
             case 0x02: /* invoke Id */
                 invokeId = BerDecoder_decodeUint32(buffer, length, bufPos);
                 if (DEBUG_MMS_SERVER)
@@ -248,7 +333,7 @@ handleConfirmedRequestPdu(
 #if (MMS_WRITE_SERVICE == 1)
             case 0xa5: /* write-request */
                 mmsServer_handleWriteRequest(self, buffer, bufPos, bufPos + length,
-                                invokeId, response);
+                        invokeId, response);
                 break;
 #endif /* (MMS_WRITE_SERVICE == 1) */
 
@@ -260,15 +345,44 @@ handleConfirmedRequestPdu(
                 break;
 #endif /* MMS_GET_VARIABLE_ACCESS_ATTRIBUTES == 1 */
 
-
 #if (MMS_DYNAMIC_DATA_SETS == 1)
+
+#if (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1)
+
+            case 0xab: /* define-named-variable-list */
+                if (self->server->dynamicVariableListServiceEnabled)
+                    mmsServer_handleDefineNamedVariableListRequest(self,
+                            buffer, bufPos, bufPos + length,
+                            invokeId, response);
+                else
+                    mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_UNRECOGNIZED_SERVICE, response);
+                break;
+
+            case 0xad: /* delete-named-variable-list-request */
+                if (self->server->dynamicVariableListServiceEnabled)
+                    mmsServer_handleDeleteNamedVariableListRequest(self,
+                            buffer, bufPos, bufPos + length,
+                            invokeId, response);
+                else
+                    mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_UNRECOGNIZED_SERVICE, response);
+                break;
+
+#else
             case 0xab: /* define-named-variable-list */
                 mmsServer_handleDefineNamedVariableListRequest(self,
                         buffer, bufPos, bufPos + length,
                         invokeId, response);
                 break;
-#endif /* (MMS_DYNAMIC_DATA_SETS == 1) */
 
+            case 0xad: /* delete-named-variable-list-request */
+                mmsServer_handleDeleteNamedVariableListRequest(self,
+                        buffer, bufPos, bufPos + length,
+                        invokeId, response);
+                break;
+
+#endif /* (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1) */
+
+#endif /* (MMS_DYNAMIC_DATA_SETS == 1) */
 
 #if (MMS_GET_DATA_SET_ATTRIBUTES == 1)
             case 0xac: /* get-named-variable-list-attributes-request */
@@ -278,23 +392,15 @@ handleConfirmedRequestPdu(
                 break;
 #endif /* (MMS_GET_DATA_SET_ATTRIBUTES == 1) */
 
-#if (MMS_DYNAMIC_DATA_SETS == 1)
-            case 0xad: /* delete-named-variable-list-request */
-                mmsServer_handleDeleteNamedVariableListRequest(self,
-                        buffer, bufPos, bufPos + length,
-                        invokeId, response);
-                break;
-#endif /* (MMS_DYNAMIC_DATA_SETS == 1) */
-
             default:
                 mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_UNRECOGNIZED_SERVICE, response);
                 return;
                 break;
             }
-		}
+        }
 
-		bufPos += length;
-	}
+        bufPos += length;
+    }
 }
 
 #if (MMS_OBTAIN_FILE_SERVICE == 1)
@@ -333,7 +439,6 @@ handleConfirmedErrorPdu(
             printf("MMS_SERVER: error parsing confirmed error PDU\n");
     }
 }
-
 
 static MmsObtainFileTask
 getUploadTaskByInvokeId(MmsServer mmsServer, uint32_t invokeId)
@@ -381,13 +486,14 @@ handleConfirmedResponsePdu(
 
         bufPos = BerDecoder_decodeLength(buffer, &length, bufPos, maxBufPos);
 
-        if (bufPos < 0)  {
+        if (bufPos < 0) {
             mmsMsg_createMmsRejectPdu(&invokeId, MMS_ERROR_REJECT_UNRECOGNIZED_SERVICE, response);
             return;
         }
 
         if (extendedTag) {
-            switch(tag) {
+            switch (tag)
+            {
 
 #if (MMS_FILE_SERVICE == 1)
             case 0x48: /* file-open-response */
@@ -400,7 +506,7 @@ handleConfirmedResponsePdu(
 
                     if (fileTask != NULL) {
 
-                    int32_t frmsId;
+                        int32_t frmsId;
 
                         if (mmsMsg_parseFileOpenResponse(buffer, startBufPos, maxBufPos, &frmsId, NULL, NULL)) {
                             fileTask->frmsId = frmsId;
@@ -487,7 +593,8 @@ handleConfirmedResponsePdu(
             }
         }
         else {
-            switch(tag) {
+            switch (tag)
+            {
             case 0x02: /* invoke Id */
                 invokeId = BerDecoder_decodeUint32(buffer, length, bufPos);
                 if (DEBUG_MMS_SERVER)
@@ -512,58 +619,59 @@ MmsServerConnection_parseMessage(MmsServerConnection self, ByteBuffer* message, 
 {
     uint8_t* buffer = message->buffer;
 
-	if (message->size < 2)
-		goto parsing_error;
+    if (message->size < 2)
+        goto parsing_error;
 
-	int bufPos = 0;
+    int bufPos = 0;
 
-	uint8_t pduType = buffer[bufPos++];
-	int pduLength;
+    uint8_t pduType = buffer[bufPos++];
+    int pduLength;
 
-	bufPos = BerDecoder_decodeLength(buffer, &pduLength, bufPos, message->size);
+    bufPos = BerDecoder_decodeLength(buffer, &pduLength, bufPos, message->size);
 
-	if (bufPos < 0)
-		goto parsing_error;
+    if (bufPos < 0)
+        goto parsing_error;
 
-	if (DEBUG_MMS_SERVER)
-	    printf("MMS_SERVER: recvd MMS-PDU type: %02x size: %i\n", pduType, pduLength);
+    if (DEBUG_MMS_SERVER)
+        printf("MMS_SERVER: recvd MMS-PDU type: %02x size: %i\n", pduType, pduLength);
 
-	switch (pduType) {
-	case 0xa8: /* Initiate request PDU */
-		mmsServer_handleInitiateRequest(self, buffer, bufPos, bufPos + pduLength, response);
-		break;
+    switch (pduType)
+    {
+    case 0xa8: /* Initiate request PDU */
+        mmsServer_handleInitiateRequest(self, buffer, bufPos, bufPos + pduLength, response);
+        break;
 
-	case 0xa0: /* Confirmed request PDU */
-		handleConfirmedRequestPdu(self, buffer, bufPos, bufPos + pduLength, response);
-		break;
+    case 0xa0: /* Confirmed request PDU */
+        handleConfirmedRequestPdu(self, buffer, bufPos, bufPos + pduLength, response);
+        break;
 
 #if (MMS_OBTAIN_FILE_SERVICE == 1)
-	case 0xa1: /* Confirmed response PDU */
-	    handleConfirmedResponsePdu(self, buffer, bufPos, bufPos + pduLength, response);
-	    break;
+    case 0xa1: /* Confirmed response PDU */
+        handleConfirmedResponsePdu(self, buffer, bufPos, bufPos + pduLength, response);
+        break;
 
-	case 0xa2: /* Confirmed error PDU */
-	    handleConfirmedErrorPdu(self, buffer, 0, bufPos + pduLength, response);
-	    break;
+    case 0xa2: /* Confirmed error PDU */
+        handleConfirmedErrorPdu(self, buffer, 0, bufPos + pduLength, response);
+        break;
 
 #endif /* (MMS_OBTAIN_FILE_SERVICE == 1) */
-	case 0x8b: /* Conclude request PDU */
-		mmsServer_writeConcludeResponsePdu(response);
-		break;
+    case 0x8b: /* Conclude request PDU */
+        mmsServer_writeConcludeResponsePdu(response);
+        break;
 
-	case 0xa4: /* Reject PDU - silently ignore */
-	    if (DEBUG_MMS_SERVER)
-	        printf("MMS_SERVER: received reject PDU!\n");
-		break;
+    case 0xa4: /* Reject PDU - silently ignore */
+        if (DEBUG_MMS_SERVER)
+            printf("MMS_SERVER: received reject PDU!\n");
+        break;
 
-	default:
-		mmsMsg_createMmsRejectPdu(NULL, MMS_ERROR_REJECT_UNKNOWN_PDU_TYPE, response);
-		break;
-	}
+    default:
+        mmsMsg_createMmsRejectPdu(NULL, MMS_ERROR_REJECT_UNKNOWN_PDU_TYPE, response);
+        break;
+    }
 
-	return;
+    return;
 
-parsing_error:
+    parsing_error:
     if (DEBUG_MMS_SERVER)
         printf("MMS_SERVER: error parsing message\n");
 
@@ -573,9 +681,9 @@ parsing_error:
 static void /* will be called by IsoConnection */
 messageReceived(void* parameter, ByteBuffer* message, ByteBuffer* response)
 {
-	MmsServerConnection self = (MmsServerConnection) parameter;
+    MmsServerConnection self = (MmsServerConnection) parameter;
 
-	MmsServerConnection_parseMessage(self,  message, response);
+    MmsServerConnection_parseMessage(self, message, response);
 }
 
 /**********************************************************************************************
@@ -585,31 +693,31 @@ messageReceived(void* parameter, ByteBuffer* message, ByteBuffer* response)
 MmsServerConnection
 MmsServerConnection_init(MmsServerConnection connection, MmsServer server, IsoConnection isoCon)
 {
-	MmsServerConnection self;
+    MmsServerConnection self;
 
-	if (connection == NULL)
-		self = (MmsServerConnection) GLOBAL_CALLOC(1, sizeof(struct sMmsServerConnection));
-	else
-		self = connection;
+    if (connection == NULL)
+        self = (MmsServerConnection) GLOBAL_CALLOC(1, sizeof(struct sMmsServerConnection));
+    else
+        self = connection;
 
-	self->maxServOutstandingCalled = 0;
-	self->maxServOutstandingCalling = 0;
-	self->maxPduSize = CONFIG_MMS_MAXIMUM_PDU_SIZE;
-	self->dataStructureNestingLevel = 0;
-	self->server = server;
-	self->isoConnection = isoCon;
+    self->maxServOutstandingCalled = 0;
+    self->maxServOutstandingCalling = 0;
+    self->maxPduSize = CONFIG_MMS_MAXIMUM_PDU_SIZE;
+    self->dataStructureNestingLevel = 0;
+    self->server = server;
+    self->isoConnection = isoCon;
 
 #if (MMS_DYNAMIC_DATA_SETS == 1)
-	self->namedVariableLists = LinkedList_create();
+    self->namedVariableLists = LinkedList_create();
 #endif
 
 #if (MMS_OBTAIN_FILE_SERVICE == 1)
-	self->lastRequestInvokeId = 0;
+    self->lastRequestInvokeId = 0;
 #endif
 
-	IsoConnection_installListener(isoCon, messageReceived, (void*) self);
+    IsoConnection_installListener(isoCon, messageReceived, (void*) self);
 
-	return self;
+    return self;
 }
 
 void
@@ -625,27 +733,27 @@ MmsServerConnection_destroy(MmsServerConnection self)
 #endif
 
 #if (MMS_DYNAMIC_DATA_SETS == 1)
-	LinkedList_destroyDeep(self->namedVariableLists, (LinkedListValueDeleteFunction) MmsNamedVariableList_destroy);
+    LinkedList_destroyDeep(self->namedVariableLists, (LinkedListValueDeleteFunction) MmsNamedVariableList_destroy);
 #endif
 
-	GLOBAL_FREEMEM(self);
+    GLOBAL_FREEMEM(self);
 }
 
 #if (MMS_DYNAMIC_DATA_SETS == 1)
 bool
 MmsServerConnection_addNamedVariableList(MmsServerConnection self, MmsNamedVariableList variableList)
 {
-	//TODO check if operation is allowed!
+    //TODO check if operation is allowed!
 
-	LinkedList_add(self->namedVariableLists, variableList);
+    LinkedList_add(self->namedVariableLists, variableList);
 
-	return true;
+    return true;
 }
 
 void
 MmsServerConnection_deleteNamedVariableList(MmsServerConnection self, char* listName)
 {
-	mmsServer_deleteVariableList(self->namedVariableLists, listName);
+    mmsServer_deleteVariableList(self->namedVariableLists, listName);
 }
 
 MmsNamedVariableList
@@ -655,11 +763,10 @@ MmsServerConnection_getNamedVariableList(MmsServerConnection self, const char* v
 }
 #endif /* (MMS_DYNAMIC_DATA_SETS == 1) */
 
-
 char*
 MmsServerConnection_getClientAddress(MmsServerConnection self)
 {
-	return IsoConnection_getPeerAddress(self->isoConnection);
+    return IsoConnection_getPeerAddress(self->isoConnection);
 }
 
 IsoConnection
@@ -672,7 +779,7 @@ MmsServerConnection_getIsoConnection(MmsServerConnection self)
 LinkedList
 MmsServerConnection_getNamedVariableLists(MmsServerConnection self)
 {
-	return self->namedVariableLists;
+    return self->namedVariableLists;
 }
 #endif /* (MMS_DYNAMIC_DATA_SETS == 1) */
 
@@ -690,7 +797,6 @@ MmsServerConnection_getNextRequestInvokeId(MmsServerConnection self)
     return self->lastRequestInvokeId;
 }
 #endif /* (MMS_OBTAIN_FILE_SERVICE == 1) */
-
 
 const char*
 MmsServerConnection_getFilesystemBasepath(MmsServerConnection self)

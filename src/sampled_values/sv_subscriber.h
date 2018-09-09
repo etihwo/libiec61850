@@ -1,7 +1,7 @@
 /*
  *  sv_subscriber.h
  *
- *  Copyright 2015 Michael Zillgith
+ *  Copyright 2015-2018 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -25,12 +25,12 @@
 #define SAMPLED_VALUES_SV_SUBSCRIBER_H_
 
 #include "libiec61850_common_api.h"
+#include "iec61850_common.h"
+#include "hal_ethernet.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-typedef struct sEthernetSocket* EthernetSocket;
 
 /**
  * \defgroup sv_subscriber_api_group IEC 61850 Sampled Values (SV) subscriber API
@@ -73,6 +73,7 @@ typedef struct sEthernetSocket* EthernetSocket;
  *  | TimeStamp      | 8 byte         |
  *  | EntryTime      | 6 byte         |
  *  | BITSTRING      | 4 byte         |
+ *  | Quality        | 4 byte         |
  *
  * The SV subscriber API can be used independent of the IEC 61850 client API. In order to access the SVCB via MMS you
  * have to use the IEC 61850 client API. Please see \ref ClientSVControlBlock object in section \ref IEC61850_CLIENT_SV.
@@ -97,7 +98,7 @@ typedef struct sSVSubscriber_ASDU* SVSubscriber_ASDU;
 /**
  * \brief opaque handle to a SV subscriber instance
  *
- * A subscriber is an instance associated with a single stream of measurement data.  It is identified
+ * A subscriber is an instance associated with a single stream of measurement data. It is identified
  * by the Ethernet destination address, the appID value (both are on SV message level) and the svID value
  * that is part of each ASDU (SVSubscriber_ASDU object).
  */
@@ -134,14 +135,23 @@ SVReceiver_create(void);
 /**
  * \brief Disable check for destination address of the received SV messages
  *
- * Per default both the appID and the destination address are checked to identify
- * relevant SV messages. Destination address check can be disabled for performance
- * reason when the appIDs are unique in the local system.
- *
  * \param self the receiver instance reference
  */
 void
 SVReceiver_disableDestAddrCheck(SVReceiver self);
+
+/**
+ * \brief Enable check for destination address of the received SV messages
+ *
+ * Per default only the appID is checked to identify relevant SV messages and the
+ * destination address is ignored for performance reasons. This only works when the
+ * appIDs are unique in the local system. Otherwise the destination address check
+ * has to be enabled.
+ *
+ * \param self the receiver instance reference
+ */
+void
+SVReceiver_enableDestAddrCheck(SVReceiver self);
 
 /**
  * \brief Set the Ethernet interface ID for the receiver instance
@@ -193,6 +203,18 @@ SVReceiver_start(SVReceiver self);
  */
 void
 SVReceiver_stop(SVReceiver self);
+
+/**
+ * \brief Check if SV receiver is running
+ *
+ * Can be used to check if \ref SVReceiver_start has been successful.
+ *
+ * \param self the receiver instance reference
+ *
+ * \return true if SV receiver is running, false otherwise
+ */
+bool
+SVReceiver_isRunning(SVReceiver self);
 
 /**
  * \brief Destroy receiver instance (cleanup resources)
@@ -470,6 +492,30 @@ double
 SVSubscriber_ASDU_getFLOAT64(SVSubscriber_ASDU self, int index);
 
 /**
+ * \brief Get a timestamp data value in the data part of the ASDU
+ *
+ * \param self ASDU object instance
+ * \param index the index (byte position of the start) of the data in the data part
+ *
+ * \return SV data
+ */
+Timestamp
+SVSubscriber_ASDU_getTimestamp(SVSubscriber_ASDU self, int index);
+
+/**
+ * \brief Get a quality value in the data part of the ASDU
+ *
+ * NOTE: Quality is encoded as BITSTRING (4 byte)
+ *
+ * \param self ASDU object instance
+ * \param index the index (byte position of the start) of the data in the data part
+ *
+ * \return SV data
+ */
+Quality
+SVSubscriber_ASDU_getQuality(SVSubscriber_ASDU self, int index);
+
+/**
  * \brief Returns the size of the data part of the ASDU
  *
  * \param self ASDU object instance
@@ -479,12 +525,75 @@ SVSubscriber_ASDU_getFLOAT64(SVSubscriber_ASDU self, int index);
 int
 SVSubscriber_ASDU_getDataSize(SVSubscriber_ASDU self);
 
+#ifndef DEPRECATED
+#if defined(__GNUC__) || defined(__clang__)
+  #define DEPRECATED __attribute__((deprecated))
+#else
+  #define DEPRECATED
+#endif
+#endif
+
+/**
+ * \addtogroup sv_subscriber_deprecated_api_group Deprecated API
+ * \ingroup sv_subscriber_api_group IEC 61850 Sampled Values (SV) publisher API
+ * \deprecated
+ * @{
+ */
+
+typedef struct sSVSubscriberASDU* SVClientASDU;
+
+DEPRECATED uint16_t
+SVClientASDU_getSmpCnt(SVSubscriber_ASDU self);
+
+DEPRECATED const char*
+SVClientASDU_getSvId(SVSubscriber_ASDU self);
+
+DEPRECATED uint32_t
+SVClientASDU_getConfRev(SVSubscriber_ASDU self);
+
+DEPRECATED bool
+SVClientASDU_hasRefrTm(SVSubscriber_ASDU self);
+
+DEPRECATED uint64_t
+SVClientASDU_getRefrTmAsMs(SVSubscriber_ASDU self);
+
+DEPRECATED int8_t
+SVClientASDU_getINT8(SVSubscriber_ASDU self, int index);
+
+DEPRECATED int16_t
+SVClientASDU_getINT16(SVSubscriber_ASDU self, int index);
+
+DEPRECATED int32_t
+SVClientASDU_getINT32(SVSubscriber_ASDU self, int index);
+
+DEPRECATED int64_t
+SVClientASDU_getINT64(SVSubscriber_ASDU self, int index);
+
+DEPRECATED uint8_t
+SVClientASDU_getINT8U(SVSubscriber_ASDU self, int index);
+
+DEPRECATED uint16_t
+SVClientASDU_getINT16U(SVSubscriber_ASDU self, int index);
+
+DEPRECATED uint32_t
+SVClientASDU_getINT32U(SVSubscriber_ASDU self, int index);
+
+DEPRECATED uint64_t
+SVClientASDU_getINT64U(SVSubscriber_ASDU self, int index);
+
+DEPRECATED float
+SVClientASDU_getFLOAT32(SVSubscriber_ASDU self, int index);
+
+DEPRECATED double
+SVClientASDU_getFLOAT64(SVSubscriber_ASDU self, int index);
+
+DEPRECATED int
+SVClientASDU_getDataSize(SVSubscriber_ASDU self);
+
 /**@} @}*/
 
 #ifdef __cplusplus
 }
 #endif
-
-#include "sv_subscriber_deprecated.h"
 
 #endif /* SAMPLED_VALUES_SV_SUBSCRIBER_ */

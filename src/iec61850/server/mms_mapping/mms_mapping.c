@@ -1,7 +1,7 @@
 /*
  *  mms_mapping.c
  *
- *  Copyright 2013-2017 Michael Zillgith
+ *  Copyright 2013-2018 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -24,7 +24,6 @@
 #include "libiec61850_platform_includes.h"
 #include "mms_mapping.h"
 #include "mms_mapping_internal.h"
-#include "array_list.h"
 #include "stack_config.h"
 
 #include "mms_goose.h"
@@ -267,6 +266,15 @@ createNamedVariableFromDataAttribute(DataAttribute* attribute)
         case IEC61850_PHYCOMADDR:
             MmsMapping_createPhyComAddrStructure(namedVariable);
             break;
+        case IEC61850_OPTFLDS:
+            namedVariable->typeSpec.bitString = 10;
+            namedVariable->type = MMS_BIT_STRING;
+            break;
+        case IEC61850_TRGOPS:
+            namedVariable->typeSpec.bitString = 6;
+            namedVariable->type = MMS_BIT_STRING;
+            break;
+
         default:
             if (DEBUG_IED_SERVER)
                 printf("MMS-MAPPING: type cannot be mapped %i\n", attribute->type);
@@ -592,6 +600,20 @@ MmsMapping_checkForSettingGroupReservationTimeouts(MmsMapping* self, uint64_t cu
 }
 
 void
+MmsMapping_initializeControlObjects(MmsMapping* self)
+{
+    LinkedList element = LinkedList_getNext(self->controlObjects);
+
+    while (element) {
+        ControlObject* controlObject = (ControlObject*) LinkedList_getData(element);
+
+        ControlObject_initialize(controlObject);
+
+        element = LinkedList_getNext(element);
+    }
+}
+
+void
 MmsMapping_configureSettingGroups(MmsMapping* self)
 {
 
@@ -814,6 +836,8 @@ countSVControlBlocksForLogicalNode(MmsMapping* self, LogicalNode* logicalNode, b
 
 #endif /* (CONFIG_IEC61850_SAMPLED_VALUES_SUPPORT == 1) */
 
+#if (CONFIG_IEC61850_SETTING_GROUPS == 1)
+
 static SettingGroupControlBlock*
 checkForSgcb(MmsMapping* self, LogicalNode* logicalNode)
 {
@@ -829,6 +853,9 @@ checkForSgcb(MmsMapping* self, LogicalNode* logicalNode)
     return NULL;
 }
 
+#endif /* (CONFIG_IEC61850_SETTING_GROUPS == 1) */
+
+
 static MmsVariableSpecification*
 createNamedVariableFromLogicalNode(MmsMapping* self, MmsDomain* domain,
         LogicalNode* logicalNode)
@@ -842,9 +869,8 @@ createNamedVariableFromLogicalNode(MmsMapping* self, MmsDomain* domain,
 
     int componentCount = determineLogicalNodeComponentCount(logicalNode);
 
-    SettingGroupControlBlock* sgControlBlock = NULL;
-
 #if (CONFIG_IEC61850_SETTING_GROUPS == 1)
+    SettingGroupControlBlock* sgControlBlock = NULL;
 
     sgControlBlock = checkForSgcb(self, logicalNode);
 
@@ -998,12 +1024,22 @@ createNamedVariableFromLogicalNode(MmsMapping* self, MmsDomain* domain,
 #endif /* (CONFIG_IEC61850_REPORT_SERVICE == 1) */
 
 #if (CONFIG_IEC61850_LOG_SERVICE == 1)
-    if (lcbCount > 0) {
-        namedVariable->typeSpec.structure.elements[currentComponent] =
-                Logging_createLCBs(self, domain, logicalNode, lcbCount);
 
-        currentComponent++;
+#if (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1)
+    if (self->iedServer->logServiceEnabled) {
+#endif
+
+        if (lcbCount > 0) {
+            namedVariable->typeSpec.structure.elements[currentComponent] =
+                    Logging_createLCBs(self, domain, logicalNode, lcbCount);
+
+            currentComponent++;
+        }
+
+#if (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1)
     }
+#endif
+
 #endif /* (CONFIG_IEC61850_LOG_SERVICE == 1) */
 
 
@@ -1106,33 +1142,42 @@ createMmsDomainFromIedDevice(MmsMapping* self, LogicalDevice* logicalDevice)
         goto exit_function;
 
 #if (CONFIG_IEC61850_LOG_SERVICE == 1)
-    /* add logs (journals) */
-    Log* log = self->model->logs;
 
-    while (log != NULL) {
+#if (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1)
+    if (self->iedServer->logServiceEnabled) {
+#endif
+        /* add logs (journals) */
+        Log* log = self->model->logs;
 
-        char journalName[65];
+        while (log != NULL) {
 
-        int nameLength = strlen(log->parent->name) + strlen(log->name);
+            char journalName[65];
 
-        if (nameLength > 63) {
-            if (DEBUG_IED_SERVER)
-                printf("IED_SERVER: Log name %s invalid! Resulting journal name too long! Skip log\n", log->name);
+            int nameLength = strlen(log->parent->name) + strlen(log->name);
+
+            if (nameLength > 63) {
+                if (DEBUG_IED_SERVER)
+                    printf("IED_SERVER: Log name %s invalid! Resulting journal name too long! Skip log\n", log->name);
+            }
+            else {
+                strcpy(journalName, log->parent->name);
+                strcat(journalName, "$");
+                strcat(journalName, log->name);
+
+                MmsDomain_addJournal(domain, journalName);
+
+                LogInstance* logInstance = LogInstance_create(log->parent, log->name);
+
+                LinkedList_add(self->logInstances, (void*) logInstance);
+            }
+
+            log = log->sibling;
         }
-        else {
-            strcpy(journalName, log->parent->name);
-            strcat(journalName, "$");
-            strcat(journalName, log->name);
 
-            MmsDomain_addJournal(domain, journalName);
-
-            LogInstance* logInstance = LogInstance_create(log->parent, log->name);
-
-            LinkedList_add(self->logInstances, (void*) logInstance);
-        }
-
-        log = log->sibling;
+#if (CONFIG_MMS_SERVER_CONFIG_SERVICES_AT_RUNTIME == 1)
     }
+#endif
+
 #endif /* (CONFIG_IEC61850_LOG_SERVICE == 1) */
 
     int nodesCount = LogicalDevice_getLogicalNodeCount(logicalDevice);
@@ -1259,11 +1304,12 @@ createMmsModelFromIedModel(MmsMapping* self, IedModel* iedModel)
 }
 
 MmsMapping*
-MmsMapping_create(IedModel* model)
+MmsMapping_create(IedModel* model, IedServer iedServer)
 {
     MmsMapping* self = (MmsMapping*) GLOBAL_CALLOC(1, sizeof(struct sMmsMapping));
 
     self->model = model;
+    self->iedServer = iedServer;
 
 #if (CONFIG_IEC61850_REPORT_SERVICE == 1)
     self->reportControls = LinkedList_create();
@@ -1294,6 +1340,7 @@ MmsMapping_create(IedModel* model)
 
     self->attributeAccessHandlers = LinkedList_create();
 
+    /* create data model specification */
     self->mmsDevice = createMmsModelFromIedModel(self, model);
 
     return self;
@@ -2047,8 +2094,12 @@ mmsWriteHandler(void* parameter, MmsDomain* domain,
                     MmsValue* matchingValue = checkIfValueBelongsToModelNode(dataAttribute, cachedValue, value);
 
                     if (matchingValue != NULL) {
+
+                        ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer,
+                                connection);
+
                         MmsDataAccessError handlerResult =
-                            accessHandler->handler(dataAttribute, matchingValue, (ClientConnection) connection,
+                            accessHandler->handler(dataAttribute, matchingValue, clientConnection,
                             		accessHandler->parameter);
 
                         if (handlerResult == DATA_ACCESS_ERROR_SUCCESS)
@@ -2060,8 +2111,12 @@ mmsWriteHandler(void* parameter, MmsDomain* domain,
                 }
                 else { /* if ACCESS_POLICY_DENY only allow direct access to handled data attribute */
                     if (dataAttribute->mmsValue == cachedValue) {
+
+                        ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer,
+                                connection);
+
                         MmsDataAccessError handlerResult =
-                            accessHandler->handler(dataAttribute, value, (ClientConnection) connection,
+                            accessHandler->handler(dataAttribute, value, clientConnection,
                             		accessHandler->parameter);
 
                         if (handlerResult == DATA_ACCESS_ERROR_SUCCESS) {
@@ -2132,6 +2187,15 @@ MmsMapping_installWriteAccessHandler(MmsMapping* self, DataAttribute* dataAttrib
     }
 
     accessHandler->handler = handler;
+}
+
+void
+MmsMapping_installReadAccessHandler(MmsMapping* self, ReadAccessHandler handler, void* parameter)
+{
+#if (CONFIG_IEC61850_SUPPORT_USER_READ_ACCESS_CONTROL == 1)
+    self->readAccessHandler = handler;
+    self->readAccessHandlerParameter = parameter;
+#endif
 }
 
 #if (CONFIG_INCLUDE_GOOSE_SUPPORT == 1)
@@ -2293,6 +2357,9 @@ mmsReadHandler(void* parameter, MmsDomain* domain, char* variableId, MmsServerCo
     }
 #endif /* (CONFIG_IEC61850_REPORT_SERVICE == 1) */
 
+    /* handle read access to other objects */
+
+
 exit_function:
     return retValue;
 }
@@ -2378,23 +2445,92 @@ mmsReadAccessHandler (void* parameter, MmsDomain* domain, char* variableId, MmsS
 
     char* separator = strchr(variableId, '$');
 
-    if (separator == NULL)
-        return DATA_ACCESS_ERROR_SUCCESS;
-
 #if (CONFIG_IEC61850_SETTING_GROUPS == 1)
 
-    if (isFunctionalConstraintSE(separator)) {
-        SettingGroup* sg = getSettingGroupByMmsDomain(self, domain);
+    if (separator) {
+        if (isFunctionalConstraintSE(separator)) {
+            SettingGroup* sg = getSettingGroupByMmsDomain(self, domain);
 
-        if (sg != NULL) {
-            if (sg->sgcb->editSG == 0)
-                return DATA_ACCESS_ERROR_TEMPORARILY_UNAVAILABLE;
+            if (sg != NULL) {
+                if (sg->sgcb->editSG == 0)
+                    return DATA_ACCESS_ERROR_TEMPORARILY_UNAVAILABLE;
+            }
+            else
+                return DATA_ACCESS_ERROR_OBJECT_NONE_EXISTENT;
         }
-        else
-            return DATA_ACCESS_ERROR_OBJECT_NONE_EXISTENT;
     }
 
 #endif /* (CONFIG_IEC61850_SETTING_GROUPS == 1) */
+
+#if (CONFIG_IEC61850_SUPPORT_USER_READ_ACCESS_CONTROL == 1)
+    if (self->readAccessHandler != NULL)
+    {
+        char* ldName = MmsDomain_getName(domain);
+
+        LogicalDevice* ld = IedModel_getDevice(self->model, ldName);
+
+        if (ld != NULL) {
+
+            char str[65];
+
+            FunctionalConstraint fc;
+
+            if (separator != NULL) {
+                fc = FunctionalConstraint_fromString(separator + 1);
+
+                if (fc == IEC61850_FC_BR || fc == IEC61850_FC_US ||
+                        fc == IEC61850_FC_MS || fc == IEC61850_FC_RP ||
+                        fc == IEC61850_FC_LG)
+                {
+                    return DATA_ACCESS_ERROR_SUCCESS;
+                }
+                else {
+
+                    StringUtils_createStringFromBufferInBuffer(str, (uint8_t*) variableId, separator - variableId);
+
+                    LogicalNode* ln = LogicalDevice_getLogicalNode(ld, str);
+
+                    if (ln != NULL) {
+
+
+                        char* doStart = strchr(separator + 1, '$');
+
+
+                        if (doStart != NULL) {
+
+                            char* doEnd = strchr(doStart + 1, '$');
+
+                            if (doEnd == NULL) {
+                                StringUtils_copyStringToBuffer(doStart + 1, str);
+                            }
+                            else {
+                                doEnd--;
+
+                                StringUtils_createStringFromBufferInBuffer(str, (uint8_t*) (doStart + 1), doEnd - doStart);
+                            }
+
+                            ModelNode* dobj = ModelNode_getChild((ModelNode*) ln, str);
+
+                            if (dobj != NULL) {
+
+                                if (dobj->modelType == DataObjectModelType) {
+
+                                    ClientConnection clientConnection = private_IedServer_getClientConnectionByHandle(self->iedServer,
+                                                                                                                      connection);
+
+                                    return self->readAccessHandler(ld, ln, (DataObject*) dobj, fc, clientConnection,
+                                            self->readAccessHandlerParameter);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return DATA_ACCESS_ERROR_OBJECT_ACCESS_UNSUPPORTED;
+    }
+#endif /* CONFIG_IEC61850_SUPPORT_USER_READ_ACCESS_CONTROL */
 
     return DATA_ACCESS_ERROR_SUCCESS;
 }
@@ -2548,12 +2684,6 @@ MmsMapping_installHandlers(MmsMapping* self)
     MmsServer_installReadAccessHandler(self->mmsServer, mmsReadAccessHandler, (void*) self);
     MmsServer_installConnectionHandler(self->mmsServer, mmsConnectionHandler, (void*) self);
     MmsServer_installVariableListChangedHandler(self->mmsServer, variableListChangedHandler, (void*) self);
-}
-
-void
-MmsMapping_setIedServer(MmsMapping* self, IedServer iedServer)
-{
-    self->iedServer = iedServer;
 }
 
 void
@@ -2714,7 +2844,7 @@ MmsMapping_triggerLogging(MmsMapping* self, MmsValue* value, LogInclusionFlag fl
 
 #if (CONFIG_IEC61850_REPORT_SERVICE == 1)
 void
-MmsMapping_triggerReportObservers(MmsMapping* self, MmsValue* value, ReportInclusionFlag flag)
+MmsMapping_triggerReportObservers(MmsMapping* self, MmsValue* value, int flag)
 {
     LinkedList element = self->reportControls;
 
@@ -2743,7 +2873,10 @@ MmsMapping_triggerReportObservers(MmsMapping* self, MmsValue* value, ReportInclu
             }
 
             if (DataSet_isMemberValue(rc->dataSet, value, &index)) {
-                ReportControl_valueUpdated(rc, index, flag);
+
+                bool modelLocked = self->isModelLocked;
+
+                ReportControl_valueUpdated(rc, index, flag, modelLocked);
             }
         }
     }

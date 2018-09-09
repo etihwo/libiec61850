@@ -119,6 +119,9 @@ namespace IEC61850
 			private static extern int ControlObjectClient_getControlModel(IntPtr self);
 
 			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+			private static extern int ControlObjectClient_getCtlValType(IntPtr self);
+
+			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             [return: MarshalAs(UnmanagedType.I1)]
 			private static extern bool ControlObjectClient_operate(IntPtr self, IntPtr ctlVal, UInt64 operTime);
 
@@ -138,13 +141,13 @@ namespace IEC61850
             private static extern void ControlObjectClient_setOrigin(IntPtr self, string orIdent, int orCat);
 
 			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			private static extern void ControlObjectClient_setInterlockCheck(IntPtr self, bool value);
+			private static extern void ControlObjectClient_setInterlockCheck(IntPtr self, [MarshalAs(UnmanagedType.I1)] bool value);
 
 			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			private static extern void ControlObjectClient_setSynchroCheck(IntPtr self, bool value);
+			private static extern void ControlObjectClient_setSynchroCheck(IntPtr self, [MarshalAs(UnmanagedType.I1)] bool value);
 
 			[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-			private static extern void ControlObjectClient_setTestMode(IntPtr self, bool value);
+			private static extern void ControlObjectClient_setTestMode(IntPtr self, [MarshalAs(UnmanagedType.I1)] bool value);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 			private delegate void InternalCommandTerminationHandler(IntPtr parameter,IntPtr controlClient);
@@ -194,6 +197,17 @@ namespace IEC61850
 				ControlModel controlModel = (ControlModel) ControlObjectClient_getControlModel(controlObject);
 
 				return controlModel;
+			}
+
+			/// <summary>
+			/// Get the type of ctlVal.
+			/// </summary>
+			/// <returns>MmsType required for the ctlVal value.</returns>
+			public MmsType GetCtlValType ()
+			{
+				MmsType ctlValType = (MmsType) ControlObjectClient_getCtlValType (controlObject);
+
+				return ctlValType;
 			}
 
             /// <summary>

@@ -5,6 +5,8 @@
 #ifndef LIBIEC61850_PLATFORM_INCLUDES_H_
 #define LIBIEC61850_PLATFORM_INCLUDES_H_
 
+#include "stack_config.h"
+
 #include "libiec61850_common_api.h"
 
 #include "string_utilities.h"
@@ -15,7 +17,7 @@
 
 #include "platform_endian.h"
 
-#define LIBIEC61850_VERSION "1.2.0"
+#define LIBIEC61850_VERSION "1.3.0"
 
 #ifndef CONFIG_DEFAULT_MMS_VENDOR_NAME
 #define CONFIG_DEFAULT_MMS_VENDOR_NAME "libiec61850.com"

@@ -1,7 +1,7 @@
 /*
  *  sv_receiver.c
  *
- *  Copyright 2015 Michael Zillgith
+ *  Copyright 2015-2018 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -119,6 +119,12 @@ SVReceiver_disableDestAddrCheck(SVReceiver self)
 }
 
 void
+SVReceiver_enableDestAddrCheck(SVReceiver self)
+{
+    self->checkDestAddr = false;
+}
+
+void
 SVReceiver_addSubscriber(SVReceiver self, SVSubscriber subscriber)
 {
 #if (CONFIG_MMS_THREADLESS_STACK == 0)
@@ -184,6 +190,13 @@ SVReceiver_start(SVReceiver self)
             printf("SV_SUBSCRIBER: Starting SV receiver failed for interface %s\n", self->interfaceId);
     }
 }
+
+bool
+SVReceiver_isRunning(SVReceiver self)
+{
+    return self->running;
+}
+
 
 void
 SVReceiver_stop(SVReceiver self)
@@ -324,8 +337,10 @@ parseASDU(SVReceiver self, SVSubscriber subscriber, uint8_t* buffer, int length)
     }
 
     /* Call callback handler */
-    if (subscriber->listener != NULL)
-        subscriber->listener(subscriber, subscriber->listenerParameter, &asdu);
+    if (subscriber) {
+        if (subscriber->listener != NULL)
+            subscriber->listener(subscriber, subscriber->listenerParameter, &asdu);
+    }
 }
 
 static void
@@ -661,15 +676,24 @@ SVSubscriber_ASDU_getDatSet(SVSubscriber_ASDU self)
     return self->datSet;
 }
 
+static inline void
+memcpy_reverse(void* to, const void* from, size_t size)
+{
+    size_t i;
+
+    for (i = 0; i < size; i++)
+        ((uint8_t*)to)[size - 1 - i] = ((uint8_t*)from)[i];
+}
+
 uint32_t
 SVSubscriber_ASDU_getConfRev(SVSubscriber_ASDU self)
 {
-    uint32_t retVal = *((uint32_t*) (self->confRev));
+    uint32_t retVal;
 
 #if (ORDER_LITTLE_ENDIAN == 1)
-    uint8_t* buf = (uint8_t*) (&retVal);
-
-    BerEncoder_revertByteOrder(buf, 4);
+    memcpy_reverse(&retVal, self->confRev, sizeof(uint32_t));
+#else
+    memcpy(&retVal, self->confRev, sizeof(uint32_t));
 #endif
 
     return retVal;
@@ -686,12 +710,12 @@ SVSubscriber_ASDU_getSmpMod(SVSubscriber_ASDU self)
 uint16_t
 SVSubscriber_ASDU_getSmpRate(SVSubscriber_ASDU self)
 {
-    uint16_t retVal = *((uint16_t*) (self->smpRate));
+    uint16_t retVal;
 
 #if (ORDER_LITTLE_ENDIAN == 1)
-    uint8_t* buf = (uint8_t*) (&retVal);
-
-    BerEncoder_revertByteOrder(buf, 2);
+    memcpy_reverse(&retVal, self->smpRate, sizeof(uint16_t));
+#else
+    memcpy(&retVal, self->smpRate, sizeof(uint16_t));
 #endif
 
     return retVal;
@@ -708,12 +732,12 @@ SVSubscriber_ASDU_getINT8(SVSubscriber_ASDU self, int index)
 int16_t
 SVSubscriber_ASDU_getINT16(SVSubscriber_ASDU self, int index)
 {
-    int16_t retVal = *((int16_t*) (self->dataBuffer + index));
+    int16_t retVal;
 
 #if (ORDER_LITTLE_ENDIAN == 1)
-    uint8_t* buf = (uint8_t*) (&retVal);
-
-    BerEncoder_revertByteOrder(buf, 2);
+    memcpy_reverse(&retVal, (self->dataBuffer + index), sizeof(uint16_t));
+#else
+    memcpy(&retVal, (self->dataBuffer + index), sizeof(uint16_t));
 #endif
 
     return retVal;
@@ -722,12 +746,12 @@ SVSubscriber_ASDU_getINT16(SVSubscriber_ASDU self, int index)
 int32_t
 SVSubscriber_ASDU_getINT32(SVSubscriber_ASDU self, int index)
 {
-    int32_t retVal = *((int32_t*) (self->dataBuffer + index));
+    int32_t retVal;
 
 #if (ORDER_LITTLE_ENDIAN == 1)
-    uint8_t* buf = (uint8_t*) (&retVal);
-
-    BerEncoder_revertByteOrder(buf, 4);
+    memcpy_reverse(&retVal, (self->dataBuffer + index), sizeof(int32_t));
+#else
+    memcpy(&retVal, (self->dataBuffer + index), sizeof(int32_t));
 #endif
 
     return retVal;
@@ -736,12 +760,12 @@ SVSubscriber_ASDU_getINT32(SVSubscriber_ASDU self, int index)
 int64_t
 SVSubscriber_ASDU_getINT64(SVSubscriber_ASDU self, int index)
 {
-    int64_t retVal = *((int64_t*) (self->dataBuffer + index));
+    int64_t retVal;
 
 #if (ORDER_LITTLE_ENDIAN == 1)
-    uint8_t* buf = (uint8_t*) (&retVal);
-
-    BerEncoder_revertByteOrder(buf, 8);
+    memcpy_reverse(&retVal, (self->dataBuffer + index), sizeof(int64_t));
+#else
+    memcpy(&retVal, (self->dataBuffer + index), sizeof(int64_t));
 #endif
 
     return retVal;
@@ -758,12 +782,12 @@ SVSubscriber_ASDU_getINT8U(SVSubscriber_ASDU self, int index)
 uint16_t
 SVSubscriber_ASDU_getINT16U(SVSubscriber_ASDU self, int index)
 {
-    uint16_t retVal = *((uint16_t*) (self->dataBuffer + index));
+    uint16_t retVal;
 
 #if (ORDER_LITTLE_ENDIAN == 1)
-    uint8_t* buf = (uint8_t*) (&retVal);
-
-    BerEncoder_revertByteOrder(buf, 2);
+    memcpy_reverse(&retVal, (self->dataBuffer + index), sizeof(uint16_t));
+#else
+    memcpy(&retVal, (self->dataBuffer + index), sizeof(uint16_t));
 #endif
 
     return retVal;
@@ -772,12 +796,12 @@ SVSubscriber_ASDU_getINT16U(SVSubscriber_ASDU self, int index)
 uint32_t
 SVSubscriber_ASDU_getINT32U(SVSubscriber_ASDU self, int index)
 {
-    uint32_t retVal = *((uint32_t*) (self->dataBuffer + index));
+    uint32_t retVal;
 
 #if (ORDER_LITTLE_ENDIAN == 1)
-    uint8_t* buf = (uint8_t*) (&retVal);
-
-    BerEncoder_revertByteOrder(buf, 4);
+    memcpy_reverse(&retVal, (self->dataBuffer + index), sizeof(uint32_t));
+#else
+    memcpy(&retVal, (self->dataBuffer + index), sizeof(uint32_t));
 #endif
 
     return retVal;
@@ -786,12 +810,12 @@ SVSubscriber_ASDU_getINT32U(SVSubscriber_ASDU self, int index)
 uint64_t
 SVSubscriber_ASDU_getINT64U(SVSubscriber_ASDU self, int index)
 {
-    uint64_t retVal = *((uint64_t*) (self->dataBuffer + index));
+    uint64_t retVal;
 
 #if (ORDER_LITTLE_ENDIAN == 1)
-    uint8_t* buf = (uint8_t*) (&retVal);
-
-    BerEncoder_revertByteOrder(buf, 8);
+    memcpy_reverse(&retVal, (self->dataBuffer + index), sizeof(uint64_t));
+#else
+    memcpy(&retVal, (self->dataBuffer + index), sizeof(uint64_t));
 #endif
 
     return retVal;
@@ -800,12 +824,12 @@ SVSubscriber_ASDU_getINT64U(SVSubscriber_ASDU self, int index)
 float
 SVSubscriber_ASDU_getFLOAT32(SVSubscriber_ASDU self, int index)
 {
-    float retVal = *((float*) (self->dataBuffer + index));
+    float retVal;
 
 #if (ORDER_LITTLE_ENDIAN == 1)
-    uint8_t* buf = (uint8_t*) (&retVal);
-
-    BerEncoder_revertByteOrder(buf, 4);
+    memcpy_reverse(&retVal, (self->dataBuffer + index), sizeof(float));
+#else
+    memcpy(&retVal, (self->dataBuffer + index), sizeof(float));
 #endif
 
     return retVal;
@@ -814,21 +838,139 @@ SVSubscriber_ASDU_getFLOAT32(SVSubscriber_ASDU self, int index)
 double
 SVSubscriber_ASDU_getFLOAT64(SVSubscriber_ASDU self, int index)
 {
-    double retVal = *((double*) (self->dataBuffer + index));
+    double retVal;
 
 #if (ORDER_LITTLE_ENDIAN == 1)
-    uint8_t* buf = (uint8_t*) (&retVal);
-
-    BerEncoder_revertByteOrder(buf, 8);
+    memcpy_reverse(&retVal, (self->dataBuffer + index), sizeof(double));
+#else
+    memcpy(&retVal, (self->dataBuffer + index), sizeof(double));
 #endif
 
     return retVal;
 }
 
+Timestamp
+SVSubscriber_ASDU_getTimestamp(SVSubscriber_ASDU self, int index)
+{
+    Timestamp retVal;
+
+    memcpy(retVal.val, self->dataBuffer + index, sizeof(retVal.val));
+
+    return retVal;
+}
+
+Quality
+SVSubscriber_ASDU_getQuality(SVSubscriber_ASDU self, int index)
+{
+    Quality retVal;
+
+    uint8_t* buffer = self->dataBuffer + index;
+
+    retVal = buffer[3];
+    retVal += (buffer[2] * 0x100);
+
+    return retVal;
+}
 
 int
 SVSubscriber_ASDU_getDataSize(SVSubscriber_ASDU self)
 {
     return self->dataBufferLength;
+}
+
+uint16_t
+SVClientASDU_getSmpCnt(SVSubscriber_ASDU self)
+{
+    return SVSubscriber_ASDU_getSmpCnt(self);
+}
+
+const char*
+SVClientASDU_getSvId(SVSubscriber_ASDU self)
+{
+    return SVSubscriber_ASDU_getSvId(self);
+}
+
+uint32_t
+SVClientASDU_getConfRev(SVSubscriber_ASDU self)
+{
+    return SVSubscriber_ASDU_getConfRev(self);
+}
+
+bool
+SVClientASDU_hasRefrTm(SVSubscriber_ASDU self)
+{
+    return SVSubscriber_ASDU_hasRefrTm(self);
+}
+
+uint64_t
+SVClientASDU_getRefrTmAsMs(SVSubscriber_ASDU self)
+{
+    return SVSubscriber_ASDU_getRefrTmAsMs(self);
+}
+
+int8_t
+SVClientASDU_getINT8(SVSubscriber_ASDU self, int index)
+{
+    return SVSubscriber_ASDU_getINT8(self, index);
+}
+
+int16_t
+SVClientASDU_getINT16(SVSubscriber_ASDU self, int index)
+{
+    return SVSubscriber_ASDU_getINT16(self, index);
+}
+
+int32_t
+SVClientASDU_getINT32(SVSubscriber_ASDU self, int index)
+{
+    return SVSubscriber_ASDU_getINT32(self, index);
+}
+
+int64_t
+SVClientASDU_getINT64(SVSubscriber_ASDU self, int index)
+{
+    return SVSubscriber_ASDU_getINT64(self, index);
+}
+
+uint8_t
+SVClientASDU_getINT8U(SVSubscriber_ASDU self, int index)
+{
+    return SVSubscriber_ASDU_getINT8U(self, index);
+}
+
+uint16_t
+SVClientASDU_getINT16U(SVSubscriber_ASDU self, int index)
+{
+    return SVSubscriber_ASDU_getINT16U(self, index);
+}
+
+uint32_t
+SVClientASDU_getINT32U(SVSubscriber_ASDU self, int index)
+{
+    return SVSubscriber_ASDU_getINT32U(self, index);
+}
+
+uint64_t
+SVClientASDU_getINT64U(SVSubscriber_ASDU self, int index)
+{
+    return SVSubscriber_ASDU_getINT64U(self, index);
+}
+
+float
+SVClientASDU_getFLOAT32(SVSubscriber_ASDU self, int index)
+{
+    return SVSubscriber_ASDU_getFLOAT32(self, index);
+}
+
+double
+SVClientASDU_getFLOAT64(SVSubscriber_ASDU self, int index)
+{
+    return SVSubscriber_ASDU_getFLOAT64(self, index);
+}
+
+int
+SVClientASDU_getDataSize(SVSubscriber_ASDU self)
+{
+    return SVSubscriber_ASDU_getDataSize(self);
 }
 

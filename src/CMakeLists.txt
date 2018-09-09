@@ -1,11 +1,9 @@
 
 set (lib_common_SRCS
 ./common/string_map.c
-./common/array_list.c
 ./common/map.c
 ./common/linked_list.c
 ./common/byte_buffer.c
-./common/lib_memory.c
 ./common/string_utilities.c
 ./common/buffer_chain.c
 ./common/conversions.c
@@ -66,6 +64,7 @@ set (lib_common_SRCS
 ./iec61850/client/ied_connection.c
 ./iec61850/common/iec61850_common.c
 ./iec61850/server/impl/ied_server.c
+./iec61850/server/impl/ied_server_config.c
 ./iec61850/server/impl/client_connection.c
 ./iec61850/server/model/model.c
 ./iec61850/server/model/dynamic_model.c
@@ -79,15 +78,6 @@ set (lib_common_SRCS
 ./iec61850/server/mms_mapping/logging.c
 ./logging/log_storage.c
 )
-
-if(WITH_MBEDTLS)
-set (lib_common_SRCS ${lib_common_SRCS}
-./tls/mbedtls/tls_mbedtls.c
-)
-
-list (APPEND lib_common_SRCS ${tls_SRCS})
-
-endif(WITH_MBEDTLS)
 
 set (lib_asn1c_SRCS
 ./mms/iso_mms/asn1c/DataAccessError.c
@@ -194,27 +184,12 @@ set (lib_sv_SRCS
 )
 
 set (lib_linux_SRCS
-./hal/socket/linux/socket_linux.c
-./hal/ethernet/linux/ethernet_linux.c
-./hal/thread/linux/thread_linux.c
-./hal/filesystem/linux/file_provider_linux.c
-./hal/time/unix/time.c
 )
 
 set (lib_windows_SRCS
-./hal/socket/win32/socket_win32.c
-./hal/ethernet/win32/ethernet_win32.c
-./hal/thread/win32/thread_win32.c
-./hal/filesystem/win32/file_provider_win32.c
-./hal/time/win32/time.c
 )
 
 set (lib_bsd_SRCS
-./hal/socket/bsd/socket_bsd.c
-./hal/ethernet/bsd/ethernet_bsd.c
-./hal/thread/bsd/thread_bsd.c
-./hal/filesystem/linux/file_provider_linux.c
-./hal/time/unix/time.c
 )
 
 IF(WIN32)
@@ -323,6 +298,9 @@ set_target_properties(iec61850-shared PROPERTIES
            SOVERSION "${LIB_VERSION_MAJOR}.${LIB_VERSION_MINOR}.${LIB_VERSION_PATCH}"
 )
 
+target_link_libraries(iec61850-shared
+	hal-shared
+)
 
 GENERATE_EXPORT_HEADER(iec61850-shared
 			BASE_NAME iec61850-shared
@@ -332,6 +310,10 @@ GENERATE_EXPORT_HEADER(iec61850-shared
 )
 
 add_library (iec61850 STATIC ${library_SRCS})
+
+target_link_libraries(iec61850
+	hal
+)
 
 IF(UNIX)
   IF (CONFIG_SYSTEM_HAS_CLOCK_GETTIME)
@@ -376,7 +358,14 @@ if(MSVC)
 endif()
 ENDIF(WITH_WPCAP)
 
+set(BINDIR "bin")
+set(LIBDIR "lib")
 if(UNIX)
+    # GNUInstallDirs is required for Debian multiarch
+    include(GNUInstallDirs)
+    set(LIBDIR ${CMAKE_INSTALL_LIBDIR})
+    set(BINDIR ${CMAKE_INSTALL_BINDIR})
+
     configure_file(
         ${CMAKE_CURRENT_LIST_DIR}/libiec61850.pc.in
         ${CMAKE_CURRENT_BINARY_DIR}/libiec61850.pc @ONLY
@@ -391,7 +380,7 @@ if(DOXYGEN_FOUND)
 endif(DOXYGEN_FOUND)
 
 install (TARGETS iec61850 iec61850-shared
-	RUNTIME DESTINATION bin COMPONENT Applications
-	ARCHIVE DESTINATION lib COMPONENT Libraries
-    LIBRARY DESTINATION lib COMPONENT Libraries
+	RUNTIME DESTINATION ${BINDIR} COMPONENT Applications
+	ARCHIVE DESTINATION ${LIBDIR} COMPONENT Libraries
+    LIBRARY DESTINATION ${LIBDIR} COMPONENT Libraries
 )

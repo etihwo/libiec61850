@@ -55,6 +55,7 @@ struct sSVPublisher_ASDU {
 
     uint8_t smpSynch;
     uint16_t smpCnt;
+    uint16_t smpCntLimit;
     uint32_t confRev;
 
     uint64_t refrTm;
@@ -65,8 +66,6 @@ struct sSVPublisher_ASDU {
 
     SVPublisher_ASDU _next;
 };
-
-
 
 struct sSVPublisher {
     uint8_t* buffer;
@@ -79,9 +78,7 @@ struct sSVPublisher {
     int payloadLength; /* length of payload buffer */
 
     int asduCount; /* number of ASDUs in the APDU */
-    SVPublisher_ASDU asduLIst;
-
-
+    SVPublisher_ASDU asduList;
 };
 
 
@@ -288,7 +285,7 @@ SVPublisher_create(CommParameters* parameters, const char* interfaceId)
 {
     SVPublisher self = (SVPublisher) GLOBAL_CALLOC(1, sizeof(struct sSVPublisher));
 
-    self->asduLIst = NULL;
+    self->asduList = NULL;
 
     preparePacketBuffer(self, parameters, interfaceId);
 
@@ -303,14 +300,15 @@ SVPublisher_addASDU(SVPublisher self, const char* svID, const char* datset, uint
     newAsdu->svID = svID;
     newAsdu->datset = datset;
     newAsdu->confRev = confRev;
+    newAsdu->smpCntLimit = UINT16_MAX;
 
     newAsdu->_next = NULL;
 
     /* append new ASDU to list */
-    if (self->asduLIst == NULL)
-        self->asduLIst = newAsdu;
+    if (self->asduList == NULL)
+        self->asduList = newAsdu;
     else {
-        SVPublisher_ASDU lastAsdu = self->asduLIst;
+        SVPublisher_ASDU lastAsdu = self->asduList;
 
         while (lastAsdu->_next != NULL)
             lastAsdu = lastAsdu->_next;
@@ -376,8 +374,6 @@ SVPublisher_ASDU_encodeToBuffer(SVPublisher_ASDU self, uint8_t* buffer, int bufP
     if (self->datset != NULL)
         bufPos = BerEncoder_encodeStringWithTag(0x81, self->datset, buffer, bufPos);
 
-    //uint8_t octetString[4];
-
     /* SmpCnt */
     bufPos = BerEncoder_encodeTL(0x82, 2, buffer, bufPos);
     self->smpCntBuf = buffer + bufPos;
@@ -408,7 +404,7 @@ SVPublisher_ASDU_encodeToBuffer(SVPublisher_ASDU self, uint8_t* buffer, int bufP
 
     self->_dataBuffer = buffer + bufPos;
 
-    bufPos += self->dataSize; /* data has to inserted by user before sending message */
+    bufPos += self->dataSize; /* data has to be inserted by user before sending message */
     
     /* SmpMod */
     if (self->hasSmpMod) {
@@ -425,7 +421,7 @@ SVPublisher_setupComplete(SVPublisher self)
     int numberOfAsdu = 0;
 
     /* determine number of ASDUs and length of all ASDUs */
-    SVPublisher_ASDU nextAsdu = self->asduLIst;
+    SVPublisher_ASDU nextAsdu = self->asduList;
     int totalASDULength = 0;
 
     while (nextAsdu != NULL) {
@@ -456,7 +452,7 @@ SVPublisher_setupComplete(SVPublisher self)
     /* seqASDU */
     bufPos = BerEncoder_encodeTL(0xa2, totalASDULength, buffer, bufPos);
 
-    nextAsdu = self->asduLIst;
+    nextAsdu = self->asduList;
 
     while (nextAsdu != NULL) {
         bufPos = SVPublisher_ASDU_encodeToBuffer(nextAsdu, buffer, bufPos);
@@ -486,7 +482,6 @@ SVPublisher_publish(SVPublisher self)
         printf("SV_PUBLISHER: send SV message\n");
 
     Ethernet_sendPacket(self->ethernetSocket, self->buffer, self->payloadStart + self->payloadLength);
-
 }
 
 
@@ -607,6 +602,44 @@ SVPublisher_ASDU_setFLOAT64(SVPublisher_ASDU self, int index, double value)
     }
 }
 
+int
+SVPublisher_ASDU_addTimestamp(SVPublisher_ASDU self)
+{
+    int index = self->dataSize;
+    self->dataSize += 8;
+    return index;
+}
+
+void
+SVPublisher_ASDU_setTimestamp(SVPublisher_ASDU self, int index, Timestamp value)
+{
+    int i;
+
+    uint8_t* buffer = self->_dataBuffer + index;
+
+    for (i = 0; i < 8; i++) {
+        buffer[i] = value.val[i];
+    }
+}
+
+int
+SVPublisher_ASDU_addQuality(SVPublisher_ASDU self)
+{
+    int index = self->dataSize;
+    self->dataSize += 4;
+    return index;
+}
+
+void
+SVPublisher_ASDU_setQuality(SVPublisher_ASDU self, int index, Quality value)
+{
+    uint8_t* buffer = self->_dataBuffer + index;
+    buffer[0] = 0;
+    buffer[1] = 0;
+    buffer[2] = value / 0x100;
+    buffer[3] = value % 0x100;
+}
+
 uint16_t
 SVPublisher_ASDU_getSmpCnt(SVPublisher_ASDU self)
 {
@@ -622,9 +655,15 @@ SVPublisher_ASDU_setSmpCnt(SVPublisher_ASDU self, uint16_t value)
 }
 
 void
+SVPublisher_ASDU_setSmpCntWrap(SVPublisher_ASDU self, uint16_t value)
+{
+    self->smpCntLimit = value;
+}
+
+void
 SVPublisher_ASDU_increaseSmpCnt(SVPublisher_ASDU self)
 {
-    self->smpCnt++;
+    self->smpCnt = ((self->smpCnt + 1) % self->smpCntLimit);
 
     encodeUInt16FixedSize(self->smpCnt, self->smpCntBuf, 0);
 }
@@ -648,4 +687,141 @@ SVPublisher_ASDU_setSmpRate(SVPublisher_ASDU self, uint16_t smpRate)
 {
     self->hasSmpRate = true;
     self->smpRate = smpRate;
+}
+
+
+/*******************************************************************
+ * Wrapper functions to support old API (remove in future versions)
+ *******************************************************************/
+
+SVPublisher
+SampledValuesPublisher_create(CommParameters* parameters, const char* interfaceId)
+{
+    return SVPublisher_create(parameters, interfaceId);
+}
+
+SVPublisher_ASDU
+SampledValuesPublisher_addASDU(SVPublisher self, char* svID, char* datset, uint32_t confRev)
+{
+    return SVPublisher_addASDU(self, svID, datset, confRev);
+}
+
+void
+SampledValuesPublisher_setupComplete(SVPublisher self)
+{
+    SVPublisher_setupComplete(self);
+}
+
+void
+SampledValuesPublisher_publish(SVPublisher self)
+{
+    SVPublisher_publish(self);
+}
+
+void
+SampledValuesPublisher_destroy(SVPublisher self)
+{
+    SVPublisher_destroy(self);
+}
+
+void
+SV_ASDU_resetBuffer(SVPublisher_ASDU self)
+{
+    SVPublisher_ASDU_resetBuffer(self);
+}
+
+int
+SV_ASDU_addINT8(SVPublisher_ASDU self)
+{
+    return SVPublisher_ASDU_addINT8(self);
+}
+
+void
+SV_ASDU_setINT8(SVPublisher_ASDU self, int index, int8_t value)
+{
+    SVPublisher_ASDU_setINT8(self, index, value);
+}
+
+int
+SV_ASDU_addINT32(SVPublisher_ASDU self)
+{
+    return SVPublisher_ASDU_addINT32(self);
+}
+
+void
+SV_ASDU_setINT32(SVPublisher_ASDU self, int index, int32_t value)
+{
+    SVPublisher_ASDU_setINT32(self, index, value);
+}
+
+int
+SV_ASDU_addINT64(SVPublisher_ASDU self)
+{
+    return SVPublisher_ASDU_addINT64(self);
+}
+
+void
+SV_ASDU_setINT64(SVPublisher_ASDU self, int index, int64_t value)
+{
+    SVPublisher_ASDU_setINT64(self, index, value);
+}
+
+int
+SV_ASDU_addFLOAT(SVPublisher_ASDU self)
+{
+    return SVPublisher_ASDU_addFLOAT(self);
+}
+
+void
+SV_ASDU_setFLOAT(SVPublisher_ASDU self, int index, float value)
+{
+    SVPublisher_ASDU_setFLOAT(self, index, value);
+}
+
+int
+SV_ASDU_addFLOAT64(SVPublisher_ASDU self)
+{
+    return SVPublisher_ASDU_addFLOAT64(self);
+}
+
+void
+SV_ASDU_setFLOAT64(SVPublisher_ASDU self, int index, double value)
+{
+    SVPublisher_ASDU_setFLOAT64(self, index, value);
+}
+
+void
+SV_ASDU_setSmpCnt(SVPublisher_ASDU self, uint16_t value)
+{
+    SVPublisher_ASDU_setSmpCnt(self, value);
+}
+
+uint16_t
+SV_ASDU_getSmpCnt(SVPublisher_ASDU self)
+{
+    return SVPublisher_ASDU_getSmpCnt(self);
+}
+
+void
+SV_ASDU_increaseSmpCnt(SVPublisher_ASDU self)
+{
+    SVPublisher_ASDU_increaseSmpCnt(self);
+}
+
+void
+SV_ASDU_setRefrTm(SVPublisher_ASDU self, uint64_t refrTm)
+{
+    SVPublisher_ASDU_setRefrTm(self, refrTm);
+}
+
+void
+SV_ASDU_setSmpMod(SVPublisher_ASDU self, uint8_t smpMod)
+{
+    SVPublisher_ASDU_setSmpMod(self, smpMod);
+}
+
+void
+SV_ASDU_setSmpRate(SVPublisher_ASDU self, uint16_t smpRate)
+{
+    SVPublisher_ASDU_setSmpRate(self, smpRate);
 }

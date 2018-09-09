@@ -30,14 +30,13 @@ extern "C" {
 
 #include <stdbool.h>
 
-typedef struct sEthernetSocket* EthernetSocket;
+#include "hal_ethernet.h"
+#include "goose_subscriber.h"
 
 /**
  * \addtogroup goose_api_group
  */
 /**@{*/
-
-typedef struct sGooseSubscriber* GooseSubscriber;
 
 typedef struct sGooseReceiver* GooseReceiver;
 
@@ -103,6 +102,15 @@ GooseReceiver_start(GooseReceiver self);
 void
 GooseReceiver_stop(GooseReceiver self);
 
+/**
+ * \brief Check if GOOSE receiver is running
+ *
+ * Can be used to check if \ref GooseReceiver_start has been successful.
+ *
+ * \param self the GooseReceiver instance
+ *
+ * \return true if GOOSE receiver is running, false otherwise
+ */
 bool
 GooseReceiver_isRunning(GooseReceiver self);
 
