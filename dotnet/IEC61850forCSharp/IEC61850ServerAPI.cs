@@ -1023,5 +1023,21 @@ namespace IEC61850
 			}
 		}
 
-	}
+
+        public class GSEControlBlock
+        {
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern IntPtr GSEControlBlock_create(string name, IntPtr parent, string appId, string dataSetName, uint confRef, bool fixedOffs,
+        int minTime, int maxTime);
+
+            public IntPtr self = IntPtr.Zero;
+
+            public GSEControlBlock(string name, LogicalNode parent, string appId,
+                string dataSetName, uint confRef, bool fixedOffs, int minTime, int maxTime)
+            {
+
+                self = GSEControlBlock_create(name, parent.self, appId, dataSetName, confRef, fixedOffs, minTime, maxTime);
+            }
+        }
+    }
 }
