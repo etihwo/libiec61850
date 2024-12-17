@@ -914,6 +914,14 @@ writeVariableHandler(uint32_t invokeId, void* parameter, MmsError mmsError, MmsD
 
         struct sWriteGoCBVariablesParameter* param = (struct sWriteGoCBVariablesParameter*) call->specificParameter2.pointer;
 
+        if (param == NULL)
+        {
+            if (DEBUG_IED_CLIENT)
+                printf("IED_CLIENT: internal error - no parameter for GoCB call!\n");
+
+            return;
+        }
+
         if ((mmsError != MMS_ERROR_NONE) || (accessError != DATA_ACCESS_ERROR_SUCCESS))
         {
             IedClientError err;
@@ -926,6 +934,8 @@ writeVariableHandler(uint32_t invokeId, void* parameter, MmsError mmsError, MmsD
             handler(param->originalInvokeId, call->callbackParameter, err);
 
             releaseWriteCall(self, call, param);
+
+            return;
         }
 
         param->currentItemId = LinkedList_getNext(param->currentItemId);
