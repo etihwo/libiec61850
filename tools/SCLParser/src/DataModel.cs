@@ -225,8 +225,6 @@ namespace IEC61850
                     if (IedName != null)
                         name += IedName;
 
-                    //name += lnClass;
-
                     if (inst != null)
                         name += inst;
 
@@ -240,7 +238,6 @@ namespace IEC61850
 
                 }
 
-
                 public string Inst
                 {
                     get
@@ -251,16 +248,8 @@ namespace IEC61850
                     {
                         inst = value;
                         UpdateName();
-
-
-
                     }
-
-
-
                 }
-
-
 
                 public List<LogicalNode> LogicalNodes
                 {
@@ -288,13 +277,9 @@ namespace IEC61850
                     SclDocument = sclDocument;
                     this.name = name;
                     this.inst = inst;
-                    //
                     objRef = this.name;
-                    //
                     this.sclLDevice = sclLDevice;
-
                 }
-
             }
 
             public class LogicalNode : IEDModelNode
@@ -303,7 +288,6 @@ namespace IEC61850
                 private string lnClass;
                 private string inst;
                 private Namespace nameSpace = null;
-
 
                 private SclLN sclElement = null;
 
@@ -316,7 +300,6 @@ namespace IEC61850
                 private List<DataObject> dataObjects = new List<DataObject>();
                 private Inputs inputs = null;
                 private SclSettingControl settingControl = null;
-
 
                 public SclLN SclElement { get => sclElement; set => sclElement = value; }
 
@@ -538,7 +521,6 @@ namespace IEC61850
                                 {
                                     settingControl = sclElement.SettingControl;
                                     settingControl.Parent = this;
-
                                 }
                             }
                         }
@@ -588,13 +570,9 @@ namespace IEC61850
 
             public class DataObjectOrAttribute : IEDModelNode
             {
-
-
                 public DataObjectOrAttribute(string name, IEDModelNode parent) : base(name, parent)
                 {
                 }
-
-
             }
 
             public class DataObject : DataObjectOrAttribute
@@ -869,11 +847,6 @@ namespace IEC61850
 
                 public SclLogControl SclLogControl { get => sclLogControl; set => sclLogControl = value; }
             }
-
-
         }
-
     }
-
 }
-

@@ -108,8 +108,6 @@ namespace IEC61850.SCL
             XmlAttribute when = xmlNode.Attributes["when"];
             if (when == null)
                 SclxmlDocument.AddIssue(xmlNode, "ERROR", "Model integrity", "No when attribute on Hitem", this, "when");
-
-
         }
 
         public SclHitem(XmlDocument xmlDocument)
@@ -292,6 +290,7 @@ namespace IEC61850.SCL
 
             return false;
         }
+
         public XmlNode Node
         {
             get { return xmlNode; }
@@ -324,7 +323,6 @@ namespace IEC61850.SCL
 
             if (historyNode != null)
                 history = new SclHistory(SclxmlDocument, historyNode, nsManager);
-
         }
 
         public SclHeader(SclDocument SclDocument, XmlNamespaceManager nsManager)
@@ -336,8 +334,6 @@ namespace IEC61850.SCL
 
             history = new SclHistory(SclDocument.XmlDocument);
             xmlNode.AppendChild(history.XmlNode);
-
         }
     }
-
 }

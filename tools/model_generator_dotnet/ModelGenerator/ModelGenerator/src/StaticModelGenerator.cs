@@ -527,19 +527,15 @@ namespace ModelGenerator
 
 
                 c_DataAttributeStructure.sclFC = SclFC.SG;
-
             }
 
             if (dataAttribute.subDataAttributes.Count > 0)
                 c_DataAttributeStructure.child = c_DataAttributeStructure.objRef + "_" + dataAttribute.subDataAttributes.First().Name;
 
-
             if (dataAttribute.Count > 0)
             {
-
                 for (int idx = 0; idx < dataAttribute.Count; idx++)
                 {
-
                     C_DataAttributeStructure arrayElement = new C_DataAttributeStructure();
                     c_DO_DA_Structures.Add(arrayElement);
                     arrayElement.name = "NULL";
@@ -555,7 +551,6 @@ namespace ModelGenerator
 
                     arrayElement.elementCount = 0;
                     arrayElement.arrayIndex = idx;
-
 
                     if (idx == 0)
                         c_DataAttributeStructure.child = arrayElement.objRef;
@@ -579,7 +574,6 @@ namespace ModelGenerator
 
                     createDataAttributeCStructure(c_DO_DA_Structures, c_DataAttributeStructure.objRef, dataObjectOrAttribute, dataAttribute, isDoTransient, sclSDI, -1);
                 }
-
             }
 
             SclDAI sclDAI = getDAI(daiObj, dataAttribute.Name);
@@ -587,7 +581,6 @@ namespace ModelGenerator
             if (sclDAI != null)
                 if (sclDAI.Val != null)
                     printValue(c_DataAttributeStructure, sclDAI.Val);
-
         }
 
         SclDAI getDAI(object parent, string name)
@@ -601,8 +594,6 @@ namespace ModelGenerator
                 return sclSDI.SclDAIs.Find(x => x.Name == name);
             else
                 return null;
-
-
         }
 
         SclSDI getSDI(object parent, string name)
@@ -616,8 +607,6 @@ namespace ModelGenerator
                 return sclSDI.SclSDIs.Find(x => x.Name == name);
             else
                 return null;
-
-
         }
 
         private void printValue(C_DataAttributeStructure c_DataAttributeStructure, string value)
@@ -791,7 +780,6 @@ namespace ModelGenerator
             c_SettingGroupControlStructure.settingControl = settingControl;
             c_SettingGroupControlStructure.parent = lnPrefix;
             c_SettingGroupControlStructure.externName = lnPrefix + "_sgcb";
-
         }
 
         private void createDataCStructure(IEDDataModel iedModel, string modelPrefix, bool isTransient)
@@ -856,8 +844,6 @@ namespace ModelGenerator
                             {
                                 Console.WriteLine("GSE not found for GoCB " + gSEControl.Name);
                             }
-
-
                         }
 
                         int gseIndex = 0;
@@ -930,7 +916,6 @@ namespace ModelGenerator
                         c_IEDModelStructure.logs = c_LogStructures.First().externName;
                     }
 
-
                     if (logicalNode.SettingControl != null)
                     {
                         addSettingGroulBlockInstance(c_LogicalNodeStructure.objRef, logicalNode.SettingControl);
@@ -991,19 +976,16 @@ namespace ModelGenerator
                                                     clientAddress[j + 1] = iPAddress.GetAddressBytes()[j];
                                             }
                                         }
-
                                     }
 
                                     addReportControlBlockInstance(c_LogicalNodeStructure.objRef, reportControl, index, logicalNode.ReportControlBlocks.Count, reportsCount, clientAddress);
                                     reportsCount++;
                                 }
-
                             }
                             catch (Exception ex)
                             {
                                 Console.WriteLine(ex.Message);
                             }
-
                         }
                         else
                         {
@@ -1011,7 +993,6 @@ namespace ModelGenerator
                             clientAddress[0] = 0;
                             addReportControlBlockInstance(c_LogicalNodeStructure.objRef, reportControl, "", logicalNode.ReportControlBlocks.Count, reportsCount, clientAddress);
                             reportsCount++;
-
                         }
 
                         int rptIndex = 0;
@@ -1030,9 +1011,6 @@ namespace ModelGenerator
 
                             c_IEDModelStructure.rcbs = c_ReportContorlBlockStructures.First().externName;
                         }
-
-
-
                     }
 
                     int datasetCOunt = 0;
@@ -1100,6 +1078,7 @@ namespace ModelGenerator
                                         componentName = componentNamePart;
                                 }
                             }
+
                             if (componentName != "")
                                 c_DatasetEntry.componentName = componentName;
 
@@ -1170,14 +1149,12 @@ namespace ModelGenerator
             hOut.WriteLine("#include <stdlib.h>");
             hOut.WriteLine("#include \"iec61850_model.h\"");
             hOut.WriteLine();
-
         }
 
         private void printHeaderFileFooter(StreamWriter hOut, string hDefineName)
         {
             hOut.WriteLine();
             hOut.WriteLine("#endif /* " + hDefineName + " */\n");
-
         }
 
         private void printCFileHeader(string filename, string outputFileName, StreamWriter cOut)
@@ -1196,6 +1173,5 @@ namespace ModelGenerator
             cOut.WriteLine("#include \"" + include);
             cOut.WriteLine();
         }
-
     }
 }
