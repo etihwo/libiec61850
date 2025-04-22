@@ -17,21 +17,10 @@ format_c_files() {
 #########Clean directory#########################
 clean_build_directories()
 {
-  echo "Removing ./vs, bin/, obj/ folders, any .git directories or files, and doxydoc.NET folder..."
+  echo "Removing .vs/, bin/, obj/ folders, any .git directories or files, and doxydoc.NET folder..."
   find "$FOLDER_NAME" -type d \( -name "vs" -o -name "bin" -o -name "obj" -o -name "doxydoc.NET" -o -name ".git" \) -exec rm -rf {} +
   find "$FOLDER_NAME" -type f -name ".git" -exec rm -f {} +
   echo "Cleanup completed!"
-}
-
-#########Prepare release#############################
-# Function to prepare folder
-prepare_folder() {
-	#Create doxigen
-	rm -rf doxydoc.NET
-	doxygen  doxygen/Doxyfile
-
-	#Create user guide
-	asciidoctor  user_guide_dotnet.adoc
 }
 
 ##########Create release folder#####################
@@ -45,16 +34,23 @@ create_release_folder()
 
 	echo "Folder '$FOLDER_NAME' created successfully!"
 
-	cp -rf .net8 $FOLDER_NAME
+	cp -rf config $FOLDER_NAME
+	cp -rf demos $FOLDER_NAME
+	cp -rf dotnet $FOLDER_NAME
 	cp -rf examples $FOLDER_NAME
-	cp -rf lib60870 $FOLDER_NAME
-	cp -rf tests $FOLDER_NAME
+	cp -rf fuzz $FOLDER_NAME
+	cp -rf hal $FOLDER_NAME
+	cp -rf pyiec61850 $FOLDER_NAME
+	cp -rf src $FOLDER_NAME
+	cp -rf tools $FOLDER_NAME
 	cp -rf CHANGELOG $FOLDER_NAME
+	cp -rf CMakeLists.txt $FOLDER_NAME
+	cp -rf Makefile $FOLDER_NAME
 	cp -rf COPYING $FOLDER_NAME
-	cp -rf lib60870.NET.sln $FOLDER_NAME
+	cp -rf mingw-w64-x86_64.cmake $FOLDER_NAME
 	cp -rf README.md $FOLDER_NAME
-	cp -rf user_guide_dotnet.adoc $FOLDER_NAME
-	cp -rf doxygen $FOLDER_NAME
+	cp -rf SECURITY.md $FOLDER_NAME
+	
 }
 
 ################ Function to create a tar.gz archive############################
@@ -72,20 +68,17 @@ while [ -z "$1" ]; do
 done
 
 while [ -z "$2" ]; do
-  read -p "Enter option ([0]prepare/[1]release/[2]formatFiles/[3]all): " OPTION_INPUT
+  read -p "Enter option ([1]release/[2]formatFiles/[3]all): " OPTION_INPUT
   set -- "$1" "$OPTION_INPUT"
 done
 
 # Store arguments
-PREFIX="../lib60870.NET-"
+PREFIX="../libiec61850-"
 FOLDER_NAME="${PREFIX}${1}"
 OPTION="$2"
 
 # Execute option case
 case "$OPTION" in
-  0)
-    prepare_folder
-    ;;
   1)
     create_release_folder
     ;;
@@ -96,7 +89,6 @@ case "$OPTION" in
   3)
 	format_cs_files
 	format_c_files
-    prepare_folder
 	create_release_folder
 	clean_build_directories
 	compress_to_tar
