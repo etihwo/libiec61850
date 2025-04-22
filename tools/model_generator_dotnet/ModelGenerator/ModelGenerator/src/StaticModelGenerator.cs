@@ -25,6 +25,7 @@ namespace ModelGenerator
         List<C_LogicalDeviceStructure> c_LogicalDeviceStructures = new List<C_LogicalDeviceStructure>();
         List<C_ReportControlBlockStructure> c_ReportContorlBlockStructures = new List<C_ReportControlBlockStructure>();
         List<C_GSEControlBlockStructure> c_GSEControlBlockStructures = new List<C_GSEControlBlockStructure>();
+        List<C_SMVControlBlockStructure> c_SMVControlBlockStructures = new List<C_SMVControlBlockStructure>();
         C_SettingGroupStructure c_SettingGroupControlStructure = null;
         List<C_LogControlBlockStructure> c_LogControlBlockStructures = new List<C_LogControlBlockStructure>();
         List<C_LogStructure> c_LogStructures = new List<C_LogStructure>();
@@ -242,6 +243,20 @@ namespace ModelGenerator
                 cOut.WriteLine(c_SettingGroupControlStructure.ExternNameToString());
                 cOut.WriteLine();
                 cOut.WriteLine(c_SettingGroupControlStructure.ToString());
+            }
+
+            cOut.WriteLine();
+
+            foreach (C_SMVControlBlockStructure c_SMVContorlBlockStructure in c_SMVControlBlockStructures)
+            {
+                cOut.WriteLine(c_SMVContorlBlockStructure.ExternNameToString());
+            }
+
+            cOut.WriteLine();
+
+            foreach (C_SMVControlBlockStructure c_SMVContorlBlockStructure in c_SMVControlBlockStructures)
+            {
+                cOut.WriteLine(c_SMVContorlBlockStructure.ToString());
             }
 
             cOut.WriteLine();
@@ -774,6 +789,19 @@ namespace ModelGenerator
             c_GSEControlBlockStructures.Add(c_GSEContorlBlockStructure);
         }
 
+        private void addSMVControlBlockInstance(string lnPrefix, SMVControl smvControl, SclSMV sclSMV, int smvNumber)
+        {
+            C_SMVControlBlockStructure c_SMVContorlBlockStructure = new C_SMVControlBlockStructure();
+            c_SMVContorlBlockStructure.SMVControl = smvControl;
+            c_SMVContorlBlockStructure.externName = lnPrefix + "_smv" + smvNumber.ToString();
+            c_SMVContorlBlockStructure.parent = lnPrefix;
+            c_SMVContorlBlockStructure.reportNumber = smvNumber;
+            c_SMVContorlBlockStructure.hasOwner = hasOwner;
+            c_SMVContorlBlockStructure.lnPrefix = lnPrefix;
+            c_SMVContorlBlockStructure.SclSMV = sclSMV;
+
+            c_SMVControlBlockStructures.Add(c_SMVContorlBlockStructure);
+        }
         private void addSettingGroulBlockInstance(string lnPrefix, SclSettingControl settingControl)
         {
             c_SettingGroupControlStructure = new C_SettingGroupStructure();
@@ -861,6 +889,41 @@ namespace ModelGenerator
                             }
 
                             c_IEDModelStructure.gseCBs = c_GSEControlBlockStructures.First().externName;
+                        }
+
+                        int smvNumber = 0;
+                        foreach (SMVControl sMVControl in logicalNode.SMVControls)
+                        {
+                            SclSMV sclSMV = connectedAP.SMVs.Find(x => x.CbName == sMVControl.Name);
+
+                            if (sclSMV != null)
+                            {
+                                addSMVControlBlockInstance(c_LogicalNodeStructure.objRef, sMVControl, sclSMV, smvNumber);
+
+                                gseNumber++;
+
+                            }
+                            else
+                            {
+                                Console.WriteLine("GSE not found for GoCB " + sMVControl.Name);
+                            }
+                        }
+
+                        int smvIndex = 0;
+
+                        if (c_SMVControlBlockStructures.Count > 0)
+                        {
+                            foreach (C_SMVControlBlockStructure c_SMVContorlBlockStructure in c_SMVControlBlockStructures)
+                            {
+                                if (c_SMVContorlBlockStructure != c_SMVControlBlockStructures.Last())
+                                {
+                                    c_SMVContorlBlockStructure.sibling = c_SMVControlBlockStructures[gseIndex + 1].externName;
+                                }
+
+                                smvIndex++;
+                            }
+
+                            c_IEDModelStructure.svCBs = c_SMVControlBlockStructures.First().externName;
                         }
                     }
 
