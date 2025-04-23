@@ -702,16 +702,14 @@ namespace ModelGenerator.C_Structures
         public SclSMV SclSMV;
         public string lnPrefix;
         public string parent;
-        public string rptId;
         public string externName;
         public int reportNumber = -1;
         public string index;
-        public bool hasOwner = false;
+        //public bool hasOwner = false;
         public string sibling = "NULL";
         public string phyComAddrName = "NULL";
         private string smvString = "";
-        private string min = "-1";
-        private string max = "-1";
+
 
         public C_SMVControlBlockStructure()
         {
@@ -719,7 +717,7 @@ namespace ModelGenerator.C_Structures
 
         public string ExternNameToString()
         {
-            return "extern SMVControlBlock " + externName + ";";
+            return "extern SVControlBlock " + externName + ";";
         }
 
         private void LoadPhyComAddrName()
@@ -731,9 +729,9 @@ namespace ModelGenerator.C_Structures
                     phyComAddrName = lnPrefix + "_smv" + reportNumber + "_address";
 
                     smvString += "\nstatic PhyComAddress " + phyComAddrName + " = {\n";
-                    smvString += "  " + SclSMV.SclAddress.AppId + ",\n";
                     smvString += "  " + SclSMV.SclAddress.VlanPriority + ",\n";
                     smvString += "  " + SclSMV.SclAddress.VlanId + ",\n";
+                    smvString += "  " + SclSMV.SclAddress.AppId + ",\n";
                     smvString += "  {";
 
                     for (int i = 0; i < 6; i++)
@@ -755,59 +753,57 @@ namespace ModelGenerator.C_Structures
             LoadPhyComAddrName();
 
             string cText = smvString;
-            cText += "SMVControlBlock " + externName + " = {\n";
+            cText += "SVControlBlock " + externName + " = {\n";
             cText += "  &" + parent + ",\n";
-            cText += "  \"" + SMVControl.Name + index + "\",\n";
 
-            if (SMVControl.SclSMVControl.Desc!= null)
-                cText += "  \"" + SclSMV.SclAddress.AppId + "\",\n";
+            if(SMVControl.SclSMVControl.Name != null)
+                cText += "  \"" + SMVControl.Name + index + "\",\n";
             else
                 cText += "  NULL,\n";
 
+            //if (SMVControl.SclSMVControl.Desc!= null)
+            //    cText += "  \"" + SclSMV.SclAddress.AppId + "\",\n";9
+            //else
+            //    cText += "  NULL,\n";
+
+            if (SMVControl.SclSMVControl.SmvID != null)
+                cText += "  " + SMVControl.SclSMVControl.SmvID + ",\n";
+            else
+                cText += "  NULL,\n";
 
             if (SMVControl.SclSMVControl.DataSet != null)
                 cText += "  \"" + SMVControl.SclSMVControl.DataSet + "\",\n";
             else
                 cText += "  NULL,\n";
 
-            if(SMVControl.SclSMVControl.ConfRev != -1)
-                cText += "  " + SMVControl.SclSMVControl.ConfRev + ",\n";
-            if(SMVControl.SclSMVControl.SmvID != null)
-                cText += "  " + SMVControl.SclSMVControl.SmvID + ",\n";
-            cText += "  " + SMVControl.SclSMVControl.Multicast.ToString() + ",\n";
-            if(SMVControl.SclSMVControl.SmpRate != -1)
-                cText += "  " + SMVControl.SclSMVControl.SmpRate + ",\n";
-            if(SMVControl.SclSMVControl.NofASDU != -1)
-                cText += "  " + SMVControl.SclSMVControl.NofASDU + ",\n";
-            if(SMVControl.SclSMVControl.SmpMod != null)
-                cText += "  " + SMVControl.SclSMVControl.SmpMod + ",\n";
-            if(SMVControl.SclSMVControl.SecurityEnabled != null)
-                cText += "  " + SMVControl.SclSMVControl.SecurityEnabled + ",\n";
+            cText += "  " + SMVControl.SclSMVControl.SclSmvOpts.GetIntValue() + ",\n";
 
-            if(SMVControl.SclSMVControl.SclSmvOpts != null)
-            {
-                cText += "  " + SMVControl.SclSMVControl.SclSmvOpts.RefreshTime + ",\n";
-                cText += "  " + SMVControl.SclSMVControl.SclSmvOpts.SampleRate + ",\n";
-                cText += "  " + SMVControl.SclSMVControl.SclSmvOpts.DataSet + ",\n";
-                cText += "  " + SMVControl.SclSMVControl.SclSmvOpts.Security + ",\n";
-                cText += "  " + SMVControl.SclSMVControl.SclSmvOpts.SynchSourceId + ",\n";
-                cText += "  " + SMVControl.SclSMVControl.SclSmvOpts.DataRef + ",\n";
-                cText += "  " + SMVControl.SclSMVControl.SclSmvOpts.SampleSynchronized + ",\n";
-            }
+            if (SMVControl.SclSMVControl.SmpMod != null)
+                cText += "  " + SMVControl.SclSMVControl.SmpMod + ",\n";
+            else
+                cText += "  NULL,\n";
+
+            cText += "  " + SMVControl.SclSMVControl.SmpRate + ",\n";
+
+            cText += "  " + SMVControl.SclSMVControl.ConfRev + ",\n";
 
             if (phyComAddrName == "NULL")
                 cText += "  " + phyComAddrName + ",\n";
             else
                 cText += "  &" + phyComAddrName + ",\n";
 
-            //cText += "  " + min + ",\n";
-            //cText += "  " + max + ",\n";
 
+            cText += "  " + SMVControl.SclSMVControl.Multicast.ToString().ToLower() + ",\n";
+        
+            cText += "  " + SMVControl.SclSMVControl.NofASDU + ",\n";
+           
+            //if(SMVControl.SclSMVControl.SecurityEnabled != null)
+            //    cText += "  " + SMVControl.SclSMVControl.SecurityEnabled + ",\n";
 
-            //if (sibling == "NULL")
-            //    cText += "  " + sibling + "\n";
-            //else
-            //    cText += "  &" + sibling + "\n";
+            if (sibling == "NULL")
+                cText += "  " + sibling + "\n";
+            else
+                cText += "  &" + sibling + "\n";
 
             cText += "};";
 
