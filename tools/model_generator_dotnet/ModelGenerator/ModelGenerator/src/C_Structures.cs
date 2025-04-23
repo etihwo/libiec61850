@@ -705,7 +705,7 @@ namespace ModelGenerator.C_Structures
         public string externName;
         public int reportNumber = -1;
         public string index;
-        //public bool hasOwner = false;
+        public bool hasOwner = false;
         public string sibling = "NULL";
         public string phyComAddrName = "NULL";
         private string smvString = "";

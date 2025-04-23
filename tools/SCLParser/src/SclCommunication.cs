@@ -396,7 +396,7 @@ namespace IEC61850.SCL
             XmlNode max = gseNode.SelectSingleNode("scl:MaxTime", nsManager);
             if (max != null)
             {
-                maxTime = min;
+                maxTime = max;
             }
 
         }
