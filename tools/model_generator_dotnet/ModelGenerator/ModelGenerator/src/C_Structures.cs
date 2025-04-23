@@ -776,7 +776,14 @@ namespace ModelGenerator.C_Structures
             else
                 cText += "  NULL,\n";
 
-            cText += "  " + SMVControl.SclSMVControl.SclSmvOpts.GetIntValue() + ",\n";
+            if (SMVControl.SclSMVControl.SclSmvOpts != null)
+            {
+                cText += "  " + SMVControl.SclSMVControl.SclSmvOpts.GetIntValue() + ",\n";
+            }
+            else
+            {
+                cText += "  0,\n";
+            }
 
             if (SMVControl.SclSMVControl.SmpMod != null)
                 cText += "  " + SMVControl.SclSMVControl.SmpMod + ",\n";
