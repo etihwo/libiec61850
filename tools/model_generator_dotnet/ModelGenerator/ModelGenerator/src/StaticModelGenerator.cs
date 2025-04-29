@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Runtime.InteropServices.ComTypes;
 using DataSet = IEC61850.SCL.DataModel.DataSet;
 
 namespace ModelGenerator
@@ -328,7 +329,10 @@ namespace ModelGenerator
             c_DataObjectStructure.parent = lnRef;
 
             c_DataObjectStructure.name = dataObject.Name;
-            c_DataObjectStructure.objRef = lnRef + "_" + dataObject.Name;
+            if(c_DataObjectStructure.arrayIndex != -1)
+                c_DataObjectStructure.name = dataObject.Name + "_" + c_DataObjectStructure.arrayIndex;
+            else
+                c_DataObjectStructure.objRef = lnRef + "_" + dataObject.Name;
 
             if (dataObject.DataObjectsAndAttributes.Count > 0)
                 c_DataObjectStructure.child = c_DataObjectStructure.objRef + "_" + dataObject.DataObjectsAndAttributes.First().Name;
@@ -377,7 +381,8 @@ namespace ModelGenerator
 
                     c_ArrayDataObjectStructure.DataObject = dataObject;
 
-                    c_ArrayDataObjectStructure.parent = lnRef;
+                    //c_ArrayDataObjectStructure.parent = lnRef;
+                    c_ArrayDataObjectStructure.parent = lnRef + "_" + dataObject.Name;
 
                     c_ArrayDataObjectStructure.name = dataObject.Name;
                     c_ArrayDataObjectStructure.objRef = lnRef + "_" + dataObject.Name + "_" + idx;
@@ -457,6 +462,12 @@ namespace ModelGenerator
             c_DataAttributeStructure.name = dataAttribute.Name;
             c_DataAttributeStructure.sclFC = dataAttribute.Fc;
             c_DataAttributeStructure.DataAttribute = dataAttribute;
+
+            if (c_DataAttributeStructure.arrayIndex != -1)
+                c_DataAttributeStructure.name = dataAttribute.Name + "_" + c_DataAttributeStructure.arrayIndex;
+            else
+                c_DataAttributeStructure.objRef = doName + "_" + dataAttribute.Name;
+
             c_DataAttributeStructure.objRef = doName + "_" + dataAttribute.Name;
             c_DataAttributeStructure.elementCount = dataAttribute.Count;
 

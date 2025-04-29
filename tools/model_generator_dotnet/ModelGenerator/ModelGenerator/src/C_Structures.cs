@@ -311,10 +311,19 @@ namespace ModelGenerator.C_Structures
 
         public override string ToString()
         {
-            string cText = "DataObject " + parent + "_" + name + " = {\n";
+            string cText = "";
+            if(arrayIndex == -1)
+                cText = "DataObject " + parent + "_" + name + " = {\n";
+            else
+                cText = "DataObject " + parent + "_" + name + "_" + arrayIndex + " = {\n";
+            //cText = "DataObject " + parent + "_" + name + " = {\n";
             cText += "  " + ModelNodeType + ",\n";
             cText += "  \"" + name + "\",\n";
-            cText += "  (ModelNode*) &" + parent + ",\n";
+
+            if(arrayIndex != -1)
+                cText += "  (ModelNode*) &" + parent + "_" + name + ",\n";
+            else
+                cText += "  (ModelNode*) &" + parent + ",\n";
 
             if (sibling == "NULL")
                 cText += "  " + sibling + ",\n";
@@ -327,8 +336,11 @@ namespace ModelGenerator.C_Structures
                 cText += "  NULL,\n";
 
             cText += "  " + elementCount + ",\n";
-            cText += "  " + arrayIndex + "\n";
 
+            if(elementCount == 0)
+                cText += "  " + arrayIndex + "\n";
+            else
+                cText += "  0" + arrayIndex + "\n";
             cText += "};";
 
             return cText;
