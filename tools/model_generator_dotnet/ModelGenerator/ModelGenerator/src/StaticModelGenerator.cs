@@ -578,6 +578,9 @@ namespace ModelGenerator
                     arrayElement.elementCount = 0;
                     arrayElement.arrayIndex = idx;
 
+                    arrayElement.DataAttribute = dataAttribute;
+
+
                     if (idx == 0)
                         c_DataAttributeStructure.child = arrayElement.objRef;
 
