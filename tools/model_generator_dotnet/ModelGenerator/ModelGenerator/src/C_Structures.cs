@@ -779,7 +779,7 @@ namespace ModelGenerator.C_Structures
             //    cText += "  NULL,\n";
 
             if (SMVControl.SclSMVControl.SmvID != null)
-                cText += "  " + SMVControl.SclSMVControl.SmvID + ",\n";
+                cText += "  \"" + SMVControl.SclSMVControl.SmvID + "\",\n";
             else
                 cText += "  NULL,\n";
 
