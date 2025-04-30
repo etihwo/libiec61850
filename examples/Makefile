@@ -15,6 +15,7 @@ EXAMPLE_DIRS += server_example_control
 EXAMPLE_DIRS += server_example_config_file
 EXAMPLE_DIRS += server_example_dynamic
 EXAMPLE_DIRS += server_example_complex_array
+EXAMPLE_DIRS += server_example_SMV
 EXAMPLE_DIRS += server_example_61400_25
 EXAMPLE_DIRS += server_example_threadless
 EXAMPLE_DIRS += server_example_setting_groups
