@@ -11,7 +11,7 @@ using IEC61850.SCL.DataModel;
 using System;
 using System.Collections.Generic;
 
-namespace ModelGenerator.C_Structures
+namespace StaticModelGenerator.C_Structures
 {
     /** FCs (Functional constraints) according to IEC 61850-7-2 */
     public enum eFunctionalConstraint

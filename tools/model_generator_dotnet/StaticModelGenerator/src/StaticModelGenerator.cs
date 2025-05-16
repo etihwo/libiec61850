@@ -8,7 +8,7 @@
 
 using IEC61850.SCL;
 using IEC61850.SCL.DataModel;
-using ModelGenerator.C_Structures;
+using StaticModelGenerator.C_Structures;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,7 +17,7 @@ using System.Net;
 using System.Runtime.InteropServices.ComTypes;
 using DataSet = IEC61850.SCL.DataModel.DataSet;
 
-namespace ModelGenerator
+namespace StaticModelGenerator
 {
 
     public class StaticModelGenerator

@@ -70,7 +70,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ModelGenerator\ModelGenerator.csproj" />
+    <ProjectReference Include="..\DynamicModelGenerator\DynamicModelGenerator.csproj" />
+    <ProjectReference Include="..\StaticModelGenerator\StaticModelGenerator.csproj" />
   </ItemGroup>
 
 </Project>
