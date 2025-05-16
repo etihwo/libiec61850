@@ -6,12 +6,6 @@ To run the tool from the command line a command of the following format has to b
 The values in <> have to be replaced with the values corresponding to an arbitrary ICD file. 
 To run this command completely the command should look like this: 
 
-Tools.exe/(dotnet Tools.dll) <generator option> <ICD file>  -ied  <ied-name> -ap <access-point-name> -out <output-name> -modelprefix <model-prefix>
-
 Example: 
-
-Tools.exe 1 ICDFiles/genericIO.icd -ied simpleIO -ap accessPoint1 -out static_model -modelprefix iedModel
-
-or 
 
 dotnet Tools.dll 1 ICDFiles/genericIO.icd -ied simpleIO -ap accessPoint1 -out static_model -modelprefix iedModel
