@@ -1,8 +1,8 @@
 Changes to version 1.6.1
 ------------------------
 
--.NET Tools
--- In the Tools folder you can find the .net project to generate Static and Dynamic Models
+-.NET Tools: in the Tools folder you can find the .net project to generate Static and Dynamic Models
+- SCLParser: also available on tools, you can load your SCL model and use it with our library
 
 Changes to version 1.6.0
 ------------------------
