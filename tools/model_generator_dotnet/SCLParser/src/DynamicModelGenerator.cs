@@ -504,6 +504,11 @@ namespace IEC61850.SCL
 
         }
 
+        private static String toMmsString(String iecString)
+        {
+            return iecString.Replace('.', '$');
+        }
+
         private void ExportDataSet(StreamWriter output, DataSet dataSet, LogicalNode logicalNode)
         {
             output.Write("DS(" + dataSet.Name + "){\n");
@@ -525,7 +530,7 @@ namespace IEC61850.SCL
                 mmsVariableName += "$" + fcda.DoName;
 
                 if (fcda.DaName != null)
-                    mmsVariableName += "$" + fcda.DaName;
+                    mmsVariableName += "$" + toMmsString(fcda.DaName);
 
                 int arrayStart = mmsVariableName.IndexOf('(');
 
