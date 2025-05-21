@@ -273,12 +273,12 @@ namespace IEC61850.SCL
             output.Write("LC(");
             output.Write(lcb.Name + " ");
 
-            if (lcb.SclLogControl.DatSet != null)
+            if (lcb.SclLogControl.DatSet != null && lcb.SclLogControl.DatSet != "")
                 output.Write(lcb.SclLogControl.DatSet + " ");
             else
                 output.Write("- ");
 
-            if (lcb.SclLogControl.LogName != null)
+            if (lcb.SclLogControl.LogName != null && lcb.SclLogControl.LogName != "")
             {
                 String logRef = logicalDevice.Inst + "/" + ln.Name + "$" + lcb.SclLogControl.LogName;
                 output.Write(logRef + " ");
@@ -291,7 +291,11 @@ namespace IEC61850.SCL
                 output.Write(lcb.SclLogControl.TrgOps.GetIntValue() + " ");
             }
 
-            output.Write(lcb.SclLogControl.IntgPd + " ");
+            
+            if(lcb.SclLogControl.IntgPd is null)
+                output.Write("0 ");
+            else
+                output.Write(lcb.SclLogControl.IntgPd + " ");
 
 
             if (lcb.SclLogControl.LogEna)
@@ -616,8 +620,6 @@ namespace IEC61850.SCL
                         case AttributeType.VISIBLE_STRING_129:
                         case AttributeType.VISIBLE_STRING_255:
                         case AttributeType.VISIBLE_STRING_65:
-                            Console.WriteLine("1111");
-
                             output.Write("=\"" + value + "\"");
                             break;
 
@@ -628,8 +630,6 @@ namespace IEC61850.SCL
                         case AttributeType.FLOAT32:
                         case AttributeType.FLOAT64:
                             output.Write("=" + value);
-
-
                             break;
 
                         default:
@@ -640,6 +640,9 @@ namespace IEC61850.SCL
 
                     //}
                 }
+
+                output.WriteLine(";");
+
             }
 
             else
@@ -654,7 +657,6 @@ namespace IEC61850.SCL
                 output.WriteLine("}");
             }
 
-            output.WriteLine(";");
 
 
 
