@@ -9,6 +9,7 @@
 using IEC61850.SCL.DataModel;
 using System;
 using System.IO;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace IEC61850.SCL
 {
@@ -81,7 +82,7 @@ namespace IEC61850.SCL
 
                     for (int i = 0; i < maxInstances; i++)
                     {
-                        string index = (i + 1).ToString("X");
+                        string index = (i + 1).ToString("00");
                         PrintRCBInstance(output, rcb, index);
                     }
                 }
@@ -390,9 +391,138 @@ namespace IEC61850.SCL
 
         }
 
+        //private void printDataAttributeValue(StreamWriter output, DataAttribute dataAttribute, bool isTransient)
+        //{
+        //    if (dataAttribute.AttributeType != AttributeType.CONSTRUCTED)
+        //    {
+        //        SclVal value = dataAttribute.Definition.GetVal();
+
+        //        /* if no value is given use default value for type if present */
+        //        if (value == null)
+        //        {
+        //            value = dataAttribute.Definition.GetVal();
+
+        //            //if (value != null)
+        //            //    if (value.Value == null)
+        //            //        value.updateEnumOrdValue(ied.getTypeDeclarations());
+        //        }
+
+        //        if (value != null)
+        //        {
+
+        //            switch (dataAttribute.AttributeType)
+        //            {
+        //                case AttributeType.ENUMERATED:
+        //                case AttributeType.INT8:
+        //                case AttributeType.INT16:
+        //                case AttributeType.INT32:
+        //                case AttributeType.INT64:
+        //                    output.Write("=" + value.Value());
+        //                    break;
+        //                case AttributeType.INT8U:
+        //                case AttributeType.INT16U:
+        //                case AttributeType.INT24U:
+        //                case AttributeType.INT32U:
+        //                    output.Write("=" + value.getLongValue());
+        //                    break;
+        //                case AttributeType.BOOLEAN:
+        //                    {
+        //                        Boolean boolVal = (Boolean)value.getValue();
+
+        //                        if (boolVal.booleanValue())
+        //                            output.print("=1");
+        //                    }
+        //                    break;
+        //                case AttributeType.UNICODE_STRING_255:
+        //                    output.print("=\"" + value.getValue() + "\"");
+        //                    break;
+        //                case AttributeType.CURRENCY:
+        //                case AttributeType.VISIBLE_STRING_32:
+        //                case AttributeType.VISIBLE_STRING_64:
+        //                case AttributeType.VISIBLE_STRING_129:
+        //                case AttributeType.VISIBLE_STRING_255:
+        //                case AttributeType.VISIBLE_STRING_65:
+        //                    output.Write("=\"" + value.getValue() + "\"");
+        //                    break;
+        //                case AttributeType.FLOAT32:
+        //                case AttributeType.FLOAT64:
+        //                    output.Write("=" + value.getValue());
+        //                    break;
+        //                case AttributeType.TIMESTAMP:
+        //                case AttributeType.ENTRY_TIME:
+        //                    output.Write("=" + value.getLongValue());
+        //                    break;
+
+        //                default:
+        //                    System.out.println("Unknown default value for " + dataAttribute.getName() + " type: " + dataAttribute.getType());
+        //                    break;
+        //            }
+
+        //        }
+
+        //        output.Write(";");
+        //    }
+        //    else
+        //    {
+        //        output.Write("{");
+
+        //        foreach (DataAttribute subDataAttribute in dataAttribute.subDataAttributes)
+        //        {
+        //            ExportDataAttribute(output, subDataAttribute, isTransient);
+        //        }
+
+        //        output.Write("}");
+        //    }
+        //}
+        SclDAI getDAI(object parent, string name)
+        {
+            if (parent == null)
+                return null;
+
+            if (parent is SclDOI sclDOI)
+                return sclDOI.SclDAIs.Find(x => x.Name == name);
+            else if (parent is SclSDI sclSDI)
+                return sclSDI.SclDAIs.Find(x => x.Name == name);
+            else
+                return null;
+        }
+
+        DataObject findDOParent(DataAttribute dataAttribute)
+        {
+            DataObject parentObject = null;
+            //DataObjectOrAttribute obj = null;
+            
+            while(!(dataAttribute.Parent is DataObject))
+            {
+                dataAttribute = dataAttribute.Parent as DataAttribute;
+            }
+            parentObject = dataAttribute.Parent as DataObject;
+
+
+            return parentObject;
+        
+        
+        }
+
+        LogicalNode findLNParent(DataObject dataObject)
+        {
+            LogicalNode parentObject = null;
+            //DataObjectOrAttribute obj = null;
+
+            while (!(dataObject.Parent is LogicalNode))
+            {
+                dataObject = dataObject.Parent as DataObject;
+            }
+            parentObject = dataObject.Parent as LogicalNode;
+
+
+            return parentObject;
+
+
+        }
+
         private void ExportDataAttribute(StreamWriter output, DataAttribute dataAttribute, bool isTransient)
         {
-
             output.Write("DA(" + dataAttribute.Name + " ");
             output.Write(dataAttribute.Count + " ");
             output.Write((int)dataAttribute.AttributeType + " ");
@@ -401,7 +531,7 @@ namespace IEC61850.SCL
             if (dataAttribute.Definition.TriggerOptions != null)
             {
                 int trgOpsVal = dataAttribute.Definition.TriggerOptions.GetIntValue();
-
+                
                 if (isTransient)
                     trgOpsVal += 128;
 
@@ -418,23 +548,42 @@ namespace IEC61850.SCL
 
             if (dataAttribute.AttributeType != AttributeType.CONSTRUCTED)
             {
-                SclVal value = dataAttribute.Definition.GetVal();
+                //if (value != null)
+                //{
+
+
+                DataObject dataObject = findDOParent(dataAttribute);
+                //DataObject dataObject = dataAttribute.Parent as DataObject;
+                //LogicalNode logicalNode = dataObject.Parent as LogicalNode;
+                LogicalNode logicalNode = findLNParent(dataObject);
+                SclDOI sclDOI = logicalNode.SclElement.DOIs.Find(x => x.Name == dataObject.Name);
+                SclDAI sclDAI = getDAI(sclDOI, dataAttribute.Name);
+
+                if(sclDAI == null)
+                {
+                    output.WriteLine(";");
+
+                    return;
+                }
+                string value = sclDAI.Val;
 
                 if (value != null)
                 {
                     switch (dataAttribute.AttributeType)
                     {
                         case AttributeType.ENUMERATED:
-                            string EnumType = dataAttribute.Definition.Type;
-                            SclEnumType sclEnumType;
-                            if (EnumType != null)
+                            SclEnumType sclEnumType = sclDocument.DataTypeTemplates.GetEnumType(dataAttribute.Definition.Type);
+
+                            if (sclEnumType != null)
                             {
-                                sclEnumType = sclDocument.DataTypeTemplates.GetEnumType(EnumType);
-                                if (sclEnumType != null)
+                                if (sclEnumType.EnumValues.Count > 0)
                                 {
-                                    SclEnumVal sclEnumVal = sclEnumType.EnumValues.Find(x => x.SymbolicName == value.Value);
+                                    SclEnumVal sclEnumVal = sclEnumType.EnumValues[0];
+                                    int value1 = sclEnumVal.Ord;
                                     output.Write("=" + sclEnumVal.Ord);
+
                                 }
+
                             }
 
                             break;
@@ -443,24 +592,22 @@ namespace IEC61850.SCL
                         case AttributeType.INT16:
                         case AttributeType.INT32:
                         case AttributeType.INT64:
-                            output.Write("=" + value.Value);
-                            break;
                         case AttributeType.INT8U:
                         case AttributeType.INT16U:
                         case AttributeType.INT24U:
                         case AttributeType.INT32U:
-                            output.Write("=" + value.Value);
+                            output.Write("=" + value);
                             break;
 
                         case AttributeType.BOOLEAN:
-                            if (value.Value == "true")
+                            if (value == "true")
                                 output.Write("=1");
                             else
                                 output.Write("=0");
                             break;
 
                         case AttributeType.UNICODE_STRING_255:
-                            output.Write("=\"" + value.Value + "\"");
+                            output.Write("=\"" + value + "\"");
                             break;
 
                         case AttributeType.CURRENCY:
@@ -469,27 +616,32 @@ namespace IEC61850.SCL
                         case AttributeType.VISIBLE_STRING_129:
                         case AttributeType.VISIBLE_STRING_255:
                         case AttributeType.VISIBLE_STRING_65:
-                            output.Write("=\"" + value.Value + "\"");
+                            Console.WriteLine("1111");
+
+                            output.Write("=\"" + value + "\"");
                             break;
 
                         case AttributeType.OCTET_STRING_64:
-                            output.Write("=\"" + value.Value + "\"");
+                            output.Write("=\"" + value + "\"");
                             break;
 
                         case AttributeType.FLOAT32:
                         case AttributeType.FLOAT64:
-                            output.Write("=" + value.Value);
+                            output.Write("=" + value);
+
+
                             break;
 
                         default:
                             Console.WriteLine("Unknown default value for " + dataAttribute.Name + " type: " + dataAttribute.AttributeType);
-                            break;
+                            break;                      
+
                     }
 
+                    //}
                 }
-
-                output.WriteLine(";");
             }
+
             else
             {
                 output.WriteLine("{");
@@ -501,6 +653,82 @@ namespace IEC61850.SCL
 
                 output.WriteLine("}");
             }
+
+            output.WriteLine(";");
+
+
+
+            //if (value != null)
+            //{
+            //    switch (dataAttribute.AttributeType)
+            //    {
+            //        case AttributeType.ENUMERATED:
+            //            string EnumType = dataAttribute.Definition.Type;
+            //            SclEnumType sclEnumType;
+            //            if (EnumType != null)
+            //            {
+            //                sclEnumType = sclDocument.DataTypeTemplates.GetEnumType(EnumType);
+            //                if (sclEnumType != null)
+            //                {
+            //                    SclEnumVal sclEnumVal = sclEnumType.EnumValues.Find(x => x.SymbolicName == value.Value);
+            //                    output.Write("=" + sclEnumVal.Ord);
+            //                }
+            //            }
+
+                //            break;
+
+                //        case AttributeType.INT8:
+                //        case AttributeType.INT16:
+                //        case AttributeType.INT32:
+                //        case AttributeType.INT64:
+                //            output.Write("=" + value.Value);
+                //            break;
+                //        case AttributeType.INT8U:
+                //        case AttributeType.INT16U:
+                //        case AttributeType.INT24U:
+                //        case AttributeType.INT32U:
+                //            output.Write("=" + value.Value);
+                //            break;
+
+                //        case AttributeType.BOOLEAN:
+                //            if (value.Value == "true")
+                //                output.Write("=1");
+                //            else
+                //                output.Write("=0");
+                //            break;
+
+                //        case AttributeType.UNICODE_STRING_255:
+                //            output.Write("=\"" + value.Value + "\"");
+                //            break;
+
+                //        case AttributeType.CURRENCY:
+                //        case AttributeType.VISIBLE_STRING_32:
+                //        case AttributeType.VISIBLE_STRING_64:
+                //        case AttributeType.VISIBLE_STRING_129:
+                //        case AttributeType.VISIBLE_STRING_255:
+                //        case AttributeType.VISIBLE_STRING_65:
+                //            output.Write("=\"" + value.Value + "\"");
+                //            break;
+
+                //        case AttributeType.OCTET_STRING_64:
+                //            output.Write("=\"" + value.Value + "\"");
+                //            break;
+
+                //        case AttributeType.FLOAT32:
+                //        case AttributeType.FLOAT64:
+                //            output.Write("=" + value.Value);
+                //            break;
+
+                //        default:
+                //            Console.WriteLine("Unknown default value for " + dataAttribute.Name + " type: " + dataAttribute.AttributeType);
+                //            break;
+                //    }
+
+                //}
+
+                //output.WriteLine(";");
+                //}
+
 
         }
 
