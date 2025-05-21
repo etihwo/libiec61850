@@ -553,31 +553,9 @@ namespace IEC61850.SCL
 
         }
 
-        private void ExportDataAttribute(StreamWriter output, DataAttribute dataAttribute, bool isTransient)
+
+        void printDataAttributes(StreamWriter output, DataAttribute dataAttribute, bool isTransient)
         {
-            output.Write("DA(" + dataAttribute.Name + " ");
-            output.Write(dataAttribute.Count + " ");
-            output.Write((int)dataAttribute.AttributeType + " ");
-            output.Write((int)dataAttribute.Fc + " ");
-
-            if (dataAttribute.Definition.TriggerOptions != null)
-            {
-                int trgOpsVal = dataAttribute.Definition.TriggerOptions.GetIntValue();
-                
-                if (isTransient)
-                    trgOpsVal += 128;
-
-                output.Write(trgOpsVal + " ");
-            }
-
-
-            if (dataAttribute.Definition.SAddr != null)
-                output.Write(dataAttribute.Definition.SAddr);
-            else
-                output.Write("0");
-
-            output.Write(")");
-
             if (dataAttribute.AttributeType != AttributeType.CONSTRUCTED)
             {
                 //if (value != null)
@@ -591,7 +569,7 @@ namespace IEC61850.SCL
                 SclDOI sclDOI = logicalNode.SclElement.DOIs.Find(x => x.Name == dataObject.Name);
                 SclDAI sclDAI = getDAI(sclDOI, dataAttribute.Name);
 
-                if(sclDAI == null)
+                if (sclDAI == null)
                 {
                     output.WriteLine(";");
 
@@ -662,7 +640,7 @@ namespace IEC61850.SCL
 
                         default:
                             Console.WriteLine("Unknown default value for " + dataAttribute.Name + " type: " + dataAttribute.AttributeType);
-                            break;                      
+                            break;
 
                     }
 
@@ -685,6 +663,53 @@ namespace IEC61850.SCL
                 output.WriteLine("}");
             }
 
+        }
+
+        private void ExportDataAttribute(StreamWriter output, DataAttribute dataAttribute, bool isTransient)
+        {
+            output.Write("DA(" + dataAttribute.Name + " ");
+            output.Write(dataAttribute.Count + " ");
+            output.Write((int)dataAttribute.AttributeType + " ");
+            output.Write((int)dataAttribute.Fc + " ");
+
+            if (dataAttribute.Definition.TriggerOptions != null)
+            {
+                int trgOpsVal = dataAttribute.Definition.TriggerOptions.GetIntValue();
+                
+                if (isTransient)
+                    trgOpsVal += 128;
+
+                output.Write(trgOpsVal + " ");
+            }
+
+
+            if (dataAttribute.Definition.SAddr != null)
+                output.Write(dataAttribute.Definition.SAddr);
+            else
+                output.Write("0");
+
+            output.Write(")");
+
+            if (dataAttribute.Count > 0)
+            {
+                output.WriteLine("{");
+
+                for (int i = 0; i < dataAttribute.Count; i++)
+                {
+                    output.Write("[" + i + "]");
+
+                    printDataAttributes(output, dataAttribute, isTransient);
+                }
+
+                output.WriteLine("}");
+            }
+
+            else
+            {
+
+                printDataAttributes(output, dataAttribute, isTransient);
+            }
+          
 
 
 
