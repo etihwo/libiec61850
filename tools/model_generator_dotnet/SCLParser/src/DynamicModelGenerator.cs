@@ -128,13 +128,13 @@ namespace IEC61850.SCL
             if (gcb.SclGSEControl.AppID != null)
                 output.Write(gcb.SclGSEControl.AppID + " ");
             else
-                output.Write("- ");
+                output.Write("null ");
 
 
             if (gcb.SclGSEControl.DatSet != null)
                 output.Write(gcb.SclGSEControl.DatSet + " ");
             else
-                output.Write("- ");
+                output.Write("null ");
 
             if (gcb.SclGSEControl.ConfRev >= 0)
                 output.Write(gcb.SclGSEControl.ConfRev + " ");
@@ -153,18 +153,18 @@ namespace IEC61850.SCL
                 if (gse.Mintime != null)
                     output.Write(gse.Mintime);
                 else
-                    output.Write("-1");
+                    output.Write("0");
 
                 output.Write(' ');
 
                 if (gse.Maxtime != null)
                     output.Write(gse.Maxtime);
                 else
-                    output.Write("-1");
+                    output.Write("0");
             }
             else
             {
-                output.Write("-1 -1");
+                output.Write("0 0");
             }
 
             if (gseAddress == null)
@@ -210,12 +210,12 @@ namespace IEC61850.SCL
             if (smv.SclSMVControl.SmvID != null)
                 output.Write(smv.SclSMVControl.SmvID + " ");
             else
-                output.Write("- ");
+                output.Write("null ");
 
             if (smv.SclSMVControl.DataSet != null)
                 output.Write(smv.SclSMVControl.DataSet + " ");
             else
-                output.Write("- ");
+                output.Write("null ");
 
             if (smv.SclSMVControl.ConfRev >= 0)
                 output.Write(smv.SclSMVControl.ConfRev + " ");
@@ -225,21 +225,25 @@ namespace IEC61850.SCL
             if (smv.SclSMVControl.SmpMod != null)
                 output.Write(smv.SclSMVControl.SmpMod + " ");
             else
-                output.Write("-1 ");
+                output.Write("0 ");
 
-            output.Write(smv.SclSMVControl.SmpRate + " ");
+            if(smv.SclSMVControl.SmpRate != -1)
+                output.Write(smv.SclSMVControl.SmpRate + " ");
+            else
+                output.Write("0 ");
+            //output.Write(smv.SclSMVControl.SmpRate + " ");
 
             if (smv.SclSMVControl.SclSmvOpts != null)
                 output.Write(smv.SclSMVControl.SclSmvOpts.GetIntValue());
             else
-                output.Write("-1");
+                output.Write("0");
 
             output.Write(' ');
 
             if (smv.SclSMVControl.Multicast)
                 output.Write('1');
             else
-                output.Write("-1");
+                output.Write("0");
             output.Write(' ');
 
 
@@ -369,11 +373,8 @@ namespace IEC61850.SCL
             output.WriteLine(");");
         }
 
-        private void ExportDataObject(StreamWriter output, DataObject dataObject, bool isTransient)
+        private void exportDataObjectChild(StreamWriter output, DataObject dataObject, bool isTransient)
         {
-
-            if (dataObject.IsTransiente)
-                isTransient = true;
 
             foreach (DataObjectOrAttribute child in dataObject.DataObjectsAndAttributes)
             {
@@ -391,6 +392,33 @@ namespace IEC61850.SCL
                     DataAttribute dataAttribute = child as DataAttribute;
                     ExportDataAttribute(output, dataAttribute, isTransient);
                 }
+            }
+
+
+        }
+
+        private void ExportDataObject(StreamWriter output, DataObject dataObject, bool isTransient)
+        {
+
+            if (dataObject.IsTransiente)
+                isTransient = true;
+
+            if (dataObject.Count > 0)
+            {
+                /* data object is an array */
+                for (int i = 0; i < dataObject.Count; i++)
+                {
+                    output.WriteLine("[" + i + "]{\n");
+
+                    exportDataObjectChild(output, dataObject, isTransient);
+
+                    output.Write("}\n");
+                }
+            }
+            else
+            {
+                exportDataObjectChild(output, dataObject, isTransient);
+
             }
 
         }
