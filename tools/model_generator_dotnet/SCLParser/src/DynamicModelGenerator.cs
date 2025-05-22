@@ -10,6 +10,7 @@ using IEC61850.SCL.DataModel;
 using System;
 using System.IO;
 using System.Runtime.InteropServices.ComTypes;
+using System.Xml.Linq;
 
 namespace IEC61850.SCL
 {
@@ -553,29 +554,367 @@ namespace IEC61850.SCL
 
         }
 
+        public SclDataAttributeDefinition GetDA(string name, SclDOType doType)
+        {
+            foreach (SclDataAttributeDefinition sclDa in doType.DataAttributes)
+            {
+                if (sclDa.Name != null && sclDa.Name.Equals(name))
+                    return sclDa;
+            }
+
+            return null;
+        }
+
+        //private void SetPredefindedValuesForDAI(LogicalNode ln, DataAttribute dataAttribute, DataObject dataObject)
+        //{
+        //    if (dai.Name != null)
+        //    {
+
+        //}
+
+        //private void SetPredefinedValuesForSDI(LogicalNode ln, string path, SclSDI sclSdi, SclDOType doType, SclDAType daType, SclDataTypeTemplates types, DataAttribute dataAttribute)
+        //{
+        //    if (sclSdi.Name != null)
+        //    {
+        //        string extendedPath = path + "." + sclSdi.Name;
+
+        //        foreach (SclDAI dai in sclSdi.SclDAIs)
+        //        {
+        //            if (doType != null)
+        //            {
+        //                SclDataAttributeDefinition sclDa = GetDA(dai.Name, doType);
+
+        //                if (sclDa != null)
+        //                {
+        //                    DataAttributeType bType = (DataAttributeType)sclDa.AttributeType;
+
+        //                    SetPredefindedValuesForDAI(ln, extendedPath, dai, bType, sclDa.Type, types);
+        //                }
+        //                else
+        //                {
+        //                    logMessage(IedModelFactoryLogLevel.ERROR, "SCL: DA for name " + dai.Name + " not found");
+        //                }
+        //            }
+        //            else if (daType != null)
+        //            {
+        //                SclDataAttributeDefinition sclBda = daType.GetBDA(dai.Name);
+
+        //                if (sclBda != null)
+        //                {
+        //                    DataAttributeType bType = (DataAttributeType)sclBda.AttributeType;
+
+        //                    SetPredefindedValuesForDAI(ln, extendedPath, dai, bType, sclBda.Type, types);
+        //                }
+
+        //            }
+        //        }
+
+        //        foreach (SclSDI sdi in sclSdi.SclSDIs)
+        //        {
+        //            if (doType != null)
+        //            {
+        //                SclDataAttributeDefinition da = doType.GetDA(sdi.Name, dataAttribute);
+
+        //                if (da != null)
+        //                {
+        //                    SclDAType subDaType = types.GetDAType(da.Type);
+
+        //                    if (subDaType != null)
+        //                    {
+        //                        SetPredefinedValuesForSDI(ln, extendedPath, sdi, null, subDaType, types);
+        //                    }             
+        //                }
+        //                else
+        //                {
+        //                    SclDataObjectDefinition sdo = doType.GetSDO(sdi.Name);
+
+        //                    if (sdo != null)
+        //                    {
+        //                        SclDOType subDoType = types.GetDOType(sdo.Type);
+
+        //                        if (subDoType != null)
+        //                        {
+        //                            SetPredefinedValuesForSDI(ln, extendedPath, sdi, subDoType, null, types);
+        //                        }
+
+        //                    }
+
+        //                }
+        //            }
+        //            else if (daType != null)
+        //            {
+        //                SclDataAttributeDefinition bda = daType.GetBDA(sdi.Name);
+
+        //                if (bda != null)
+        //                {
+        //                    SclDAType subDaType = types.GetDAType(bda.Type);
+
+        //                    if (subDaType != null)
+        //                    {
+        //                        SetPredefinedValuesForSDI(ln, extendedPath, sdi, null, subDaType, types);
+        //                    }
+
+        //                }
+
+        //            }
+        //        }
+        //    }
+        //}
+
+
+
+        //object findValue(DataAttribute dataAttribute)
+        //{
+        //    object value = null;
+
+        //    if(dataAttribute.Parent is DataAttribute dataAttribute1)
+        //    {
+        //        SclDAI sclDAI = getDAI(dataAttribute1.Parent, dataAttribute.Name);
+
+
+        //        SclSDO sclSDOI = null;
+        //        sclSDOI.
+        //    }
+
+        //    return value;
+        //}
+
+        SclDAI getDAIInternal(SclSDI sclSDI, DataAttribute dataAttribute)
+        {
+            SclDAI returnValue = null;
+            foreach(SclDAI sclDAI1 in sclSDI.SclDAIs)
+            {
+                if(sclDAI1.Name == dataAttribute.Name)
+                {
+                    if (dataAttribute.ObjRef.EndsWith("." + sclSDI.Name + "." + sclDAI1.Name))
+                    {
+
+                        returnValue = sclDAI1;
+                        break;
+
+                    }
+                }
+            }
+
+            return returnValue;
+        }
+
+        string getSDIValue(DataAttribute dataAttribute, object DIObject)
+        {
+            string value = null;
+
+            SclSDI sclSDI1 = DIObject as SclSDI;
+            if (sclSDI1 == null)
+                return value;
+
+
+            SclDAI sclDAI = getDAIInternal(sclSDI1, dataAttribute);
+
+
+            if (sclDAI != null)
+            {
+
+                value = sclDAI.Val;
+            }
+
+            else
+            {
+                foreach (SclSDI sclSDI in sclSDI1.SclSDIs)
+            {
+                    string fValue = getSDIValue(dataAttribute, sclSDI);
+                    if (fValue != null)
+                {
+                        value = fValue;
+                        break;
+                    }
+                }
+            }
+
+
+            return value;
+
+        }
+
+        string getDAIValue(DataAttribute dataAttribute, SclDOI sclDOI)
+        {
+            if (sclDOI == null)
+                return null;
+
+            string value = null;
+            SclDAI sclDAI = sclDOI.SclDAIs.Find(x => x.Name == dataAttribute.Name);
+            if (sclDAI != null)
+            {
+                value = sclDAI.Val;
+            }
+            else
+            { 
+                foreach (SclSDI sclSDI in sclDOI.SclSDIs)
+                {
+                    string fValue = getSDIValue(dataAttribute, sclSDI);
+                    if (fValue != null)
+                    {
+                        value = fValue;
+                        break;
+                    }
+                }
+                
+            }
+          
+            return value;
+
+        }
+
+        string getObjRef(string initialString, SclSDI sclSDI)
+        {
+            object parent = sclSDI.Parent;
+            while(!(parent is SclDOI))
+            {
+                SclSDI sclSDI1 = parent as SclSDI;
+                parent = sclSDI1.Parent;
+            }
+            SclDOI doName = (SclDOI)parent;
+            initialString += "." + doName.Name;
+
+
+            return initialString;
+        }
+
+        SclDOI getDOIfromSDAI(SclSDI sclSDI)
+        {
+            object parent = sclSDI.Parent;
+            while (!(parent is SclDOI))
+            {
+                SclSDI sclSDI1 = parent as SclSDI;
+                parent = sclSDI1.Parent;
+            }
+            SclDOI doName = (SclDOI)parent;
+
+
+            return doName;
+        }
+        SclSDI getSDIIInternal(SclSDI sclSDI, DataObject dataObject, LogicalNode logicalNode)
+        {
+            SclSDI returnValue = null;
+            foreach (SclSDI sclSDI1 in sclSDI.SclSDIs)
+            {
+                if (sclSDI1.Name == dataObject.Name)
+                {
+                    string hh = ((LogicalDevice)logicalNode.Parent).Name + "/" + logicalNode.Name;
+
+                    string objRefString = getObjRef(hh, sclSDI);
+                    if (dataObject.ObjRef.StartsWith(objRefString))
+                    {
+
+                        returnValue = sclSDI1;
+                        break;
+
+                    }
+                }
+            }
+
+            return returnValue;
+        }
+
+        SclSDI getSDI(LogicalNode logicalNode, DataObject dataObject, object DIObject)
+        {
+            SclSDI returnValue = null;
+            SclSDI sclSDI1 = DIObject as SclSDI;
+            if (sclSDI1 == null)
+                return null;
+
+
+            SclSDI sclSDI_internal = getSDIIInternal(sclSDI1, dataObject, logicalNode);
+
+
+            if (sclSDI_internal != null)
+            {
+
+                return sclSDI_internal;
+            }
+
+            else
+            {
+                foreach (SclSDI sclSDI in sclSDI1.SclSDIs)
+                {
+                    SclSDI sclSDI2 = getSDI(logicalNode, dataObject, sclSDI);
+                    if (sclSDI2 != null)
+                    {
+                        returnValue = sclSDI2;  
+                        break;
+                    }
+                    
+                }
+            }
+
+
+            return returnValue;
+
+        }
+
+        SclDOI getSDO(LogicalNode logicalNode, DataObject dataObject)
+        {
+            SclSDI returnSDI = null;
+
+            
+            foreach (SclDOI sclDOI1 in logicalNode.SclElement.DOIs)
+            {
+                foreach(SclSDI sclSDI in sclDOI1.SclSDIs)
+                {
+                    returnSDI = getSDI(logicalNode, dataObject, sclSDI);
+                    if(returnSDI != null)
+                    {
+                        break;
+                    }   
+                }
+
+                if(returnSDI != null)
+                {
+                    break;
+                }
+            }
+            if (returnSDI == null)
+                return null;
+            else
+                return getDOIfromSDAI(returnSDI);
+
+        }
 
         void printDataAttributes(StreamWriter output, DataAttribute dataAttribute, bool isTransient)
         {
+            if (dataAttribute.ObjRef.Contains("serNum"))
+            {
+                Console.WriteLine("Debug");
+            }
+
             if (dataAttribute.AttributeType != AttributeType.CONSTRUCTED)
             {
                 //if (value != null)
                 //{
 
-
                 DataObject dataObject = findDOParent(dataAttribute);
                 //DataObject dataObject = dataAttribute.Parent as DataObject;
                 //LogicalNode logicalNode = dataObject.Parent as LogicalNode;
                 LogicalNode logicalNode = findLNParent(dataObject);
+               
                 SclDOI sclDOI = logicalNode.SclElement.DOIs.Find(x => x.Name == dataObject.Name);
+                
+                if(sclDOI == null)
+                {
+                    sclDOI = getSDO(logicalNode, dataObject);
+                }
                 SclDAI sclDAI = getDAI(sclDOI, dataAttribute.Name);
 
-                if (sclDAI == null)
+
+                string obValue = getDAIValue(dataAttribute, sclDOI);
+
+                if (obValue == null)
                 {
                     output.WriteLine(";");
 
                     return;
                 }
-                string value = sclDAI.Val;
+                //string value = sclDAI.Val;
+                string value = obValue;
 
                 if (value != null)
                 {
