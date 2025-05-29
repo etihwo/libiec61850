@@ -2,6 +2,9 @@
 using IEC61850.Server;
 using IEC61850.Common;
 using System.Threading;
+using System.Net;
+using static IEC61850.Server.IedServer;
+using System.Collections.Generic;
 
 namespace server1
 {
@@ -94,6 +97,26 @@ namespace server1
                 }
 
             }, null);
+
+            void ConnectionCallBack(IedServer server, ClientConnection clientConnection, bool connected, object parameter)
+            {
+                string allowedIp = parameter as string;
+                string ipAddress = clientConnection.GetPeerAddress();
+                if (allowedIp == ipAddress)
+                {
+
+                }
+                else
+                {
+
+                }
+
+
+            }
+
+            var connectionCallBack = new ConnectionIndicationHandler(ConnectionCallBack);
+
+            iedServer.SetConnectionIndicationHandler(connectionCallBack, "127.0.0.2");
 
             iedServer.Start(102);
 
