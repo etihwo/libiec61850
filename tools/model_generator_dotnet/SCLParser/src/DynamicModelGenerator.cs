@@ -1,0 +1,1223 @@
+﻿/*
+ *  Copyright 2013-2025 Michael Zillgith, MZ Automation GmbH
+ *
+ *  This file is part of MZ Automation IEC 61850 SDK
+ * 
+ *  All rights reserved.
+ */
+
+using IEC61850.SCL.DataModel;
+using System;
+using System.IO;
+using System.Runtime.InteropServices.ComTypes;
+using System.Xml.Linq;
+
+namespace IEC61850.SCL
+{
+    public class DynamicModelGenerator
+    {
+        private SclConnectedAP connectedAP = null;
+        private SclIED ied = null;
+        private bool hasOwner = false;
+        private IEDDataModel iED = null;
+        private SclDocument sclDocument;
+
+        public DynamicModelGenerator(SclDocument sclDocument, StreamWriter output, IEDDataModel iED, SclAccessPoint accessPoint)
+        {
+            this.sclDocument = sclDocument;
+            this.iED = iED;
+
+            connectedAP = sclDocument.GetConnectedAP(accessPoint.Name, iED.Name);
+
+            output.WriteLine("MODEL(" + iED.Name + "){");
+            foreach (LogicalDevice ld in iED.LogicalDevices)
+            {
+                output.Write("LD(" + ld.Inst + "){\n");
+
+                ExportLogicalNodes(output, ld);
+
+                output.WriteLine("}");
+            }
+            output.WriteLine("}");
+        }
+
+        private void ExportLogicalNodes(StreamWriter output, LogicalDevice logicalDevice)
+        {
+            foreach (LogicalNode logicalNode in logicalDevice.LogicalNodes)
+            {
+                output.Write("LN(" + logicalNode.Name + "){\n");
+
+                ExportLogicalNode(output, logicalNode, logicalDevice);
+
+                output.WriteLine("}");
+            }
+        }
+
+        private void ExportLogicalNode(StreamWriter output, LogicalNode logicalNode, LogicalDevice logicalDevice)
+        {
+            if (logicalNode.SettingControl != null)
+                output.Write("SG(" + logicalNode.SettingControl.ActSG + " " + logicalNode.SettingControl.NumOfSGs + ")\n");
+
+
+            foreach (DataObject dataObject in logicalNode.DataObjects)
+            {
+                output.Write("DO(" + dataObject.Name + " " + dataObject.Count + "){\n");
+
+                ExportDataObject(output, dataObject, false);
+
+                output.WriteLine("}");
+            }
+
+            foreach (DataSet dataSet in logicalNode.DataSets)
+                ExportDataSet(output, dataSet, logicalNode);
+
+            foreach (ReportControl rcb in logicalNode.ReportControlBlocks)
+            {
+                if (rcb.SclReportControl.Indexed)
+                {
+
+                    int maxInstances = 1;
+
+                    if (rcb.SclReportControl.RptEna != null)
+                        maxInstances = rcb.SclReportControl.RptEna.Max;
+
+                    for (int i = 0; i < maxInstances; i++)
+                    {
+                        string index = (i + 1).ToString("00");
+                        PrintRCBInstance(output, rcb, index);
+                    }
+                }
+                else
+                    PrintRCBInstance(output, rcb, "");
+            }
+
+            foreach (LogControl lcb in logicalNode.LogControls)
+                PrintLCB(output, lcb, logicalNode, logicalDevice);
+
+            foreach (Log log in logicalNode.Logs)
+                output.WriteLine("LOG(" + log.Name + ");");
+
+            foreach (GSEControl gcb in logicalNode.GSEControls)
+            {
+                PrintGSEControl(output, gcb);
+            }
+
+            foreach (SMVControl smv in logicalNode.SMVControls)
+            {
+                PrintSMVControl(output, smv);
+            }
+        }
+
+        private void PrintGSEControl(StreamWriter output, GSEControl gcb)
+        {
+            SclGSE gse = null;
+            SclAddress gseAddress = null;
+
+            if (connectedAP != null)
+            {
+                gse = connectedAP.GSEs.Find(x => x.CbName == gcb.Name);
+
+                if (gse != null)
+                    gseAddress = gse.SclAddress;
+            }
+            else
+                Console.WriteLine("WARNING: IED \"" + ied.Name + "\" has no connected access point!");
+
+            output.Write("GC(");
+            output.Write(gcb.Name + " ");
+
+            if (gcb.SclGSEControl.AppID != null)
+                output.Write(gcb.SclGSEControl.AppID + " ");
+            else
+                output.Write("null ");
+
+
+            if (gcb.SclGSEControl.DatSet != null)
+                output.Write(gcb.SclGSEControl.DatSet + " ");
+            else
+                output.Write("null ");
+
+            if (gcb.SclGSEControl.ConfRev >= 0)
+                output.Write(gcb.SclGSEControl.ConfRev + " ");
+            else
+                output.Write("0 ");
+
+            if (gcb.SclGSEControl.FixedOffs)
+                output.Write('1');
+            else
+                output.Write('0');
+
+            output.Write(' ');
+
+            if (gse != null)
+            {
+                if (gse.Mintime != null)
+                    output.Write(gse.Mintime);
+                else
+                    output.Write("0");
+
+                output.Write(' ');
+
+                if (gse.Maxtime != null)
+                    output.Write(gse.Maxtime);
+                else
+                    output.Write("0");
+            }
+            else
+            {
+                output.Write("0 0");
+            }
+
+            if (gseAddress == null)
+            {
+                output.WriteLine(");");
+            }
+            else
+            {
+                output.WriteLine("){");
+
+                output.Write("PA(");
+                output.Write(gseAddress.VlanPriority + " ");
+                output.Write(gseAddress.VlanId + " ");
+                output.Write(gseAddress.AppId + " ");
+
+                for (int i = 0; i < 6; i++)
+                {
+                    string hexValue = gseAddress.MacAddress[i].ToString("X2");
+                    output.Write(hexValue);
+                }
+
+                output.WriteLine(");");
+
+                output.WriteLine("}");
+            }
+        }
+
+        private void PrintSMVControl(StreamWriter output, SMVControl smv)
+        {
+            SclSMV sclsmv = null;
+            SclAddress smvAddress = null;
+
+            if (connectedAP != null)
+            {
+                sclsmv = connectedAP.SMVs.Find(x => x.CbName == smv.Name);
+
+                if (sclsmv != null)
+                    smvAddress = sclsmv.SclAddress;
+            }
+
+            output.Write("SMVC(");
+            output.Write(smv.Name + " ");
+            if (smv.SclSMVControl.SmvID != null)
+                output.Write(smv.SclSMVControl.SmvID + " ");
+            else
+                output.Write("null ");
+
+            if (smv.SclSMVControl.DataSet != null)
+                output.Write(smv.SclSMVControl.DataSet + " ");
+            else
+                output.Write("null ");
+
+            if (smv.SclSMVControl.ConfRev >= 0)
+                output.Write(smv.SclSMVControl.ConfRev + " ");
+            else
+                output.Write("0 ");
+
+            if (smv.SclSMVControl.SmpMod != null)
+                output.Write(smv.SclSMVControl.SmpMod + " ");
+            else
+                output.Write("0 ");
+
+            if(smv.SclSMVControl.SmpRate != -1)
+                output.Write(smv.SclSMVControl.SmpRate + " ");
+            else
+                output.Write("0 ");
+            //output.Write(smv.SclSMVControl.SmpRate + " ");
+
+            if (smv.SclSMVControl.SclSmvOpts != null)
+                output.Write(smv.SclSMVControl.SclSmvOpts.GetIntValue());
+            else
+                output.Write("0");
+
+            output.Write(' ');
+
+            if (smv.SclSMVControl.Multicast)
+                output.Write('1');
+            else
+                output.Write("0");
+            output.Write(' ');
+
+
+            if (smvAddress == null)
+            {
+                output.WriteLine(");");
+            }
+            else
+            {
+                output.WriteLine("){");
+
+                output.Write("PA(");
+                output.Write(smvAddress.VlanPriority + " ");
+                output.Write(smvAddress.VlanId + " ");
+                output.Write(smvAddress.AppId + " ");
+
+                for (int i = 0; i < 6; i++)
+                {
+                    string hexValue = smvAddress.MacAddress[i].ToString("X2");
+                    output.Write(hexValue);
+                }
+
+                output.WriteLine(");");
+
+                output.WriteLine("}");
+            }
+        }
+
+        private void PrintLCB(StreamWriter output, LogControl lcb, LogicalNode ln, LogicalDevice logicalDevice)
+        {
+            output.Write("LC(");
+            output.Write(lcb.Name + " ");
+
+            if (lcb.SclLogControl.DatSet != null && lcb.SclLogControl.DatSet != "")
+                output.Write(lcb.SclLogControl.DatSet + " ");
+            else
+                output.Write("- ");
+
+            if (lcb.SclLogControl.LogName != null && lcb.SclLogControl.LogName != "")
+            {
+                String logRef = logicalDevice.Inst + "/" + ln.Name + "$" + lcb.SclLogControl.LogName;
+                output.Write(logRef + " ");
+            }
+            else
+                output.Write("- ");
+
+            if (lcb.SclLogControl.TrgOps != null)
+            {
+                output.Write(lcb.SclLogControl.TrgOps.GetIntValue() + " ");
+            }
+
+            
+            if(lcb.SclLogControl.IntgPd is null)
+                output.Write("0 ");
+            else
+                output.Write(lcb.SclLogControl.IntgPd + " ");
+
+
+            if (lcb.SclLogControl.LogEna)
+                output.Write("1 ");
+            else
+                output.Write("0 ");
+
+            if (lcb.SclLogControl.ReasonCode)
+                output.WriteLine("1);");
+            else
+                output.WriteLine("0);");
+        }
+
+        private void PrintRCBInstance(StreamWriter output, ReportControl rcb, string index)
+        {
+            output.Write("RC(");
+            output.Write(rcb.Name + index + " ");
+
+            if (rcb.SclReportControl.RptID != null)
+                output.Write(rcb.SclReportControl.RptID + " ");
+            else
+                output.Write("- ");
+
+            if (rcb.SclReportControl.Buffered)
+                output.Write("1 ");
+            else
+                output.Write("0 ");
+
+            if (rcb.SclReportControl.DatSet != null)
+                output.Write(rcb.SclReportControl.DatSet + " ");
+            else
+                output.Write("- ");
+
+            if (rcb.SclReportControl.IntConfRev >= 0)
+                output.Write(rcb.SclReportControl.IntConfRev + " ");
+            else
+                output.Write("0 ");
+
+            int triggerOptions = 0;
+
+            if (rcb.SclReportControl.TrgOps != null)
+            {
+                triggerOptions = rcb.SclReportControl.TrgOps.GetIntValue();
+            }
+
+            if (hasOwner)
+                triggerOptions += 64;
+
+            output.Write(triggerOptions + " ");
+
+            int OptFields = 0;
+            if (rcb.SclReportControl.OptFields != null)
+            {
+                OptFields = rcb.SclReportControl.OptFields.GetIntValue();
+            }
+            output.Write(OptFields + " ");
+
+
+            if (rcb.SclReportControl.BufTime != null)
+                output.Write(rcb.SclReportControl.BufTime + " ");
+            else
+                output.Write("0 ");
+
+
+            if (rcb.SclReportControl.IntgPd != null)
+                output.Write(rcb.SclReportControl.IntgPd);
+            else
+                output.Write("0");
+
+
+            output.WriteLine(");");
+        }
+
+        private void exportDataObjectChild(StreamWriter output, DataObject dataObject, bool isTransient)
+        {
+
+            foreach (DataObjectOrAttribute child in dataObject.DataObjectsAndAttributes)
+            {
+                if (child is DataObject)
+                {
+                    DataObject subDataObject = child as DataObject;
+                    output.Write("DO(" + subDataObject.Name + " " + subDataObject.Count + "){\n");
+
+                    ExportDataObject(output, subDataObject, isTransient);
+
+                    output.WriteLine("}");
+                }
+                else
+                {
+                    DataAttribute dataAttribute = child as DataAttribute;
+                    ExportDataAttribute(output, dataAttribute, isTransient);
+                }
+            }
+
+
+        }
+
+        private void ExportDataObject(StreamWriter output, DataObject dataObject, bool isTransient)
+        {
+
+            if (dataObject.IsTransiente)
+                isTransient = true;
+
+            if (dataObject.Count > 0)
+            {
+                /* data object is an array */
+                for (int i = 0; i < dataObject.Count; i++)
+                {
+                    output.WriteLine("[" + i + "]{\n");
+
+                    exportDataObjectChild(output, dataObject, isTransient);
+
+                    output.Write("}\n");
+                }
+            }
+            else
+            {
+                exportDataObjectChild(output, dataObject, isTransient);
+
+            }
+
+        }
+
+        //private void printDataAttributeValue(StreamWriter output, DataAttribute dataAttribute, bool isTransient)
+        //{
+        //    if (dataAttribute.AttributeType != AttributeType.CONSTRUCTED)
+        //    {
+        //        SclVal value = dataAttribute.Definition.GetVal();
+
+        //        /* if no value is given use default value for type if present */
+        //        if (value == null)
+        //        {
+        //            value = dataAttribute.Definition.GetVal();
+
+        //            //if (value != null)
+        //            //    if (value.Value == null)
+        //            //        value.updateEnumOrdValue(ied.getTypeDeclarations());
+        //        }
+
+        //        if (value != null)
+        //        {
+
+        //            switch (dataAttribute.AttributeType)
+        //            {
+        //                case AttributeType.ENUMERATED:
+        //                case AttributeType.INT8:
+        //                case AttributeType.INT16:
+        //                case AttributeType.INT32:
+        //                case AttributeType.INT64:
+        //                    output.Write("=" + value.Value());
+        //                    break;
+        //                case AttributeType.INT8U:
+        //                case AttributeType.INT16U:
+        //                case AttributeType.INT24U:
+        //                case AttributeType.INT32U:
+        //                    output.Write("=" + value.getLongValue());
+        //                    break;
+        //                case AttributeType.BOOLEAN:
+        //                    {
+        //                        Boolean boolVal = (Boolean)value.getValue();
+
+        //                        if (boolVal.booleanValue())
+        //                            output.print("=1");
+        //                    }
+        //                    break;
+        //                case AttributeType.UNICODE_STRING_255:
+        //                    output.print("=\"" + value.getValue() + "\"");
+        //                    break;
+        //                case AttributeType.CURRENCY:
+        //                case AttributeType.VISIBLE_STRING_32:
+        //                case AttributeType.VISIBLE_STRING_64:
+        //                case AttributeType.VISIBLE_STRING_129:
+        //                case AttributeType.VISIBLE_STRING_255:
+        //                case AttributeType.VISIBLE_STRING_65:
+        //                    output.Write("=\"" + value.getValue() + "\"");
+        //                    break;
+        //                case AttributeType.FLOAT32:
+        //                case AttributeType.FLOAT64:
+        //                    output.Write("=" + value.getValue());
+        //                    break;
+        //                case AttributeType.TIMESTAMP:
+        //                case AttributeType.ENTRY_TIME:
+        //                    output.Write("=" + value.getLongValue());
+        //                    break;
+
+        //                default:
+        //                    System.out.println("Unknown default value for " + dataAttribute.getName() + " type: " + dataAttribute.getType());
+        //                    break;
+        //            }
+
+        //        }
+
+        //        output.Write(";");
+        //    }
+        //    else
+        //    {
+        //        output.Write("{");
+
+        //        foreach (DataAttribute subDataAttribute in dataAttribute.subDataAttributes)
+        //        {
+        //            ExportDataAttribute(output, subDataAttribute, isTransient);
+        //        }
+
+        //        output.Write("}");
+        //    }
+        //}
+        SclDAI getDAI(object parent, string name)
+        {
+            if (parent == null)
+                return null;
+
+            if (parent is SclDOI sclDOI)
+                return sclDOI.SclDAIs.Find(x => x.Name == name);
+            else if (parent is SclSDI sclSDI)
+                return sclSDI.SclDAIs.Find(x => x.Name == name);
+            else
+                return null;
+        }
+
+        DataObject findDOParent(DataAttribute dataAttribute)
+        {
+            DataObject parentObject = null;
+            //DataObjectOrAttribute obj = null;
+            
+            while(!(dataAttribute.Parent is DataObject))
+            {
+                dataAttribute = dataAttribute.Parent as DataAttribute;
+            }
+            parentObject = dataAttribute.Parent as DataObject;
+
+
+            return parentObject;
+        
+        
+        }
+
+        LogicalNode findLNParent(DataObject dataObject)
+        {
+            LogicalNode parentObject = null;
+            //DataObjectOrAttribute obj = null;
+
+            while (!(dataObject.Parent is LogicalNode))
+            {
+                dataObject = dataObject.Parent as DataObject;
+            }
+            parentObject = dataObject.Parent as LogicalNode;
+
+
+            return parentObject;
+
+
+        }
+
+        public SclDataAttributeDefinition GetDA(string name, SclDOType doType)
+        {
+            foreach (SclDataAttributeDefinition sclDa in doType.DataAttributes)
+            {
+                if (sclDa.Name != null && sclDa.Name.Equals(name))
+                    return sclDa;
+            }
+
+            return null;
+        }
+
+        //private void SetPredefindedValuesForDAI(LogicalNode ln, DataAttribute dataAttribute, DataObject dataObject)
+        //{
+        //    if (dai.Name != null)
+        //    {
+
+        //}
+
+        //private void SetPredefinedValuesForSDI(LogicalNode ln, string path, SclSDI sclSdi, SclDOType doType, SclDAType daType, SclDataTypeTemplates types, DataAttribute dataAttribute)
+        //{
+        //    if (sclSdi.Name != null)
+        //    {
+        //        string extendedPath = path + "." + sclSdi.Name;
+
+        //        foreach (SclDAI dai in sclSdi.SclDAIs)
+        //        {
+        //            if (doType != null)
+        //            {
+        //                SclDataAttributeDefinition sclDa = GetDA(dai.Name, doType);
+
+        //                if (sclDa != null)
+        //                {
+        //                    DataAttributeType bType = (DataAttributeType)sclDa.AttributeType;
+
+        //                    SetPredefindedValuesForDAI(ln, extendedPath, dai, bType, sclDa.Type, types);
+        //                }
+        //                else
+        //                {
+        //                    logMessage(IedModelFactoryLogLevel.ERROR, "SCL: DA for name " + dai.Name + " not found");
+        //                }
+        //            }
+        //            else if (daType != null)
+        //            {
+        //                SclDataAttributeDefinition sclBda = daType.GetBDA(dai.Name);
+
+        //                if (sclBda != null)
+        //                {
+        //                    DataAttributeType bType = (DataAttributeType)sclBda.AttributeType;
+
+        //                    SetPredefindedValuesForDAI(ln, extendedPath, dai, bType, sclBda.Type, types);
+        //                }
+
+        //            }
+        //        }
+
+        //        foreach (SclSDI sdi in sclSdi.SclSDIs)
+        //        {
+        //            if (doType != null)
+        //            {
+        //                SclDataAttributeDefinition da = doType.GetDA(sdi.Name, dataAttribute);
+
+        //                if (da != null)
+        //                {
+        //                    SclDAType subDaType = types.GetDAType(da.Type);
+
+        //                    if (subDaType != null)
+        //                    {
+        //                        SetPredefinedValuesForSDI(ln, extendedPath, sdi, null, subDaType, types);
+        //                    }             
+        //                }
+        //                else
+        //                {
+        //                    SclDataObjectDefinition sdo = doType.GetSDO(sdi.Name);
+
+        //                    if (sdo != null)
+        //                    {
+        //                        SclDOType subDoType = types.GetDOType(sdo.Type);
+
+        //                        if (subDoType != null)
+        //                        {
+        //                            SetPredefinedValuesForSDI(ln, extendedPath, sdi, subDoType, null, types);
+        //                        }
+
+        //                    }
+
+        //                }
+        //            }
+        //            else if (daType != null)
+        //            {
+        //                SclDataAttributeDefinition bda = daType.GetBDA(sdi.Name);
+
+        //                if (bda != null)
+        //                {
+        //                    SclDAType subDaType = types.GetDAType(bda.Type);
+
+        //                    if (subDaType != null)
+        //                    {
+        //                        SetPredefinedValuesForSDI(ln, extendedPath, sdi, null, subDaType, types);
+        //                    }
+
+        //                }
+
+        //            }
+        //        }
+        //    }
+        //}
+
+
+
+        //object findValue(DataAttribute dataAttribute)
+        //{
+        //    object value = null;
+
+        //    if(dataAttribute.Parent is DataAttribute dataAttribute1)
+        //    {
+        //        SclDAI sclDAI = getDAI(dataAttribute1.Parent, dataAttribute.Name);
+
+
+        //        SclSDO sclSDOI = null;
+        //        sclSDOI.
+        //    }
+
+        //    return value;
+        //}
+
+        SclDAI getDAIInternal(SclSDI sclSDI, DataAttribute dataAttribute)
+        {
+            SclDAI returnValue = null;
+            foreach(SclDAI sclDAI1 in sclSDI.SclDAIs)
+            {
+                if(sclDAI1.Name == dataAttribute.Name)
+                {
+                    if (dataAttribute.ObjRef.EndsWith("." + sclSDI.Name + "." + sclDAI1.Name))
+                    {
+
+                        returnValue = sclDAI1;
+                        break;
+
+                    }
+                }
+            }
+
+            return returnValue;
+        }
+
+        string getSDIValue(DataAttribute dataAttribute, object DIObject)
+        {
+            string value = null;
+
+            SclSDI sclSDI1 = DIObject as SclSDI;
+            if (sclSDI1 == null)
+                return value;
+
+
+            SclDAI sclDAI = getDAIInternal(sclSDI1, dataAttribute);
+
+
+            if (sclDAI != null)
+            {
+
+                value = sclDAI.Val;
+            }
+
+            else
+            {
+                foreach (SclSDI sclSDI in sclSDI1.SclSDIs)
+            {
+                    string fValue = getSDIValue(dataAttribute, sclSDI);
+                    if (fValue != null)
+                {
+                        value = fValue;
+                        break;
+                    }
+                }
+            }
+
+
+            return value;
+
+        }
+
+        string getDAIValue(DataAttribute dataAttribute, SclDOI sclDOI)
+        {
+            if (sclDOI == null)
+                return null;
+
+            string value = null;
+            SclDAI sclDAI = sclDOI.SclDAIs.Find(x => x.Name == dataAttribute.Name);
+            if (sclDAI != null)
+            {
+                value = sclDAI.Val;
+            }
+            else
+            { 
+                foreach (SclSDI sclSDI in sclDOI.SclSDIs)
+                {
+                    string fValue = getSDIValue(dataAttribute, sclSDI);
+                    if (fValue != null)
+                    {
+                        value = fValue;
+                        break;
+                    }
+                }
+                
+            }
+          
+            return value;
+
+        }
+
+        string getObjRef(string initialString, SclSDI sclSDI)
+        {
+            object parent = sclSDI.Parent;
+            while(!(parent is SclDOI))
+            {
+                SclSDI sclSDI1 = parent as SclSDI;
+                parent = sclSDI1.Parent;
+            }
+            SclDOI doName = (SclDOI)parent;
+            initialString += "." + doName.Name;
+
+
+            return initialString;
+        }
+
+        SclDOI getDOIfromSDAI(SclSDI sclSDI)
+        {
+            object parent = sclSDI.Parent;
+            while (!(parent is SclDOI))
+            {
+                SclSDI sclSDI1 = parent as SclSDI;
+                parent = sclSDI1.Parent;
+            }
+            SclDOI doName = (SclDOI)parent;
+
+
+            return doName;
+        }
+        SclSDI getSDIIInternal(SclSDI sclSDI, DataObject dataObject, LogicalNode logicalNode)
+        {
+            SclSDI returnValue = null;
+            foreach (SclSDI sclSDI1 in sclSDI.SclSDIs)
+            {
+                if (sclSDI1.Name == dataObject.Name)
+                {
+                    string hh = ((LogicalDevice)logicalNode.Parent).Name + "/" + logicalNode.Name;
+
+                    string objRefString = getObjRef(hh, sclSDI);
+                    if (dataObject.ObjRef.StartsWith(objRefString))
+                    {
+
+                        returnValue = sclSDI1;
+                        break;
+
+                    }
+                }
+            }
+
+            return returnValue;
+        }
+
+        SclSDI getSDI(LogicalNode logicalNode, DataObject dataObject, object DIObject)
+        {
+            SclSDI returnValue = null;
+            SclSDI sclSDI1 = DIObject as SclSDI;
+            if (sclSDI1 == null)
+                return null;
+
+
+            SclSDI sclSDI_internal = getSDIIInternal(sclSDI1, dataObject, logicalNode);
+
+
+            if (sclSDI_internal != null)
+            {
+
+                return sclSDI_internal;
+            }
+
+            else
+            {
+                foreach (SclSDI sclSDI in sclSDI1.SclSDIs)
+                {
+                    SclSDI sclSDI2 = getSDI(logicalNode, dataObject, sclSDI);
+                    if (sclSDI2 != null)
+                    {
+                        returnValue = sclSDI2;  
+                        break;
+                    }
+                    
+                }
+            }
+
+
+            return returnValue;
+
+        }
+
+        SclDOI getSDO(LogicalNode logicalNode, DataObject dataObject)
+        {
+            SclSDI returnSDI = null;
+
+            
+            foreach (SclDOI sclDOI1 in logicalNode.SclElement.DOIs)
+            {
+                foreach(SclSDI sclSDI in sclDOI1.SclSDIs)
+                {
+                    returnSDI = getSDI(logicalNode, dataObject, sclSDI);
+                    if(returnSDI != null)
+                    {
+                        break;
+                    }   
+                }
+
+                if(returnSDI != null)
+                {
+                    break;
+                }
+            }
+            if (returnSDI == null)
+                return null;
+            else
+                return getDOIfromSDAI(returnSDI);
+
+        }
+
+        void printDataAttributes(StreamWriter output, DataAttribute dataAttribute, bool isTransient)
+        {
+            if (dataAttribute.ObjRef.Contains("serNum"))
+            {
+                Console.WriteLine("Debug");
+            }
+
+            if (dataAttribute.AttributeType != AttributeType.CONSTRUCTED)
+            {
+                //if (value != null)
+                //{
+
+                DataObject dataObject = findDOParent(dataAttribute);
+                //DataObject dataObject = dataAttribute.Parent as DataObject;
+                //LogicalNode logicalNode = dataObject.Parent as LogicalNode;
+                LogicalNode logicalNode = findLNParent(dataObject);
+               
+                SclDOI sclDOI = logicalNode.SclElement.DOIs.Find(x => x.Name == dataObject.Name);
+                
+                if(sclDOI == null)
+                {
+                    sclDOI = getSDO(logicalNode, dataObject);
+                }
+                SclDAI sclDAI = getDAI(sclDOI, dataAttribute.Name);
+
+
+                string obValue = getDAIValue(dataAttribute, sclDOI);
+
+                if (obValue == null)
+                {
+                    output.WriteLine(";");
+
+                    return;
+                }
+                //string value = sclDAI.Val;
+                string value = obValue;
+
+                if (value != null)
+                {
+                    switch (dataAttribute.AttributeType)
+                    {
+                        case AttributeType.ENUMERATED:
+                            SclEnumType sclEnumType = sclDocument.DataTypeTemplates.GetEnumType(dataAttribute.Definition.Type);
+
+                            if (sclEnumType != null)
+                            {
+                                if (sclEnumType.EnumValues.Count > 0)
+                                {
+                                    SclEnumVal sclEnumVal = sclEnumType.EnumValues[0];
+                                    int value1 = sclEnumVal.Ord;
+                                    output.Write("=" + sclEnumVal.Ord);
+
+                                }
+
+                            }
+
+                            break;
+
+                        case AttributeType.INT8:
+                        case AttributeType.INT16:
+                        case AttributeType.INT32:
+                        case AttributeType.INT64:
+                        case AttributeType.INT8U:
+                        case AttributeType.INT16U:
+                        case AttributeType.INT24U:
+                        case AttributeType.INT32U:
+                            output.Write("=" + value);
+                            break;
+
+                        case AttributeType.BOOLEAN:
+                            if (value == "true")
+                                output.Write("=1");
+                            else
+                                output.Write("=0");
+                            break;
+
+                        case AttributeType.UNICODE_STRING_255:
+                            output.Write("=\"" + value + "\"");
+                            break;
+
+                        case AttributeType.CURRENCY:
+                        case AttributeType.VISIBLE_STRING_32:
+                        case AttributeType.VISIBLE_STRING_64:
+                        case AttributeType.VISIBLE_STRING_129:
+                        case AttributeType.VISIBLE_STRING_255:
+                        case AttributeType.VISIBLE_STRING_65:
+                            output.Write("=\"" + value + "\"");
+                            break;
+
+                        case AttributeType.OCTET_STRING_64:
+                            output.Write("=\"" + value + "\"");
+                            break;
+
+                        case AttributeType.FLOAT32:
+                        case AttributeType.FLOAT64:
+                            output.Write("=" + value);
+                            break;
+
+                        default:
+                            Console.WriteLine("Unknown default value for " + dataAttribute.Name + " type: " + dataAttribute.AttributeType);
+                            break;
+
+                    }
+
+                    //}
+                }
+
+                output.WriteLine(";");
+
+            }
+
+            else
+            {
+                output.WriteLine("{");
+
+                foreach (DataAttribute subDataAttribute in dataAttribute.SubDataAttributes)
+                {
+                    ExportDataAttribute(output, subDataAttribute, isTransient);
+                }
+
+                output.WriteLine("}");
+            }
+
+        }
+
+        private void ExportDataAttribute(StreamWriter output, DataAttribute dataAttribute, bool isTransient)
+        {
+            output.Write("DA(" + dataAttribute.Name + " ");
+            output.Write(dataAttribute.Count + " ");
+            output.Write((int)dataAttribute.AttributeType + " ");
+            output.Write((int)dataAttribute.Fc + " ");
+
+            if (dataAttribute.Definition.TriggerOptions != null)
+            {
+                int trgOpsVal = dataAttribute.Definition.TriggerOptions.GetIntValue();
+                
+                if (isTransient)
+                    trgOpsVal += 128;
+
+                output.Write(trgOpsVal + " ");
+            }
+
+
+            if (dataAttribute.Definition.SAddr != null)
+                output.Write(dataAttribute.Definition.SAddr);
+            else
+                output.Write("0");
+
+            output.Write(")");
+
+            if (dataAttribute.Count > 0)
+            {
+                output.WriteLine("{");
+
+                for (int i = 0; i < dataAttribute.Count; i++)
+                {
+                    output.Write("[" + i + "]");
+
+                    printDataAttributes(output, dataAttribute, isTransient);
+                }
+
+                output.WriteLine("}");
+            }
+
+            else
+            {
+
+                printDataAttributes(output, dataAttribute, isTransient);
+            }
+          
+
+
+
+            //if (value != null)
+            //{
+            //    switch (dataAttribute.AttributeType)
+            //    {
+            //        case AttributeType.ENUMERATED:
+            //            string EnumType = dataAttribute.Definition.Type;
+            //            SclEnumType sclEnumType;
+            //            if (EnumType != null)
+            //            {
+            //                sclEnumType = sclDocument.DataTypeTemplates.GetEnumType(EnumType);
+            //                if (sclEnumType != null)
+            //                {
+            //                    SclEnumVal sclEnumVal = sclEnumType.EnumValues.Find(x => x.SymbolicName == value.Value);
+            //                    output.Write("=" + sclEnumVal.Ord);
+            //                }
+            //            }
+
+                //            break;
+
+                //        case AttributeType.INT8:
+                //        case AttributeType.INT16:
+                //        case AttributeType.INT32:
+                //        case AttributeType.INT64:
+                //            output.Write("=" + value.Value);
+                //            break;
+                //        case AttributeType.INT8U:
+                //        case AttributeType.INT16U:
+                //        case AttributeType.INT24U:
+                //        case AttributeType.INT32U:
+                //            output.Write("=" + value.Value);
+                //            break;
+
+                //        case AttributeType.BOOLEAN:
+                //            if (value.Value == "true")
+                //                output.Write("=1");
+                //            else
+                //                output.Write("=0");
+                //            break;
+
+                //        case AttributeType.UNICODE_STRING_255:
+                //            output.Write("=\"" + value.Value + "\"");
+                //            break;
+
+                //        case AttributeType.CURRENCY:
+                //        case AttributeType.VISIBLE_STRING_32:
+                //        case AttributeType.VISIBLE_STRING_64:
+                //        case AttributeType.VISIBLE_STRING_129:
+                //        case AttributeType.VISIBLE_STRING_255:
+                //        case AttributeType.VISIBLE_STRING_65:
+                //            output.Write("=\"" + value.Value + "\"");
+                //            break;
+
+                //        case AttributeType.OCTET_STRING_64:
+                //            output.Write("=\"" + value.Value + "\"");
+                //            break;
+
+                //        case AttributeType.FLOAT32:
+                //        case AttributeType.FLOAT64:
+                //            output.Write("=" + value.Value);
+                //            break;
+
+                //        default:
+                //            Console.WriteLine("Unknown default value for " + dataAttribute.Name + " type: " + dataAttribute.AttributeType);
+                //            break;
+                //    }
+
+                //}
+
+                //output.WriteLine(";");
+                //}
+
+
+        }
+
+        private static String toMmsString(String iecString)
+        {
+            return iecString.Replace('.', '$');
+        }
+
+        private void ExportDataSet(StreamWriter output, DataSet dataSet, LogicalNode logicalNode)
+        {
+            output.Write("DS(" + dataSet.Name + "){\n");
+
+            foreach (SclFCDA fcda in dataSet.SclDataSet.Fcdas)
+            {
+                String mmsVariableName = "";
+
+                if (fcda.Prefix != null)
+                    mmsVariableName += fcda.Prefix;
+
+                mmsVariableName += fcda.LnClass;
+
+                if (fcda.LnInst != null)
+                    mmsVariableName += fcda.LnInst;
+
+                mmsVariableName += "$" + fcda.Fc;
+
+                mmsVariableName += "$" + fcda.DoName;
+
+                if (fcda.DaName != null)
+                    mmsVariableName += "$" + toMmsString(fcda.DaName);
+
+                int arrayStart = mmsVariableName.IndexOf('(');
+
+                String variableName = mmsVariableName;
+                int arrayIndex = -1;
+                string componentName = null;
+
+
+                if (arrayStart != -1)
+                {
+                    variableName = mmsVariableName.Substring(0, arrayStart);
+                    int arrayEnd = mmsVariableName.IndexOf(')');
+
+                    string arrayIndexStr = mmsVariableName.Substring(arrayStart + 1, arrayEnd);
+                    arrayIndex = int.Parse(arrayIndexStr);
+                    //if (arrayIndex < 0)
+                    //  throw new SclParserException("Array index out of range in data set entry definition");
+
+                    string componentNamePart = mmsVariableName.Substring(arrayEnd + 1);
+
+                    if ((componentNamePart != null) && (componentNamePart.Length > 0))
+                    {
+                        if (componentNamePart[0] == '$')
+                        {
+                            componentNamePart = componentNamePart.Substring(1);
+                        }
+
+                        if ((componentNamePart != null) && (componentNamePart.Length > 0))
+                            componentName = componentNamePart;
+                    }
+                }
+
+                /* check for LD name */
+
+                String logicalDeviceName = null;
+
+                if (fcda.LdInst != null)
+                {
+
+                    if (fcda.LdInst != (logicalNode.Parent as LogicalDevice).Inst)
+                    {
+                        logicalDeviceName = fcda.LdInst;
+                    }
+                }
+
+                if (logicalDeviceName != null)
+                    variableName = logicalDeviceName + "/" + variableName;
+
+                if (variableName != null && arrayIndex != -1 && componentName != null)
+                {
+                    output.Write("DE(" + variableName + " " + arrayIndex + " " + componentName + ");\n");
+                }
+                else if (variableName != null && arrayIndex != -1)
+                {
+                    output.Write("DE(" + variableName + " " + arrayIndex + ");\n");
+                }
+                else if (variableName != null)
+                {
+                    output.Write("DE(" + variableName + ");\n");
+                }
+
+            }
+
+            output.WriteLine("}");
+
+        }
+    }
+}
