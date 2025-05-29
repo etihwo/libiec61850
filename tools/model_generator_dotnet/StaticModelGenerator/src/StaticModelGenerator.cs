@@ -14,7 +14,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Runtime.InteropServices.ComTypes;
 using DataSet = IEC61850.SCL.DataModel.DataSet;
 
 namespace StaticModelGenerator
@@ -329,7 +328,7 @@ namespace StaticModelGenerator
             c_DataObjectStructure.parent = lnRef;
 
             c_DataObjectStructure.name = dataObject.Name;
-            if(c_DataObjectStructure.arrayIndex != -1)
+            if (c_DataObjectStructure.arrayIndex != -1)
                 c_DataObjectStructure.name = dataObject.Name + "_" + c_DataObjectStructure.arrayIndex;
             else
                 c_DataObjectStructure.objRef = lnRef + "_" + dataObject.Name;

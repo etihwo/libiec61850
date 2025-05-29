@@ -312,7 +312,7 @@ namespace StaticModelGenerator.C_Structures
         public override string ToString()
         {
             string cText = "";
-            if(arrayIndex == -1)
+            if (arrayIndex == -1)
                 cText = "DataObject " + parent + "_" + name + " = {\n";
             else
                 cText = "DataObject " + parent + "_" + name + "_" + arrayIndex + " = {\n";
@@ -320,7 +320,7 @@ namespace StaticModelGenerator.C_Structures
             cText += "  " + ModelNodeType + ",\n";
             cText += "  \"" + name + "\",\n";
 
-            if(arrayIndex != -1)
+            if (arrayIndex != -1)
                 cText += "  (ModelNode*) &" + parent + "_" + name + ",\n";
             else
                 cText += "  (ModelNode*) &" + parent + ",\n";
@@ -337,7 +337,7 @@ namespace StaticModelGenerator.C_Structures
 
             cText += "  " + elementCount + ",\n";
 
-            if(elementCount == 0)
+            if (elementCount == 0)
                 cText += "  " + arrayIndex + "\n";
             else
                 cText += "  0" + arrayIndex + "\n";
@@ -768,7 +768,7 @@ namespace StaticModelGenerator.C_Structures
             cText += "SVControlBlock " + externName + " = {\n";
             cText += "  &" + parent + ",\n";
 
-            if(SMVControl.SclSMVControl.Name != null)
+            if (SMVControl.SclSMVControl.Name != null)
                 cText += "  \"" + SMVControl.Name + index + "\",\n";
             else
                 cText += "  NULL,\n";
@@ -813,9 +813,9 @@ namespace StaticModelGenerator.C_Structures
 
 
             cText += "  " + SMVControl.SclSMVControl.Multicast.ToString().ToLower() + ",\n";
-        
+
             cText += "  " + SMVControl.SclSMVControl.NofASDU + ",\n";
-           
+
             //if(SMVControl.SclSMVControl.SecurityEnabled != null)
             //    cText += "  " + SMVControl.SclSMVControl.SecurityEnabled + ",\n";
 

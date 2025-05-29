@@ -9,8 +9,6 @@
 using IEC61850.SCL.DataModel;
 using System;
 using System.IO;
-using System.Runtime.InteropServices.ComTypes;
-using System.Xml.Linq;
 
 namespace IEC61850.SCL
 {
@@ -228,11 +226,10 @@ namespace IEC61850.SCL
             else
                 output.Write("0 ");
 
-            if(smv.SclSMVControl.SmpRate != -1)
+            if (smv.SclSMVControl.SmpRate != -1)
                 output.Write(smv.SclSMVControl.SmpRate + " ");
             else
                 output.Write("0 ");
-            //output.Write(smv.SclSMVControl.SmpRate + " ");
 
             if (smv.SclSMVControl.SclSmvOpts != null)
                 output.Write(smv.SclSMVControl.SclSmvOpts.GetIntValue());
@@ -296,8 +293,8 @@ namespace IEC61850.SCL
                 output.Write(lcb.SclLogControl.TrgOps.GetIntValue() + " ");
             }
 
-            
-            if(lcb.SclLogControl.IntgPd is null)
+
+            if (lcb.SclLogControl.IntgPd is null)
                 output.Write("0 ");
             else
                 output.Write(lcb.SclLogControl.IntgPd + " ");
@@ -424,89 +421,6 @@ namespace IEC61850.SCL
 
         }
 
-        //private void printDataAttributeValue(StreamWriter output, DataAttribute dataAttribute, bool isTransient)
-        //{
-        //    if (dataAttribute.AttributeType != AttributeType.CONSTRUCTED)
-        //    {
-        //        SclVal value = dataAttribute.Definition.GetVal();
-
-        //        /* if no value is given use default value for type if present */
-        //        if (value == null)
-        //        {
-        //            value = dataAttribute.Definition.GetVal();
-
-        //            //if (value != null)
-        //            //    if (value.Value == null)
-        //            //        value.updateEnumOrdValue(ied.getTypeDeclarations());
-        //        }
-
-        //        if (value != null)
-        //        {
-
-        //            switch (dataAttribute.AttributeType)
-        //            {
-        //                case AttributeType.ENUMERATED:
-        //                case AttributeType.INT8:
-        //                case AttributeType.INT16:
-        //                case AttributeType.INT32:
-        //                case AttributeType.INT64:
-        //                    output.Write("=" + value.Value());
-        //                    break;
-        //                case AttributeType.INT8U:
-        //                case AttributeType.INT16U:
-        //                case AttributeType.INT24U:
-        //                case AttributeType.INT32U:
-        //                    output.Write("=" + value.getLongValue());
-        //                    break;
-        //                case AttributeType.BOOLEAN:
-        //                    {
-        //                        Boolean boolVal = (Boolean)value.getValue();
-
-        //                        if (boolVal.booleanValue())
-        //                            output.print("=1");
-        //                    }
-        //                    break;
-        //                case AttributeType.UNICODE_STRING_255:
-        //                    output.print("=\"" + value.getValue() + "\"");
-        //                    break;
-        //                case AttributeType.CURRENCY:
-        //                case AttributeType.VISIBLE_STRING_32:
-        //                case AttributeType.VISIBLE_STRING_64:
-        //                case AttributeType.VISIBLE_STRING_129:
-        //                case AttributeType.VISIBLE_STRING_255:
-        //                case AttributeType.VISIBLE_STRING_65:
-        //                    output.Write("=\"" + value.getValue() + "\"");
-        //                    break;
-        //                case AttributeType.FLOAT32:
-        //                case AttributeType.FLOAT64:
-        //                    output.Write("=" + value.getValue());
-        //                    break;
-        //                case AttributeType.TIMESTAMP:
-        //                case AttributeType.ENTRY_TIME:
-        //                    output.Write("=" + value.getLongValue());
-        //                    break;
-
-        //                default:
-        //                    System.out.println("Unknown default value for " + dataAttribute.getName() + " type: " + dataAttribute.getType());
-        //                    break;
-        //            }
-
-        //        }
-
-        //        output.Write(";");
-        //    }
-        //    else
-        //    {
-        //        output.Write("{");
-
-        //        foreach (DataAttribute subDataAttribute in dataAttribute.subDataAttributes)
-        //        {
-        //            ExportDataAttribute(output, subDataAttribute, isTransient);
-        //        }
-
-        //        output.Write("}");
-        //    }
-        //}
         SclDAI getDAI(object parent, string name)
         {
             if (parent == null)
@@ -523,9 +437,8 @@ namespace IEC61850.SCL
         DataObject findDOParent(DataAttribute dataAttribute)
         {
             DataObject parentObject = null;
-            //DataObjectOrAttribute obj = null;
-            
-            while(!(dataAttribute.Parent is DataObject))
+
+            while (!(dataAttribute.Parent is DataObject))
             {
                 dataAttribute = dataAttribute.Parent as DataAttribute;
             }
@@ -533,14 +446,13 @@ namespace IEC61850.SCL
 
 
             return parentObject;
-        
-        
+
+
         }
 
         LogicalNode findLNParent(DataObject dataObject)
         {
             LogicalNode parentObject = null;
-            //DataObjectOrAttribute obj = null;
 
             while (!(dataObject.Parent is LogicalNode))
             {
@@ -565,126 +477,12 @@ namespace IEC61850.SCL
             return null;
         }
 
-        //private void SetPredefindedValuesForDAI(LogicalNode ln, DataAttribute dataAttribute, DataObject dataObject)
-        //{
-        //    if (dai.Name != null)
-        //    {
-
-        //}
-
-        //private void SetPredefinedValuesForSDI(LogicalNode ln, string path, SclSDI sclSdi, SclDOType doType, SclDAType daType, SclDataTypeTemplates types, DataAttribute dataAttribute)
-        //{
-        //    if (sclSdi.Name != null)
-        //    {
-        //        string extendedPath = path + "." + sclSdi.Name;
-
-        //        foreach (SclDAI dai in sclSdi.SclDAIs)
-        //        {
-        //            if (doType != null)
-        //            {
-        //                SclDataAttributeDefinition sclDa = GetDA(dai.Name, doType);
-
-        //                if (sclDa != null)
-        //                {
-        //                    DataAttributeType bType = (DataAttributeType)sclDa.AttributeType;
-
-        //                    SetPredefindedValuesForDAI(ln, extendedPath, dai, bType, sclDa.Type, types);
-        //                }
-        //                else
-        //                {
-        //                    logMessage(IedModelFactoryLogLevel.ERROR, "SCL: DA for name " + dai.Name + " not found");
-        //                }
-        //            }
-        //            else if (daType != null)
-        //            {
-        //                SclDataAttributeDefinition sclBda = daType.GetBDA(dai.Name);
-
-        //                if (sclBda != null)
-        //                {
-        //                    DataAttributeType bType = (DataAttributeType)sclBda.AttributeType;
-
-        //                    SetPredefindedValuesForDAI(ln, extendedPath, dai, bType, sclBda.Type, types);
-        //                }
-
-        //            }
-        //        }
-
-        //        foreach (SclSDI sdi in sclSdi.SclSDIs)
-        //        {
-        //            if (doType != null)
-        //            {
-        //                SclDataAttributeDefinition da = doType.GetDA(sdi.Name, dataAttribute);
-
-        //                if (da != null)
-        //                {
-        //                    SclDAType subDaType = types.GetDAType(da.Type);
-
-        //                    if (subDaType != null)
-        //                    {
-        //                        SetPredefinedValuesForSDI(ln, extendedPath, sdi, null, subDaType, types);
-        //                    }             
-        //                }
-        //                else
-        //                {
-        //                    SclDataObjectDefinition sdo = doType.GetSDO(sdi.Name);
-
-        //                    if (sdo != null)
-        //                    {
-        //                        SclDOType subDoType = types.GetDOType(sdo.Type);
-
-        //                        if (subDoType != null)
-        //                        {
-        //                            SetPredefinedValuesForSDI(ln, extendedPath, sdi, subDoType, null, types);
-        //                        }
-
-        //                    }
-
-        //                }
-        //            }
-        //            else if (daType != null)
-        //            {
-        //                SclDataAttributeDefinition bda = daType.GetBDA(sdi.Name);
-
-        //                if (bda != null)
-        //                {
-        //                    SclDAType subDaType = types.GetDAType(bda.Type);
-
-        //                    if (subDaType != null)
-        //                    {
-        //                        SetPredefinedValuesForSDI(ln, extendedPath, sdi, null, subDaType, types);
-        //                    }
-
-        //                }
-
-        //            }
-        //        }
-        //    }
-        //}
-
-
-
-        //object findValue(DataAttribute dataAttribute)
-        //{
-        //    object value = null;
-
-        //    if(dataAttribute.Parent is DataAttribute dataAttribute1)
-        //    {
-        //        SclDAI sclDAI = getDAI(dataAttribute1.Parent, dataAttribute.Name);
-
-
-        //        SclSDO sclSDOI = null;
-        //        sclSDOI.
-        //    }
-
-        //    return value;
-        //}
-
         SclDAI getDAIInternal(SclSDI sclSDI, DataAttribute dataAttribute)
         {
             SclDAI returnValue = null;
-            foreach(SclDAI sclDAI1 in sclSDI.SclDAIs)
+            foreach (SclDAI sclDAI1 in sclSDI.SclDAIs)
             {
-                if(sclDAI1.Name == dataAttribute.Name)
+                if (sclDAI1.Name == dataAttribute.Name)
                 {
                     if (dataAttribute.ObjRef.EndsWith("." + sclSDI.Name + "." + sclDAI1.Name))
                     {
@@ -720,10 +518,10 @@ namespace IEC61850.SCL
             else
             {
                 foreach (SclSDI sclSDI in sclSDI1.SclSDIs)
-            {
+                {
                     string fValue = getSDIValue(dataAttribute, sclSDI);
                     if (fValue != null)
-                {
+                    {
                         value = fValue;
                         break;
                     }
@@ -747,7 +545,7 @@ namespace IEC61850.SCL
                 value = sclDAI.Val;
             }
             else
-            { 
+            {
                 foreach (SclSDI sclSDI in sclDOI.SclSDIs)
                 {
                     string fValue = getSDIValue(dataAttribute, sclSDI);
@@ -757,9 +555,9 @@ namespace IEC61850.SCL
                         break;
                     }
                 }
-                
+
             }
-          
+
             return value;
 
         }
@@ -767,7 +565,7 @@ namespace IEC61850.SCL
         string getObjRef(string initialString, SclSDI sclSDI)
         {
             object parent = sclSDI.Parent;
-            while(!(parent is SclDOI))
+            while (!(parent is SclDOI))
             {
                 SclSDI sclSDI1 = parent as SclSDI;
                 parent = sclSDI1.Parent;
@@ -839,10 +637,10 @@ namespace IEC61850.SCL
                     SclSDI sclSDI2 = getSDI(logicalNode, dataObject, sclSDI);
                     if (sclSDI2 != null)
                     {
-                        returnValue = sclSDI2;  
+                        returnValue = sclSDI2;
                         break;
                     }
-                    
+
                 }
             }
 
@@ -855,19 +653,19 @@ namespace IEC61850.SCL
         {
             SclSDI returnSDI = null;
 
-            
+
             foreach (SclDOI sclDOI1 in logicalNode.SclElement.DOIs)
             {
-                foreach(SclSDI sclSDI in sclDOI1.SclSDIs)
+                foreach (SclSDI sclSDI in sclDOI1.SclSDIs)
                 {
                     returnSDI = getSDI(logicalNode, dataObject, sclSDI);
-                    if(returnSDI != null)
+                    if (returnSDI != null)
                     {
                         break;
-                    }   
+                    }
                 }
 
-                if(returnSDI != null)
+                if (returnSDI != null)
                 {
                     break;
                 }
@@ -888,17 +686,13 @@ namespace IEC61850.SCL
 
             if (dataAttribute.AttributeType != AttributeType.CONSTRUCTED)
             {
-                //if (value != null)
-                //{
 
                 DataObject dataObject = findDOParent(dataAttribute);
-                //DataObject dataObject = dataAttribute.Parent as DataObject;
-                //LogicalNode logicalNode = dataObject.Parent as LogicalNode;
                 LogicalNode logicalNode = findLNParent(dataObject);
-               
+
                 SclDOI sclDOI = logicalNode.SclElement.DOIs.Find(x => x.Name == dataObject.Name);
-                
-                if(sclDOI == null)
+
+                if (sclDOI == null)
                 {
                     sclDOI = getSDO(logicalNode, dataObject);
                 }
@@ -913,7 +707,7 @@ namespace IEC61850.SCL
 
                     return;
                 }
-                //string value = sclDAI.Val;
+
                 string value = obValue;
 
                 if (value != null)
@@ -983,7 +777,6 @@ namespace IEC61850.SCL
 
                     }
 
-                    //}
                 }
 
                 output.WriteLine(";");
@@ -1014,7 +807,7 @@ namespace IEC61850.SCL
             if (dataAttribute.Definition.TriggerOptions != null)
             {
                 int trgOpsVal = dataAttribute.Definition.TriggerOptions.GetIntValue();
-                
+
                 if (isTransient)
                     trgOpsVal += 128;
 
@@ -1048,82 +841,6 @@ namespace IEC61850.SCL
 
                 printDataAttributes(output, dataAttribute, isTransient);
             }
-          
-
-
-
-            //if (value != null)
-            //{
-            //    switch (dataAttribute.AttributeType)
-            //    {
-            //        case AttributeType.ENUMERATED:
-            //            string EnumType = dataAttribute.Definition.Type;
-            //            SclEnumType sclEnumType;
-            //            if (EnumType != null)
-            //            {
-            //                sclEnumType = sclDocument.DataTypeTemplates.GetEnumType(EnumType);
-            //                if (sclEnumType != null)
-            //                {
-            //                    SclEnumVal sclEnumVal = sclEnumType.EnumValues.Find(x => x.SymbolicName == value.Value);
-            //                    output.Write("=" + sclEnumVal.Ord);
-            //                }
-            //            }
-
-                //            break;
-
-                //        case AttributeType.INT8:
-                //        case AttributeType.INT16:
-                //        case AttributeType.INT32:
-                //        case AttributeType.INT64:
-                //            output.Write("=" + value.Value);
-                //            break;
-                //        case AttributeType.INT8U:
-                //        case AttributeType.INT16U:
-                //        case AttributeType.INT24U:
-                //        case AttributeType.INT32U:
-                //            output.Write("=" + value.Value);
-                //            break;
-
-                //        case AttributeType.BOOLEAN:
-                //            if (value.Value == "true")
-                //                output.Write("=1");
-                //            else
-                //                output.Write("=0");
-                //            break;
-
-                //        case AttributeType.UNICODE_STRING_255:
-                //            output.Write("=\"" + value.Value + "\"");
-                //            break;
-
-                //        case AttributeType.CURRENCY:
-                //        case AttributeType.VISIBLE_STRING_32:
-                //        case AttributeType.VISIBLE_STRING_64:
-                //        case AttributeType.VISIBLE_STRING_129:
-                //        case AttributeType.VISIBLE_STRING_255:
-                //        case AttributeType.VISIBLE_STRING_65:
-                //            output.Write("=\"" + value.Value + "\"");
-                //            break;
-
-                //        case AttributeType.OCTET_STRING_64:
-                //            output.Write("=\"" + value.Value + "\"");
-                //            break;
-
-                //        case AttributeType.FLOAT32:
-                //        case AttributeType.FLOAT64:
-                //            output.Write("=" + value.Value);
-                //            break;
-
-                //        default:
-                //            Console.WriteLine("Unknown default value for " + dataAttribute.Name + " type: " + dataAttribute.AttributeType);
-                //            break;
-                //    }
-
-                //}
-
-                //output.WriteLine(";");
-                //}
-
-
         }
 
         private static String toMmsString(String iecString)
@@ -1168,8 +885,6 @@ namespace IEC61850.SCL
 
                     string arrayIndexStr = mmsVariableName.Substring(arrayStart + 1, arrayEnd);
                     arrayIndex = int.Parse(arrayIndexStr);
-                    //if (arrayIndex < 0)
-                    //  throw new SclParserException("Array index out of range in data set entry definition");
 
                     string componentNamePart = mmsVariableName.Substring(arrayEnd + 1);
 

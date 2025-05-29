@@ -6,8 +6,6 @@
  *  All rights reserved.
  */
 
-using StaticModelGenerator;
-
 namespace modeGenerator_example
 {
 
@@ -122,11 +120,11 @@ namespace modeGenerator_example
                     Console.WriteLine("Wrong option, parse 1 or 2 \n" +
                    "Usage: Static Model (1) \n Dynamic Model (2) \n  <generator option> <ICD file>  [-ied  <ied-name>] [-ap <access-point-name>] [-out <output-name>] [-modelprefix <model-prefix>]");
                 }
-               
 
-              
+
+
             }
-           
+
         }
     }
 }

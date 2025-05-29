@@ -3,7 +3,6 @@ using IEC61850.SCL.DataModel;
 using System;
 using System.IO;
 using System.Linq;
-using System.Xml;
 
 namespace DynamicModel
 {
@@ -50,10 +49,10 @@ namespace DynamicModel
                 }
             }
             catch (Exception ex)
-            { 
+            {
                 Console.Write(ex.ToString());
             }
-           
+
         }
     }
 }
