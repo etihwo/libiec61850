@@ -9,8 +9,6 @@
 using IEC61850.SCL.DataModel;
 using System;
 using System.IO;
-using System.Runtime.InteropServices.ComTypes;
-using System.Xml.Linq;
 
 namespace IEC61850.SCL
 {
@@ -228,7 +226,7 @@ namespace IEC61850.SCL
             else
                 output.Write("0 ");
 
-            if(smv.SclSMVControl.SmpRate != -1)
+            if (smv.SclSMVControl.SmpRate != -1)
                 output.Write(smv.SclSMVControl.SmpRate + " ");
             else
                 output.Write("0 ");
@@ -295,8 +293,8 @@ namespace IEC61850.SCL
                 output.Write(lcb.SclLogControl.TrgOps.GetIntValue() + " ");
             }
 
-            
-            if(lcb.SclLogControl.IntgPd is null)
+
+            if (lcb.SclLogControl.IntgPd is null)
                 output.Write("0 ");
             else
                 output.Write(lcb.SclLogControl.IntgPd + " ");
@@ -422,7 +420,7 @@ namespace IEC61850.SCL
             }
 
         }
-        
+
         SclDAI getDAI(object parent, string name)
         {
             if (parent == null)
@@ -439,8 +437,8 @@ namespace IEC61850.SCL
         DataObject findDOParent(DataAttribute dataAttribute)
         {
             DataObject parentObject = null;
-            
-            while(!(dataAttribute.Parent is DataObject))
+
+            while (!(dataAttribute.Parent is DataObject))
             {
                 dataAttribute = dataAttribute.Parent as DataAttribute;
             }
@@ -448,8 +446,8 @@ namespace IEC61850.SCL
 
 
             return parentObject;
-        
-        
+
+
         }
 
         LogicalNode findLNParent(DataObject dataObject)
@@ -482,9 +480,9 @@ namespace IEC61850.SCL
         SclDAI getDAIInternal(SclSDI sclSDI, DataAttribute dataAttribute)
         {
             SclDAI returnValue = null;
-            foreach(SclDAI sclDAI1 in sclSDI.SclDAIs)
+            foreach (SclDAI sclDAI1 in sclSDI.SclDAIs)
             {
-                if(sclDAI1.Name == dataAttribute.Name)
+                if (sclDAI1.Name == dataAttribute.Name)
                 {
                     if (dataAttribute.ObjRef.EndsWith("." + sclSDI.Name + "." + sclDAI1.Name))
                     {
@@ -520,10 +518,10 @@ namespace IEC61850.SCL
             else
             {
                 foreach (SclSDI sclSDI in sclSDI1.SclSDIs)
-            {
+                {
                     string fValue = getSDIValue(dataAttribute, sclSDI);
                     if (fValue != null)
-                {
+                    {
                         value = fValue;
                         break;
                     }
@@ -547,7 +545,7 @@ namespace IEC61850.SCL
                 value = sclDAI.Val;
             }
             else
-            { 
+            {
                 foreach (SclSDI sclSDI in sclDOI.SclSDIs)
                 {
                     string fValue = getSDIValue(dataAttribute, sclSDI);
@@ -557,9 +555,9 @@ namespace IEC61850.SCL
                         break;
                     }
                 }
-                
+
             }
-          
+
             return value;
 
         }
@@ -567,7 +565,7 @@ namespace IEC61850.SCL
         string getObjRef(string initialString, SclSDI sclSDI)
         {
             object parent = sclSDI.Parent;
-            while(!(parent is SclDOI))
+            while (!(parent is SclDOI))
             {
                 SclSDI sclSDI1 = parent as SclSDI;
                 parent = sclSDI1.Parent;
@@ -639,10 +637,10 @@ namespace IEC61850.SCL
                     SclSDI sclSDI2 = getSDI(logicalNode, dataObject, sclSDI);
                     if (sclSDI2 != null)
                     {
-                        returnValue = sclSDI2;  
+                        returnValue = sclSDI2;
                         break;
                     }
-                    
+
                 }
             }
 
@@ -655,19 +653,19 @@ namespace IEC61850.SCL
         {
             SclSDI returnSDI = null;
 
-            
+
             foreach (SclDOI sclDOI1 in logicalNode.SclElement.DOIs)
             {
-                foreach(SclSDI sclSDI in sclDOI1.SclSDIs)
+                foreach (SclSDI sclSDI in sclDOI1.SclSDIs)
                 {
                     returnSDI = getSDI(logicalNode, dataObject, sclSDI);
-                    if(returnSDI != null)
+                    if (returnSDI != null)
                     {
                         break;
-                    }   
+                    }
                 }
 
-                if(returnSDI != null)
+                if (returnSDI != null)
                 {
                     break;
                 }
@@ -688,13 +686,13 @@ namespace IEC61850.SCL
 
             if (dataAttribute.AttributeType != AttributeType.CONSTRUCTED)
             {
-               
+
                 DataObject dataObject = findDOParent(dataAttribute);
                 LogicalNode logicalNode = findLNParent(dataObject);
-               
+
                 SclDOI sclDOI = logicalNode.SclElement.DOIs.Find(x => x.Name == dataObject.Name);
-                
-                if(sclDOI == null)
+
+                if (sclDOI == null)
                 {
                     sclDOI = getSDO(logicalNode, dataObject);
                 }
@@ -809,7 +807,7 @@ namespace IEC61850.SCL
             if (dataAttribute.Definition.TriggerOptions != null)
             {
                 int trgOpsVal = dataAttribute.Definition.TriggerOptions.GetIntValue();
-                
+
                 if (isTransient)
                     trgOpsVal += 128;
 
@@ -887,7 +885,7 @@ namespace IEC61850.SCL
 
                     string arrayIndexStr = mmsVariableName.Substring(arrayStart + 1, arrayEnd);
                     arrayIndex = int.Parse(arrayIndexStr);
-                  
+
                     string componentNamePart = mmsVariableName.Substring(arrayEnd + 1);
 
                     if ((componentNamePart != null) && (componentNamePart.Length > 0))
