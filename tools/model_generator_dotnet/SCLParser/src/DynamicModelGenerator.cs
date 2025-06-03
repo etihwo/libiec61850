@@ -546,11 +546,16 @@ namespace IEC61850.SCL
             if (dataAttribute.AttributeType != AttributeType.CONSTRUCTED)
             {
 
+                if (dataAttribute.ObjRef.Contains("stVal"))
+                {
+                    Console.WriteLine("debug");
+                }
+
                 DataObject dataObject = findDOParent(dataAttribute);
                 LogicalNode logicalNode = findLNParent(dataObject);
                 LogicalDevice logicalDevice = logicalNode.Parent as LogicalDevice;
 
-                string value = "";
+                string value = null;
 
                 SclDOI sclDOI = logicalNode.SclElement.DOIs.Find(x => x.Name == dataObject.Name);
 
