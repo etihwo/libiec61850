@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Xml.Linq;
 using DataSet = IEC61850.SCL.DataModel.DataSet;
 
 namespace StaticModelGenerator
@@ -318,6 +319,46 @@ namespace StaticModelGenerator
             return iecString.Replace('.', '$');
         }
 
+
+        DataObject findDOParent(DataAttribute dataAttribute)
+        {
+            DataObject parentObject = null;
+
+            while (!(dataAttribute.Parent is DataObject))
+            {
+                dataAttribute = dataAttribute.Parent as DataAttribute;
+            }
+            parentObject = dataAttribute.Parent as DataObject;
+
+            while ((parentObject.Parent is LogicalNode) == false)
+            {
+                parentObject = parentObject.Parent as DataObject;
+            }
+
+            return parentObject;
+
+
+        }
+
+        LogicalNode findLNParent(DataObject dataObject)
+        {
+            LogicalNode parentObject = null;
+
+            while (!(dataObject.Parent is LogicalNode))
+            {
+                dataObject = dataObject.Parent as DataObject;
+            }
+            parentObject = dataObject.Parent as LogicalNode;
+
+
+            return parentObject;
+
+
+        }
+
+
+
+
         private void createDataObjectCStructure(List<C_DO_DA_Structure> c_DO_DA_Structures, string dataAttributeSibling, string lnRef, DataObject dataObject, object parent, bool isTransiente, object sclDOI, int arrayIdx)
         {
             C_DataObjectStructure c_DataObjectStructure = new C_DataObjectStructure();
@@ -398,6 +439,10 @@ namespace StaticModelGenerator
                         DataObjectOrAttribute dataObjectOrAttribute1 = dataObject.DataObjectsAndAttributes.First();
                         if (dataObjectOrAttribute1 is DataAttribute da)
                             firstDataAttributeName = da.Name;
+                        else
+                        {
+                            firstDataAttributeName = lnRef;
+                        }
 
                         c_ArrayDataObjectStructure.child = c_ArrayDataObjectStructure.objRef + "_" + dataObject.DataObjectsAndAttributes.First().Name;
 
@@ -406,6 +451,8 @@ namespace StaticModelGenerator
                             if (dataObjectOrAttribute is DataObject doObj)
                             {
                                 SclSDI sclSDO = getSDI(sclDOI, dataObject.Name);
+                            
+                                firstDataAttributeName += "_" + dataObject.Name;
 
                                 createDataObjectCStructure(c_DO_DA_Structures, c_DataObjectStructure.objRef, firstDataAttributeName, doObj, dataObject, isDoTransient, sclSDO, -1);
 
@@ -429,11 +476,17 @@ namespace StaticModelGenerator
                 DataObjectOrAttribute dataObjectOrAttribute1 = dataObject.DataObjectsAndAttributes.First();
                 if (dataObjectOrAttribute1 is DataAttribute da)
                     firstDataAttributeName = da.Name;
+                else
+                {
+                    firstDataAttributeName = lnRef;
+                }
 
                 foreach (DataObjectOrAttribute dataObjectOrAttribute in dataObject.DataObjectsAndAttributes)
                 {
                     if (dataObjectOrAttribute is DataObject doObj)
                     {
+                        firstDataAttributeName += "_" + dataObject.Name;
+
                         SclSDI sclSDO = getSDI(sclDOI, dataObject.Name);
 
                         createDataObjectCStructure(c_DO_DA_Structures, c_DataObjectStructure.objRef, firstDataAttributeName, doObj, dataObject, isDoTransient, sclSDO, -1);
@@ -604,11 +657,35 @@ namespace StaticModelGenerator
                 }
             }
 
-            SclDAI sclDAI = getDAI(daiObj, dataAttribute.Name);
+            DataObject dataObject = findDOParent(dataAttribute);
+            LogicalNode logicalNode = findLNParent(dataObject);
+            LogicalDevice logicalDevice = logicalNode.Parent as LogicalDevice;
 
-            if (sclDAI != null)
-                if (sclDAI.Val != null)
-                    printValue(c_DataAttributeStructure, sclDAI.Val);
+            string value = null;
+
+            SclDOI sclDOI = logicalNode.SclElement.DOIs.Find(x => x.Name == dataObject.Name);
+
+            SclDAI sclDAI1 = null;
+
+            if (sclDOI != null)
+            {
+                
+                SclDAI sclDAI = sclDOI.SclDAIs.Find(x => x.Name == dataAttribute.Name);
+                if (sclDAI != null && dataAttribute.ObjRef == logicalDevice.Name + "/" + logicalNode.Name + "." + sclDOI.Name + "." + sclDAI.Name)
+                {
+                    sclDAI1 = sclDAI;
+                }
+
+                else
+                {
+                    sclDAI1 = getNestedDAI(sclDOI, dataAttribute.ObjRef);
+                }
+
+            }
+
+            if (sclDAI1 != null)
+                if (sclDAI1.Val != null)
+                    printValue(c_DataAttributeStructure, sclDAI1.Val);
         }
 
         SclDAI getDAI(object parent, string name)
@@ -637,6 +714,67 @@ namespace StaticModelGenerator
                 return null;
         }
 
+        SclSDI getSDINested(object parent, string name)
+        {
+            if (parent == null)
+                return null;
+
+            if (parent is SclDOI sclDOI)
+                return sclDOI.SclSDIs.Find(x => x.Name == name);
+            else if (parent is SclSDI sclSDI)
+                return sclSDI.SclSDIs.Find(x => x.Name == name);
+            else
+                return null;
+        }
+
+
+
+        string getStippedObjRef(string objRef)
+        {
+            string result = "";
+
+            int index = objRef.IndexOf('.');
+
+            if (index >= 0 && index < objRef.Length - 1)
+            {
+                result = objRef.Substring(index + 1);
+            }
+
+            return result;
+
+        }
+
+
+        SclDAI getNestedDAI(SclDOI initialDO, string name)
+        {
+            string strippedObjRef = getStippedObjRef(name);
+
+
+            string[] parts = strippedObjRef.Split('.');
+
+            object obj = null;
+            Object foundObject = initialDO;
+            SclDAI sclDAI = null;
+            for (int i = 1; i < parts.Length; i++)
+            {
+                if (i == 1)
+                    foundObject = initialDO.SclSDIs.Find(x => x.Name == parts[1]);
+                else if (i == parts.Length - 1)
+                {
+                    SclSDI sclSDI = foundObject as SclSDI;
+                    sclDAI = sclSDI?.SclDAIs.Find(x => x.Name == parts[i]);
+
+                }
+                else
+                {
+                    if (foundObject is SclSDI sclSDI)
+                        foundObject = sclSDI.SclSDIs.Find(x => x.Name == parts[i]);
+                }
+
+            }
+            return sclDAI;
+        }    
+
         private void printValue(C_DataAttributeStructure c_DataAttributeStructure, string value)
         {
             C_InitializeValues c_InitializeValue = new C_InitializeValues();
@@ -653,6 +791,9 @@ namespace StaticModelGenerator
 
             switch (c_DataAttributeStructure.DataAttribute.AttributeType)
             {
+                case AttributeType.INT8:
+                case AttributeType.INT16:
+                case AttributeType.INT32:
                 case AttributeType.INT64:
                     c_InitializeValue.c_text += "MmsValue_newIntegerFromInt32(" + value + ");";
                     break;
@@ -688,6 +829,9 @@ namespace StaticModelGenerator
                     }
                     break;
 
+                case AttributeType.INT8U:
+                case AttributeType.INT16U:
+                case AttributeType.INT24U:
                 case AttributeType.INT32U:
                     c_InitializeValue.c_text += "MmsValue_newUnsignedFromUint32(" + value + ");";
                     break;
@@ -737,7 +881,11 @@ namespace StaticModelGenerator
                     c_InitializeValue.c_text += "MmsValue_newUtcTimeByMsTime(" + value + ");";
                     break;
 
+                case AttributeType.VISIBLE_STRING_32:
+                case AttributeType.VISIBLE_STRING_64:
+                case AttributeType.VISIBLE_STRING_129:
                 case AttributeType.VISIBLE_STRING_255:
+                case AttributeType.VISIBLE_STRING_65:
                     c_InitializeValue.c_text += "MmsValue_newVisibleString(\"" + value + "\");";
                     break;
 

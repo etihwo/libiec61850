@@ -9,6 +9,7 @@
 using IEC61850.SCL.DataModel;
 using System;
 using System.IO;
+using System.Runtime.Serialization;
 
 namespace IEC61850.SCL
 {
@@ -434,6 +435,33 @@ namespace IEC61850.SCL
                 return null;
         }
 
+        SclDAI getNestedDAI(SclDOI initialDO, string name)
+        {
+            string[] parts = name.Split('.');
+
+            object obj = null;
+            Object foundObject = initialDO;
+            SclDAI sclDAI = null;
+            for( int i = 1; i < parts.Length; i++)
+            {
+                if (i == 1)
+                    foundObject = initialDO.SclSDIs.Find(x => x.Name == parts[1]);
+                else if (i == parts.Length - 1)
+                { 
+                    SclSDI sclSDI = foundObject as SclSDI;  
+                     sclDAI = sclSDI?.SclDAIs.Find(x => x.Name == parts[i]);
+
+                }
+                else
+                {
+                    if (foundObject is SclSDI sclSDI)
+                        foundObject = sclSDI.SclSDIs.Find(x => x.Name == parts[i]);
+                }
+
+            }
+            return sclDAI;  
+        }
+
         DataObject findDOParent(DataAttribute dataAttribute)
         {
             DataObject parentObject = null;
@@ -444,6 +472,10 @@ namespace IEC61850.SCL
             }
             parentObject = dataAttribute.Parent as DataObject;
 
+           while((parentObject.Parent is LogicalNode) == false)
+            {
+                parentObject = parentObject.Parent as DataObject;
+            }
 
             return parentObject;
 
@@ -466,249 +498,81 @@ namespace IEC61850.SCL
 
         }
 
-        public SclDataAttributeDefinition GetDA(string name, SclDOType doType)
+
+        //string recreateObjectReference(DataObject dataObject, SclSDI sclSDI, LogicalNode logicalNode)
+        //{
+        //    string result = "";
+
+        //    object parent = sclSDI.Parent;
+        //    while (!(parent is SclDOI))
+        //    {
+        //        SclSDI sclSDI1 = parent as SclSDI;
+        //        parent = sclSDI1.Parent;
+
+        //        result = result.Insert(0, "." + sclSDI1.Name);
+        //    }
+        //    SclDOI doName = (SclDOI)parent;
+        //    result = result.Insert(0, doName.Name);
+
+        //    LogicalDevice logicalDevice = logicalNode.Parent as LogicalDevice;
+
+        //    result = result.Insert(0, logicalDevice.Name + "/" + logicalNode.Name + ".");
+
+
+
+
+        //    return result;
+            
+        //}
+
+        string getStippedObjRef(string objRef)
         {
-            foreach (SclDataAttributeDefinition sclDa in doType.DataAttributes)
+            string result = "";
+
+            int index = objRef.IndexOf('.');
+
+            if (index >= 0 && index < objRef.Length - 1)
             {
-                if (sclDa.Name != null && sclDa.Name.Equals(name))
-                    return sclDa;
+                result = objRef.Substring(index + 1);
             }
 
-            return null;
+            return result;
+        
         }
 
-        SclDAI getDAIInternal(SclSDI sclSDI, DataAttribute dataAttribute)
-        {
-            SclDAI returnValue = null;
-            foreach (SclDAI sclDAI1 in sclSDI.SclDAIs)
-            {
-                if (sclDAI1.Name == dataAttribute.Name)
-                {
-                    if (dataAttribute.ObjRef.EndsWith("." + sclSDI.Name + "." + sclDAI1.Name))
-                    {
-
-                        returnValue = sclDAI1;
-                        break;
-
-                    }
-                }
-            }
-
-            return returnValue;
-        }
-
-        string getSDIValue(DataAttribute dataAttribute, object DIObject)
-        {
-            string value = null;
-
-            SclSDI sclSDI1 = DIObject as SclSDI;
-            if (sclSDI1 == null)
-                return value;
-
-
-            SclDAI sclDAI = getDAIInternal(sclSDI1, dataAttribute);
-
-
-            if (sclDAI != null)
-            {
-
-                value = sclDAI.Val;
-            }
-
-            else
-            {
-                foreach (SclSDI sclSDI in sclSDI1.SclSDIs)
-                {
-                    string fValue = getSDIValue(dataAttribute, sclSDI);
-                    if (fValue != null)
-                    {
-                        value = fValue;
-                        break;
-                    }
-                }
-            }
-
-
-            return value;
-
-        }
-
-        string getDAIValue(DataAttribute dataAttribute, SclDOI sclDOI)
-        {
-            if (sclDOI == null)
-                return null;
-
-            string value = null;
-            SclDAI sclDAI = sclDOI.SclDAIs.Find(x => x.Name == dataAttribute.Name);
-            if (sclDAI != null)
-            {
-                value = sclDAI.Val;
-            }
-            else
-            {
-                foreach (SclSDI sclSDI in sclDOI.SclSDIs)
-                {
-                    string fValue = getSDIValue(dataAttribute, sclSDI);
-                    if (fValue != null)
-                    {
-                        value = fValue;
-                        break;
-                    }
-                }
-
-            }
-
-            return value;
-
-        }
-
-        string getObjRef(string initialString, SclSDI sclSDI)
-        {
-            object parent = sclSDI.Parent;
-            while (!(parent is SclDOI))
-            {
-                SclSDI sclSDI1 = parent as SclSDI;
-                parent = sclSDI1.Parent;
-            }
-            SclDOI doName = (SclDOI)parent;
-            initialString += "." + doName.Name;
-
-
-            return initialString;
-        }
-
-        SclDOI getDOIfromSDAI(SclSDI sclSDI)
-        {
-            object parent = sclSDI.Parent;
-            while (!(parent is SclDOI))
-            {
-                SclSDI sclSDI1 = parent as SclSDI;
-                parent = sclSDI1.Parent;
-            }
-            SclDOI doName = (SclDOI)parent;
-
-
-            return doName;
-        }
-        SclSDI getSDIIInternal(SclSDI sclSDI, DataObject dataObject, LogicalNode logicalNode)
-        {
-            SclSDI returnValue = null;
-            foreach (SclSDI sclSDI1 in sclSDI.SclSDIs)
-            {
-                if (sclSDI1.Name == dataObject.Name)
-                {
-                    string hh = ((LogicalDevice)logicalNode.Parent).Name + "/" + logicalNode.Name;
-
-                    string objRefString = getObjRef(hh, sclSDI);
-                    if (dataObject.ObjRef.StartsWith(objRefString))
-                    {
-
-                        returnValue = sclSDI1;
-                        break;
-
-                    }
-                }
-            }
-
-            return returnValue;
-        }
-
-        SclSDI getSDI(LogicalNode logicalNode, DataObject dataObject, object DIObject)
-        {
-            SclSDI returnValue = null;
-            SclSDI sclSDI1 = DIObject as SclSDI;
-            if (sclSDI1 == null)
-                return null;
-
-
-            SclSDI sclSDI_internal = getSDIIInternal(sclSDI1, dataObject, logicalNode);
-
-
-            if (sclSDI_internal != null)
-            {
-
-                return sclSDI_internal;
-            }
-
-            else
-            {
-                foreach (SclSDI sclSDI in sclSDI1.SclSDIs)
-                {
-                    SclSDI sclSDI2 = getSDI(logicalNode, dataObject, sclSDI);
-                    if (sclSDI2 != null)
-                    {
-                        returnValue = sclSDI2;
-                        break;
-                    }
-
-                }
-            }
-
-
-            return returnValue;
-
-        }
-
-        SclDOI getSDO(LogicalNode logicalNode, DataObject dataObject)
-        {
-            SclSDI returnSDI = null;
-
-
-            foreach (SclDOI sclDOI1 in logicalNode.SclElement.DOIs)
-            {
-                foreach (SclSDI sclSDI in sclDOI1.SclSDIs)
-                {
-                    returnSDI = getSDI(logicalNode, dataObject, sclSDI);
-                    if (returnSDI != null)
-                    {
-                        break;
-                    }
-                }
-
-                if (returnSDI != null)
-                {
-                    break;
-                }
-            }
-            if (returnSDI == null)
-                return null;
-            else
-                return getDOIfromSDAI(returnSDI);
-
-        }
 
         void printDataAttributes(StreamWriter output, DataAttribute dataAttribute, bool isTransient)
         {
-            if (dataAttribute.ObjRef.Contains("serNum"))
-            {
-                Console.WriteLine("Debug");
-            }
-
             if (dataAttribute.AttributeType != AttributeType.CONSTRUCTED)
             {
 
                 DataObject dataObject = findDOParent(dataAttribute);
                 LogicalNode logicalNode = findLNParent(dataObject);
+                LogicalDevice logicalDevice = logicalNode.Parent as LogicalDevice;
+
+                string value = null;
 
                 SclDOI sclDOI = logicalNode.SclElement.DOIs.Find(x => x.Name == dataObject.Name);
 
-                if (sclDOI == null)
-                {
-                    sclDOI = getSDO(logicalNode, dataObject);
-                }
-                SclDAI sclDAI = getDAI(sclDOI, dataAttribute.Name);
-
-
-                string obValue = getDAIValue(dataAttribute, sclDOI);
-
-                if (obValue == null)
+                if(sclDOI == null)
                 {
                     output.WriteLine(";");
-
                     return;
+
+                }
+                SclDAI sclDAI = sclDOI.SclDAIs.Find(x => x.Name == dataAttribute.Name);
+                if (sclDAI != null && dataAttribute.ObjRef == logicalDevice.Name + "/" + logicalNode.Name + "." + sclDOI.Name + "." + sclDAI.Name)
+                {
+                    value = sclDAI.Val;   
                 }
 
-                string value = obValue;
+                else
+                {
+                    string strippedObjRef = getStippedObjRef(dataAttribute.ObjRef);
+                    sclDAI = getNestedDAI(sclDOI, strippedObjRef);
+                    value = sclDAI?.Val;
+                }
+
 
                 if (value != null)
                 {
@@ -721,7 +585,7 @@ namespace IEC61850.SCL
                             {
                                 if (sclEnumType.EnumValues.Count > 0)
                                 {
-                                    SclEnumVal sclEnumVal = sclEnumType.EnumValues[0];
+                                    SclEnumVal sclEnumVal = sclEnumType.EnumValues.Find(x => x.SymbolicName == value);
                                     int value1 = sclEnumVal.Ord;
                                     output.Write("=" + sclEnumVal.Ord);
 
