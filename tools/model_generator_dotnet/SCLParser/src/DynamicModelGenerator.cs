@@ -499,32 +499,6 @@ namespace IEC61850.SCL
         }
 
 
-        //string recreateObjectReference(DataObject dataObject, SclSDI sclSDI, LogicalNode logicalNode)
-        //{
-        //    string result = "";
-
-        //    object parent = sclSDI.Parent;
-        //    while (!(parent is SclDOI))
-        //    {
-        //        SclSDI sclSDI1 = parent as SclSDI;
-        //        parent = sclSDI1.Parent;
-
-        //        result = result.Insert(0, "." + sclSDI1.Name);
-        //    }
-        //    SclDOI doName = (SclDOI)parent;
-        //    result = result.Insert(0, doName.Name);
-
-        //    LogicalDevice logicalDevice = logicalNode.Parent as LogicalDevice;
-
-        //    result = result.Insert(0, logicalDevice.Name + "/" + logicalNode.Name + ".");
-
-
-
-
-        //    return result;
-            
-        //}
-
         string getStippedObjRef(string objRef)
         {
             string result = "";
