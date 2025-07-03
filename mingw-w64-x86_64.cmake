@@ -3,7 +3,7 @@
 # Typical usage:
 #    *) install cross compiler: `sudo apt-get install mingw-w64`
 #    *) cd build
-#    *) cmake -DCMAKE_TOOLCHAIN_FILE=~/mingw-w64-x86_64.cmake ..
+#    *) cmake -DCMAKE_TOOLCHAIN_FILE=../mingw-w64-x86_64.cmake ..
 # This is free and unencumbered software released into the public domain.
 
 set(CMAKE_SYSTEM_NAME Windows)

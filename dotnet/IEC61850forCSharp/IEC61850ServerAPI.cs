@@ -22,9 +22,11 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using IEC61850.Common;
 using IEC61850.TLS;
+using static IEC61850.Client.IedConnection;
 
 // IEC 61850 API for the libiec61850 .NET wrapper library
 namespace IEC61850
@@ -2187,6 +2189,22 @@ namespace IEC61850
             static extern int LogStorage_getMaxLogEntries(IntPtr self);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern int LogStorage_addEntry(IntPtr self, long time);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern bool LogStorage_addEntryData(IntPtr self, int entryID, string dataRef, byte[] data, int dataSize, int reasonCode);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+            public delegate bool LogEntryCallback(IntPtr self, long timeStamp, long entryID, bool moreFollows);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+            public delegate bool LogEntryDataCallback(IntPtr self, string dataRef, byte[] data, int dataSize, int reasonCode, bool moreFollows);
+
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern bool LogStorage_getEntries(IntPtr self, long startingTime, long endingTime, LogEntryCallback entryCallback, LogEntryDataCallback entryDataCallback, object parameter);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern void LogStorage_destroy(IntPtr self);
 
             private IntPtr self = IntPtr.Zero;
@@ -2209,6 +2227,21 @@ namespace IEC61850
             private int GetMaxLogEntries()
             {
                 return LogStorage_getMaxLogEntries(self);
+            }
+            public int  AddEntry(long time)
+            {
+                return LogStorage_addEntry(self, time);
+            }
+
+            public bool AddEntryData(int entryID, string dataRef, byte[] data, int dataSize, int reasonCode)
+            {
+
+                return LogStorage_addEntryData(self, entryID, dataRef, data, dataSize, reasonCode);
+            }
+
+            public bool GetEntries(long startingTime, long endingTime, LogEntryCallback entryCallback, LogEntryDataCallback entryDataCallback, object parameter)
+            {
+                return LogStorage_getEntries(self, startingTime, endingTime, entryCallback, entryDataCallback, parameter);
             }
 
             /// <summary>
@@ -2314,6 +2347,12 @@ namespace IEC61850
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr IedServer_getFunctionalConstrainedData(IntPtr self, IntPtr dataObject, int fc);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            public static extern void IedServer_setListObjectsAccessHandler(IntPtr self, IedServer_ListObjectsAccessHandler handler, IntPtr parameter);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+            public delegate bool IedServer_ListObjectsAccessHandler(IntPtr parameter, ClientConnection connection, ACSIClass acsiClass, LogicalDevice ld, LogicalNode ln, string objectName, string subObjectName, FunctionalConstraint fc);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
             private delegate int InternalControlPerformCheckHandler (IntPtr action, IntPtr parameter, IntPtr ctlVal, [MarshalAs(UnmanagedType.I1)] bool test, [MarshalAs(UnmanagedType.I1)] bool interlockCheck);
@@ -2536,6 +2575,11 @@ namespace IEC61850
                 {
                     return (int) MmsDataAccessError.OBJECT_ACCESS_DENIED;
                 }
+            }
+
+            public void SetListObjectsAccessHandler(IedServer_ListObjectsAccessHandler handler, System.IntPtr parameter)
+            {
+                IedServer_setListObjectsAccessHandler(self, handler, parameter);
             }
 
             private Dictionary<IntPtr, WriteAccessHandlerInfo> writeAccessHandlers = new Dictionary<IntPtr, WriteAccessHandlerInfo> ();
