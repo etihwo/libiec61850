@@ -170,7 +170,7 @@ PAL_API void
 TLSConfiguration_setChainValidation(TLSConfiguration self, bool value);
 
 /**
- * \brief Enabled or disables the verification of validity times for certificates and CRLs
+ * \brief Enables or disables the verification of validity times for certificates and CRLs
  *
  * \param value true to enable time validation, false to disable (enabled by default)
  */
