@@ -12,6 +12,7 @@ using System.Threading;
 using System.Net;
 using static IEC61850.Server.IedServer;
 using System.Collections.Generic;
+using System.Reflection.Metadata;
 
 namespace server_access_control
 {
@@ -142,6 +143,23 @@ namespace server_access_control
             }
 
             iedServer.SetControlBlockAccessHandler(ControlBlockAccessCallBack, iedServer);
+
+            /* By default access to variables with FC=DC and FC=CF is not allowed.
+            * This allow to write to simpleIOGenericIO/GGIO1.NamPlt.vendor variable used
+            * by iec61850_client_example1.
+            */
+            iedServer.SetWriteAccessPolicy(FunctionalConstraint.DC, AccessPolicy.ACCESS_POLICY_ALLOW);
+
+            /* Install handler to perform access control on datasets */
+            bool dataSetAccessHandler(object parameter, ClientConnection connection, DataSetOperation operation, string datasetRef)
+            {
+                Console.WriteLine("Data set access: "+ datasetRef+" operation: "+ operation.ToString()  + "\n");
+
+                return true;
+            }
+
+            iedServer.SetDataSetAccessHandler(dataSetAccessHandler, iedServer);
+
 
             iedServer.Start(102);
 

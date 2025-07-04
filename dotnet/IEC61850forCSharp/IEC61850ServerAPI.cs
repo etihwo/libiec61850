@@ -2160,6 +2160,15 @@ namespace IEC61850
             IEC61850_CB_ACCESS_TYPE_WRITE
         }
 
+        public enum DataSetOperation
+        {
+            DATASET_CREATE,
+            DATASET_DELETE,
+            DATASET_READ,
+            DATASET_WRITE,
+            DATASET_GET_DIRECTORY
+        }
+        
         public delegate CheckHandlerResult CheckHandler (ControlAction action, object parameter, MmsValue ctlVal, bool test, bool interlockCheck);
 
         public static class SqliteLogStorage
@@ -2359,6 +2368,12 @@ namespace IEC61850
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             public static extern void IedServer_setControlBlockAccessHandler(IntPtr self, IedServer_ControlBlockAccessHandler handler, IntPtr parameter);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            public static extern void IedServer_setDataSetAccessHandler(IntPtr self, IedServer_DataSetAccessHandler handler, IntPtr parameter);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+            public delegate bool IedServer_DataSetAccessHandler(IntPtr parameter, IntPtr connection, int operation, string datasetRef);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
             public delegate bool IedServer_ControlBlockAccessHandler(IntPtr parameter, IntPtr connection, int acsiClass, IntPtr ld, IntPtr ln, string objectName, string subObjectName, int accessType);
@@ -2619,7 +2634,6 @@ namespace IEC61850
 
             }
 
-
             /// <summary>
             /// Set a handler to control read and write access to control blocks and logs
             /// </summary>
@@ -2636,6 +2650,47 @@ namespace IEC61850
 
                     IedServer_setControlBlockAccessHandler(self, internalRCBControlHandler, IntPtr.Zero);
                 }
+            }
+
+            public delegate bool DataSetAccessHandler(object parameter, ClientConnection connection, DataSetOperation operation, string datasetRef);
+
+            private DataSetAccessHandler dataSetAccessHandler = null;
+
+            private object dataSetAccessHandlerParameter = null;
+
+            private IedServer_DataSetAccessHandler internalDataSetAccessHandler = null;
+
+            /// <summary>
+            /// Callback that is called when the client is calling a dataset operation (create, delete, read, write, list directory)
+            /// note This callback is called before the IedServer_RCBEventHandler and only in case of operations(RCB_EVENT_GET_PARAMETER, RCB_EVENT_SET_PARAMETER, RCB_EVENT_ENABLE
+            /// </summary>
+            /// <param name="handler">the callback handler to be used</param>
+            /// <param name="parameter">a user provided parameter that is passed to the handler</param>
+            public void SetDataSetAccessHandler(DataSetAccessHandler handler, object parameter)
+            {
+                dataSetAccessHandler = handler;
+                dataSetAccessHandlerParameter = parameter;
+
+                if (internalDataSetAccessHandler == null)
+                {
+                    internalDataSetAccessHandler = new IedServer_DataSetAccessHandler(InternalDataSetlHandlerImplementation);
+
+                    IedServer_setDataSetAccessHandler(self, internalDataSetAccessHandler, IntPtr.Zero);
+                }
+            }
+
+            private bool InternalDataSetlHandlerImplementation (IntPtr parameter, IntPtr connection, int operation, string datasetRef)
+            {
+                if (dataSetAccessHandler != null && connection != IntPtr.Zero)
+                {
+                    ClientConnection con = null;
+
+                    this.clientConnections.TryGetValue(connection, out con);
+
+                    return dataSetAccessHandler(dataSetAccessHandlerParameter, con, (DataSetOperation)operation, datasetRef);
+                }
+
+                return false;
             }
 
             private Dictionary<IntPtr, WriteAccessHandlerInfo> writeAccessHandlers = new Dictionary<IntPtr, WriteAccessHandlerInfo> ();
