@@ -1,0 +1,180 @@
+﻿/*
+ *  server_example_access_control.cs
+ *
+ *  - How to use access control mechanisms
+ *  - How to implement RBAC features based on access control mechanisms
+ */
+
+using System;
+using IEC61850.Server;
+using IEC61850.Common;
+using System.Threading;
+using System.Net;
+using static IEC61850.Server.IedServer;
+using System.Collections.Generic;
+
+namespace server_access_control
+{
+    class MainClass
+    {
+        public static void Main(string[] args)
+        {
+            bool running = true;
+
+            /* run until Ctrl-C is pressed */
+            Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e)
+            {
+                e.Cancel = true;
+                running = false;
+            };
+
+            /* Create new server configuration object */
+            IedServerConfig config = new IedServerConfig();
+
+            /* Set buffer size for buffered report control blocks to 200000 bytes */
+            config.ReportBufferSize = 200000;
+
+            /* Set stack compliance to a specific edition of the standard (WARNING: data model has also to be checked for compliance) */
+           config.Edition = Iec61850Edition.EDITION_2;
+
+            /* Set the base path for the MMS file services */
+            config.FileServiceBasePath = "./vmd-filestore/";
+
+            /* disable MMS file service */
+            config.FileServiceEnabled =  false;
+
+            /* enable dynamic data set service */
+            config.DynamicDataSetServiceEnabled = true;
+
+            /* disable log service */
+            config.LogServiceEnabled = false;
+
+            /* set maximum number of clients */
+            config.MaxMmsConnections = 2;
+
+            IedModel iedModel = ConfigFileParser.CreateModelFromConfigFile("model.cfg");
+
+            IedServer iedServer = new IedServer(iedModel, config);
+
+            iedServer.SetServerIdentity("libiec61850.com", "access control example", "1.0.0");
+
+            DataObject spcso1 = (DataObject)iedModel.GetModelNodeByShortObjectReference("GenericIO/GGIO1.SPCSO1");
+
+            iedServer.SetControlHandler(spcso1, delegate (ControlAction action, object parameter, MmsValue value, bool test)
+            {
+                if (test)
+                    return ControlHandlerResult.FAILED;
+
+                if (value.GetType() == MmsType.MMS_BOOLEAN)
+                {
+                    Console.WriteLine("received binary control command: ");
+
+                    if (value.GetBoolean())
+                        Console.WriteLine("on\n");
+                    else
+                        Console.WriteLine("off\n");
+                }
+                else
+                    return ControlHandlerResult.FAILED;
+
+                return ControlHandlerResult.OK;
+            }, spcso1);
+
+            void ConnectionCallBack(IedServer server, ClientConnection clientConnection, bool connected, object parameter)
+            {
+                if (connected)
+                    Console.WriteLine("Connection opened\n");
+                else
+                    Console.WriteLine("Connection closed\n");
+            }
+
+            var connectionCallBack = new ConnectionIndicationHandler(ConnectionCallBack);
+            iedServer.SetConnectionIndicationHandler(connectionCallBack, "127.0.0.1");
+
+
+            /* Install handler to log RCB events */
+
+            iedServer.SetRCBEventHandler(delegate (object parameter, ReportControlBlock rcb, ClientConnection con, RCBEventType eventType, string parameterName, MmsDataAccessError serviceError)
+            {
+                Console.WriteLine("RCB: " + rcb.Parent.GetObjectReference() + "." + rcb.Name + " event: " + eventType.ToString());
+
+                if (con != null)
+                {
+                    Console.WriteLine("  caused by client " + con.GetPeerAddress());
+                }
+                else
+                {
+                    Console.WriteLine("  client = null");
+                }
+
+                if ((eventType == RCBEventType.SET_PARAMETER) || (eventType == RCBEventType.GET_PARAMETER))
+                {
+                    Console.WriteLine("RCB: "+rcb.Name + " event: "+ eventType .ToString()+ "\n");
+                    Console.WriteLine("  param:  "+ parameterName + "\n");
+                    Console.WriteLine("  result: "+ serviceError.ToString() + "\n");
+                }
+
+                if (eventType == RCBEventType.ENABLED)
+                {
+                    Console.WriteLine("RCB: "+ rcb.Name + " event: " + eventType.ToString() + "\n");
+                    string rptId = rcb.RptID;
+                    Console.WriteLine("   rptID:  "+ rptId+"\n");
+                    string dataSet =rcb.DataSet;
+                    Console.WriteLine("   datSet:"+ dataSet+"\n");
+                }
+
+
+             }, null);
+
+            /* Install handler to control access to control blocks (RCBs, LCBs, GoCBs, SVCBs, SGCBs)*/
+            bool ControlBlockAccessCallBack(object parameter, ClientConnection connection, ACSIClass acsiClass, LogicalDevice ld, LogicalNode ln, string objectName, string subObjectName, ControlBlockAccessType accessType)
+            {
+                IedServer iedServer1 = parameter as IedServer;
+
+                Console.WriteLine(acsiClass.ToString() + " "+ accessType.ToString() + " access " +  ld.GetName() + ln.GetName() +"/"+ objectName + "." + subObjectName);
+
+                if (objectName == "EventsIndexed03")
+                    return false;
+
+
+                Console.WriteLine("Control block access callback");
+                return true;
+            }
+
+            iedServer.SetControlBlockAccessHandler(ControlBlockAccessCallBack, iedServer);
+
+            iedServer.Start(102);
+
+            if (iedServer.IsRunning())
+            {
+                Console.WriteLine("Server started");
+
+                GC.Collect();
+
+                DataObject ggio1AnIn1 = (DataObject)iedModel.GetModelNodeByShortObjectReference("GenericIO/GGIO1.AnIn1");
+
+                DataAttribute ggio1AnIn1magF = (DataAttribute)ggio1AnIn1.GetChild("mag.f");
+                DataAttribute ggio1AnIn1T = (DataAttribute)ggio1AnIn1.GetChild("t");
+
+                float floatVal = 1.0f;
+
+                while (running)
+                {
+                    floatVal += 1f;
+                    iedServer.UpdateTimestampAttributeValue(ggio1AnIn1T, new Timestamp(DateTime.Now));
+                    iedServer.UpdateFloatAttributeValue(ggio1AnIn1magF, floatVal);
+                    Thread.Sleep(100);
+                }
+
+                iedServer.Stop();
+                Console.WriteLine("Server stopped");
+            }
+            else
+            {
+                Console.WriteLine("Failed to start server");
+            }
+
+            iedServer.Destroy();
+        }
+    }
+}

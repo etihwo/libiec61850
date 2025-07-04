@@ -2154,6 +2154,12 @@ namespace IEC61850
             OBJECT_UNDEFINED = 4
         }
 
+        public enum ControlBlockAccessType
+        {
+            IEC61850_CB_ACCESS_TYPE_READ,
+            IEC61850_CB_ACCESS_TYPE_WRITE
+        }
+
         public delegate CheckHandlerResult CheckHandler (ControlAction action, object parameter, MmsValue ctlVal, bool test, bool interlockCheck);
 
         public static class SqliteLogStorage
@@ -2350,6 +2356,12 @@ namespace IEC61850
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             public static extern void IedServer_setListObjectsAccessHandler(IntPtr self, IedServer_ListObjectsAccessHandler handler, IntPtr parameter);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            public static extern void IedServer_setControlBlockAccessHandler(IntPtr self, IedServer_ControlBlockAccessHandler handler, IntPtr parameter);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+            public delegate bool IedServer_ControlBlockAccessHandler(IntPtr parameter, IntPtr connection, int acsiClass, IntPtr ld, IntPtr ln, string objectName, string subObjectName, int accessType);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
             public delegate bool IedServer_ListObjectsAccessHandler(IntPtr parameter, ClientConnection connection, ACSIClass acsiClass, LogicalDevice ld, LogicalNode ln, string objectName, string subObjectName, FunctionalConstraint fc);
@@ -2577,9 +2589,53 @@ namespace IEC61850
                 }
             }
 
-            public void SetListObjectsAccessHandler(IedServer_ListObjectsAccessHandler handler, System.IntPtr parameter)
+            public void SetListObjectsAccessHandler(IedServer_ListObjectsAccessHandler handler, IntPtr parameter)
             {
                 IedServer_setListObjectsAccessHandler(self, handler, parameter);
+            }
+
+            public delegate bool ControlBlockAccessHandler(object parameter, ClientConnection connection, ACSIClass acsiClass, LogicalDevice ld, LogicalNode ln, string objectName, string subObjectName, ControlBlockAccessType accessType);
+
+            private ControlBlockAccessHandler rcbControlHandler = null;
+
+            private object rcbControlHandlerParameter = null;
+
+            private IedServer_ControlBlockAccessHandler internalRCBControlHandler = null;
+
+            private bool InternalRCBControlHandlerImplementation(IntPtr parameter, IntPtr connection, int acsiClass, IntPtr ld, IntPtr ln, string objectName, string subObjectName, int accessType)
+            {
+                if (rcbControlHandler != null && connection != IntPtr.Zero && ld != IntPtr.Zero && ln != IntPtr.Zero)
+                {
+                    ClientConnection con = null;
+
+                    this.clientConnections.TryGetValue(connection, out con);
+
+                    ModelNode ldModelNode = iedModel.GetModelNodeFromNodeRef(ld);
+                    ModelNode lnModelNode = iedModel.GetModelNodeFromNodeRef(ln);
+                    return rcbControlHandler(rcbControlHandlerParameter, con, (ACSIClass)acsiClass, ldModelNode as LogicalDevice, lnModelNode as LogicalNode, objectName, subObjectName, (ControlBlockAccessType)accessType);
+                }
+
+                return false;
+
+            }
+
+
+            /// <summary>
+            /// Set a handler to control read and write access to control blocks and logs
+            /// </summary>
+            /// <param name="handler">the callback handler to be used</param>
+            /// <param name="parameter">a user provided parameter that is passed to the handler</param>
+            public void SetControlBlockAccessHandler(ControlBlockAccessHandler handler, object parameter)
+            {
+                rcbControlHandler = handler;
+                rcbControlHandlerParameter = parameter;
+
+                if (internalRCBControlHandler == null)
+                {
+                    internalRCBControlHandler = new IedServer_ControlBlockAccessHandler(InternalRCBControlHandlerImplementation);
+
+                    IedServer_setControlBlockAccessHandler(self, internalRCBControlHandler, IntPtr.Zero);
+                }
             }
 
             private Dictionary<IntPtr, WriteAccessHandlerInfo> writeAccessHandlers = new Dictionary<IntPtr, WriteAccessHandlerInfo> ();
