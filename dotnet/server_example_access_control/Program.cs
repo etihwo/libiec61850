@@ -192,6 +192,29 @@ namespace server_access_control
 
             iedServer.SetReadAccessHandler(readAccessHandler, null);
 
+            bool directoryAccessHandler(object parameter, ClientConnection connection, IedServer_DirectoryCategory category, LogicalDevice ld)
+            {
+                switch (category)
+                {
+                    case IedServer_DirectoryCategory.DIRECTORY_CAT_LD_LIST:
+
+                        Console.WriteLine("Get list of logical devices from "+ connection.GetPeerAddress()+"\n");
+                        break;
+                    case IedServer_DirectoryCategory.DIRECTORY_CAT_DATASET_LIST:
+                        Console.WriteLine("Get list of datasets for LD "+ ld.GetName() + " from "+ connection.GetPeerAddress()+"\n");
+                        break;
+                    case IedServer_DirectoryCategory.DIRECTORY_CAT_DATA_LIST:
+                        Console.WriteLine("Get list of data for LD " + ld.GetName() + " from " + connection.GetPeerAddress() + "\n");
+                        break;
+                    case IedServer_DirectoryCategory.DIRECTORY_CAT_LOG_LIST:
+                        Console.WriteLine("Get list of logs for LD" + ld.GetName() + " from " + connection.GetPeerAddress() + "\n");
+                        return false;
+                }
+
+                return true;
+            }
+
+            iedServer.SetDirectoryAccessHandler(directoryAccessHandler, null);
 
             iedServer.Start(102);
 

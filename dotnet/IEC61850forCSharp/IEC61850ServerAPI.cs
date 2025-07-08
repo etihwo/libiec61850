@@ -2396,7 +2396,10 @@ namespace IEC61850
             /// <param name="parameter">a user provided parameter that is passed to the handler</param>
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             public static extern void IedServer_setDataSetAccessHandler(IntPtr self, IedServer_DataSetAccessHandler handler, IntPtr parameter);
-           
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            public static extern void IedServer_setDirectoryAccessHandler(IntPtr self, IedServer_DirectoryAccessHandler handler, IntPtr parameter);
+
             /// <summary>
             /// callback handler to control client read access to data attributes
             ///  User provided callback function to control MMS client read access to IEC 61850
@@ -2440,6 +2443,9 @@ namespace IEC61850
             /// <returns>true to include the object in the service response, otherwise false</returns>
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
             public delegate bool IedServer_ControlBlockAccessHandler(IntPtr parameter, IntPtr connection, int acsiClass, IntPtr ld, IntPtr ln, string objectName, string subObjectName, int accessType);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+            public delegate bool IedServer_DirectoryAccessHandler(IntPtr parameter, IntPtr connection, int category, IntPtr logicalDevice);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
             public delegate bool IedServer_ListObjectsAccessHandler(IntPtr parameter, ClientConnection connection, ACSIClass acsiClass, LogicalDevice ld, LogicalNode ln, string objectName, string subObjectName, FunctionalConstraint fc);
@@ -2779,7 +2785,7 @@ namespace IEC61850
 
             private MmsDataAccessError InternalReadHandlerImplementation(IntPtr ld, IntPtr ln, IntPtr dataObject, int fc, IntPtr connection, IntPtr parameter)
             {
-                if (internalReadAccessHandler != null && ld != IntPtr.Zero && ln != IntPtr.Zero)
+                if (internalReadAccessHandler != null && ld != IntPtr.Zero && ln != IntPtr.Zero && connection != IntPtr.Zero)
                 {
                     ClientConnection con = null;
 
@@ -2787,7 +2793,10 @@ namespace IEC61850
 
                     ModelNode ldModelNode = iedModel.GetModelNodeFromNodeRef(ld);
                     ModelNode lnModelNode = iedModel.GetModelNodeFromNodeRef(ln);
-                    ModelNode doModelNode = iedModel.GetModelNodeFromNodeRef(dataObject);
+                    ModelNode doModelNode = null;
+
+                    if(dataObject != IntPtr.Zero)
+                     doModelNode = iedModel.GetModelNodeFromNodeRef(dataObject);
 
                     return internalReadAccessHandler(ldModelNode as LogicalDevice, lnModelNode as LogicalNode, doModelNode as DataObject, (FunctionalConstraint)fc, con, internalReadAccessHandlerParameter);
                 }
@@ -2795,6 +2804,53 @@ namespace IEC61850
                 return MmsDataAccessError.UNKNOWN;
             }
 
+            public enum IedServer_DirectoryCategory
+            {
+                DIRECTORY_CAT_LD_LIST,
+                DIRECTORY_CAT_DATA_LIST,
+                DIRECTORY_CAT_DATASET_LIST,
+                DIRECTORY_CAT_LOG_LIST
+            }
+
+            public delegate bool InternalDirectoryAccessHandler(object parameter, ClientConnection connection, IedServer_DirectoryCategory category,LogicalDevice ld);
+
+            private InternalDirectoryAccessHandler internalDirectoryAccessHandler = null;
+
+            private object internalDirectoryAccessHandlerParameter = null;
+
+            private IedServer_DirectoryAccessHandler directoryAccessHandler = null;
+
+            public void SetDirectoryAccessHandler(InternalDirectoryAccessHandler handler, object parameter)
+            {
+                internalDirectoryAccessHandler = handler;
+                internalDirectoryAccessHandlerParameter = parameter;
+
+                if (directoryAccessHandler == null)
+                {
+                    directoryAccessHandler = new IedServer_DirectoryAccessHandler(DirectoryAccessHandler);
+
+                    IedServer_setDirectoryAccessHandler(self, directoryAccessHandler, IntPtr.Zero);
+                }
+            }
+
+            private bool DirectoryAccessHandler(IntPtr parameter, IntPtr connection, int category, IntPtr logicalDevice)
+            {
+                if (internalDirectoryAccessHandler != null && connection != IntPtr.Zero)
+                {
+                    ClientConnection con = null;
+
+                    this.clientConnections.TryGetValue(connection, out con);
+
+                    ModelNode ldModelNode = null;
+
+                    if(logicalDevice != IntPtr.Zero)
+                        ldModelNode = iedModel.GetModelNodeFromNodeRef(logicalDevice);
+
+                    return internalDirectoryAccessHandler(internalDirectoryAccessHandlerParameter, con, (IedServer_DirectoryCategory)category, ldModelNode as LogicalDevice);
+                }
+
+                return false;
+            }
 
 
             private Dictionary<IntPtr, WriteAccessHandlerInfo> writeAccessHandlers = new Dictionary<IntPtr, WriteAccessHandlerInfo> ();
