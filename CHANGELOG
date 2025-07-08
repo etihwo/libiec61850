@@ -1,3 +1,11 @@
+
+Changes to version ?
+------------------------
+
+New features and improvements:
+
+- .NET API: added additional callbacks to control external access to the data model (required to implement RBAC)
+
 Changes to version 1.6.1
 ------------------------
 

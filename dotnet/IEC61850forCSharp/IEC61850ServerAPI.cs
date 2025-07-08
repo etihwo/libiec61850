@@ -22,10 +22,13 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Xml.Linq;
 using IEC61850.Common;
 using IEC61850.TLS;
+using static System.Net.Mime.MediaTypeNames;
 using static IEC61850.Client.IedConnection;
 
 // IEC 61850 API for the libiec61850 .NET wrapper library
@@ -2366,15 +2369,75 @@ namespace IEC61850
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             public static extern void IedServer_setListObjectsAccessHandler(IntPtr self, IedServer_ListObjectsAccessHandler handler, IntPtr parameter);
 
+            /// <summary>
+            /// Set a handler to control read and write access to control blocks and logs
+            /// </summary>
+            /// <param name="self">IedServer</param>
+            /// <param name="handler">handler the callback handler to be used</param>
+            /// <param name="parameter">a user provided parameter that is passed to the handler</param>
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             public static extern void IedServer_setControlBlockAccessHandler(IntPtr self, IedServer_ControlBlockAccessHandler handler, IntPtr parameter);
 
+            /// <summary>
+            /// Install the global read access handler
+            /// The read access handler will be called for every read access before the server grants access to the client
+            /// </summary>
+            /// <param name="self">IedServer</param>
+            /// <param name="handler">the callback function that is invoked if a client tries to read a data object</param>
+            /// <param name="parameter">a user provided parameter that is passed to the callback function</param>
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            public static extern void IedServer_setReadAccessHandler(IntPtr self, ReadAccessHandler handler, IntPtr parameter);
+
+            /// <summary>
+            /// Set a handler to control access to a dataset (create, delete, read, write, list directory)
+            /// </summary>
+            /// <param name="self">IedServer</param>
+            /// <param name="handler">the callback handler to be used</param>
+            /// <param name="parameter">a user provided parameter that is passed to the handler</param>
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             public static extern void IedServer_setDataSetAccessHandler(IntPtr self, IedServer_DataSetAccessHandler handler, IntPtr parameter);
+           
+            /// <summary>
+            /// callback handler to control client read access to data attributes
+            ///  User provided callback function to control MMS client read access to IEC 61850
+            ///  data objects.The application is to allow read access to data objects for specific clients only.
+            ///  It can be used to implement a role based access control (RBAC).
+            /// </summary>
+            /// <param name="ld">the logical device the client wants to access</param>
+            /// <param name="ln">the logical node the client wants to access</param>
+            /// <param name="dataObject">the data object the client wants to access</param>
+            /// <param name="fc">the functional constraint of the access</param>
+            /// <param name="connection">the client connection that causes the access</param>
+            /// <param name="parameter">the user provided parameter</param>
+            /// <returns>DATA_ACCESS_ERROR_SUCCESS if access is accepted, DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED if access is denied</returns>
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+            public delegate MmsDataAccessError ReadAccessHandler(IntPtr ld, IntPtr ln, IntPtr dataObject, int fc, IntPtr connection, IntPtr parameter);
 
+            /// <summary>
+            /// Callback that is called when the client is calling a dataset operation (create, delete, read, write, list directory)
+            /// his callback is called before the IedServer_RCBEventHandler and only in case of operations (RCB_EVENT_GET_PARAMETER, RCB_EVENT_SET_PARAMETER, RCB_EVENT_ENABLE
+            /// </summary>
+            /// <param name="parameter">user provided parameter</param>
+            /// <param name="connection">client connection that is involved</param>
+            /// <param name="operation">one of the following operation types: DATASET_CREATE, DATASET_DELETE, DATASET_READ, DATASET_WRITE, DATASET_GET_DIRECTORY</param>
+            /// <param name="datasetRef"></param>
+            /// <returns>true to allow operation, false to deny operation</returns>
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
             public delegate bool IedServer_DataSetAccessHandler(IntPtr parameter, IntPtr connection, int operation, string datasetRef);
 
+            /// <summary>
+            /// Callback that is called when a client is invoking a read or write service to a control block or log
+            /// This callback can be used to control the read and write access to control blocks and logs (SGCB, LCBs, URCBs, BRCBs, GoCBs, SVCBs, logs)
+            /// </summary>
+            /// <param name="parameter">user provided parameter</param>
+            /// <param name="connection">client connection that is involved</param>
+            /// <param name="acsiClass">the ACSI class of the object</param>
+            /// <param name="ld">the logical device of the object</param>
+            /// <param name="ln">the logical node of the object</param>
+            /// <param name="objectName">the name of the object (e.g. data object name, data set name, log name, RCB name, ...)</param>
+            /// <param name="subObjectName">the name of a sub element of an object or NULL</param>
+            /// <param name="accessType">access type (read=IEC61850_CB_ACCESS_TYPE_READ or write=IEC61850_CB_ACCESS_TYPE_WRITE)</param>
+            /// <returns>true to include the object in the service response, otherwise false</returns>
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
             public delegate bool IedServer_ControlBlockAccessHandler(IntPtr parameter, IntPtr connection, int acsiClass, IntPtr ld, IntPtr ln, string objectName, string subObjectName, int accessType);
 
@@ -2692,6 +2755,47 @@ namespace IEC61850
 
                 return false;
             }
+
+            public delegate MmsDataAccessError InternalReadAccessHandler(LogicalDevice ld, LogicalNode ln, DataObject dataObject, FunctionalConstraint fc, ClientConnection connection, object parameter);
+
+            private InternalReadAccessHandler internalReadAccessHandler = null;
+
+            private object internalReadAccessHandlerParameter = null;
+
+            private ReadAccessHandler readAccessHandler = null;
+
+            public void SetReadAccessHandler(InternalReadAccessHandler handler, object parameter)
+            {
+                internalReadAccessHandler = handler;
+                internalReadAccessHandlerParameter = parameter;
+
+                if (readAccessHandler == null)
+                {
+                    readAccessHandler = new ReadAccessHandler (InternalReadHandlerImplementation);
+
+                    IedServer_setReadAccessHandler(self, readAccessHandler, IntPtr.Zero);
+                }
+            }
+
+            private MmsDataAccessError InternalReadHandlerImplementation(IntPtr ld, IntPtr ln, IntPtr dataObject, int fc, IntPtr connection, IntPtr parameter)
+            {
+                if (internalReadAccessHandler != null && ld != IntPtr.Zero && ln != IntPtr.Zero)
+                {
+                    ClientConnection con = null;
+
+                    this.clientConnections.TryGetValue(connection, out con);
+
+                    ModelNode ldModelNode = iedModel.GetModelNodeFromNodeRef(ld);
+                    ModelNode lnModelNode = iedModel.GetModelNodeFromNodeRef(ln);
+                    ModelNode doModelNode = iedModel.GetModelNodeFromNodeRef(dataObject);
+
+                    return internalReadAccessHandler(ldModelNode as LogicalDevice, lnModelNode as LogicalNode, doModelNode as DataObject, (FunctionalConstraint)fc, con, internalReadAccessHandlerParameter);
+                }
+
+                return MmsDataAccessError.UNKNOWN;
+            }
+
+
 
             private Dictionary<IntPtr, WriteAccessHandlerInfo> writeAccessHandlers = new Dictionary<IntPtr, WriteAccessHandlerInfo> ();
 

@@ -160,6 +160,38 @@ namespace server_access_control
 
             iedServer.SetDataSetAccessHandler(dataSetAccessHandler, iedServer);
 
+            /* Install handler to perform read access control on data model elements
+            * NOTE: when read access to a data model element is blocked this will also prevent the client
+            * to read the data model element  in a data set or enable a RCB instance that uses a dataset
+            * containing the restricted data model element.
+            */
+            MmsDataAccessError readAccessHandler(LogicalDevice ld, LogicalNode ln, DataObject dataObject, FunctionalConstraint fc, ClientConnection connection, object parameter)
+            {
+                if( dataObject!= null)
+                    Console.WriteLine("Read access to "+ld.GetName() + "/"+ln.GetName() + "."+dataObject.GetName() + "\n");
+                else
+                    Console.WriteLine("Read access to "+ld.GetName() + "/"+ln.GetName() + "\n");
+
+                if (dataObject == null)
+                {
+                    if (ln.GetName() == "GGIO1")
+                    {
+                        return MmsDataAccessError.OBJECT_ACCESS_DENIED;
+                    }
+                }
+                else
+                {
+                    if (ln.GetName() == "GGIO1" && dataObject.GetName() ==  "AnIn1")
+                    {
+                        return MmsDataAccessError.OBJECT_ACCESS_DENIED;
+                    }
+                }
+
+                return MmsDataAccessError.SUCCESS;
+            }
+
+            iedServer.SetReadAccessHandler(readAccessHandler, null);
+
 
             iedServer.Start(102);
 
