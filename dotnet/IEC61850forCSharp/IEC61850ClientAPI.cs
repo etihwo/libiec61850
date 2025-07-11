@@ -1264,7 +1264,6 @@ namespace IEC61850
                 moreFollows = moreFollowsVal;
 
                 return WrapNativeLogQueryResult(linkedList);
-
             }
 
             /// <summary>
@@ -1725,7 +1724,6 @@ namespace IEC61850
 
                 if (error != 0)
                     throw new IedConnectionException("Error uploading file", error);
-
             }
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -2109,7 +2107,6 @@ namespace IEC61850
 
                 if (error != 0)
                     throw new IedConnectionException("Failed to create data set", error);
-
             }
 
             /// <summary>
@@ -2543,7 +2540,6 @@ namespace IEC61850
 
                 handler(invokeId, handlerParameter, clientError);
             }
-
 
             public UInt32 WriteValueAsync(string objectReference, FunctionalConstraint fc, MmsValue value, WriteValueHandler handler, object parameter)
             {
