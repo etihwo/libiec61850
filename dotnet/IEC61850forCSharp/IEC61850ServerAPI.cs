@@ -2207,7 +2207,7 @@ namespace IEC61850
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern void LogStorage_destroy(IntPtr self);
 
-            private IntPtr self = IntPtr.Zero;
+            private IntPtr self;
 
             internal IntPtr GetNativeInstance()
             {
@@ -2228,7 +2228,7 @@ namespace IEC61850
             {
                 return LogStorage_getMaxLogEntries(self);
             }
-            public int  AddEntry(long time)
+            public int AddEntry(long time)
             {
                 return LogStorage_addEntry(self, time);
             }
