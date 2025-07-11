@@ -2161,6 +2161,11 @@ namespace IEC61850
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr SqliteLogStorage_createInstance(string filename);
 
+            /// <summary>
+            /// Create a new LogStorage instance using the embedded sqlite database
+            /// </summary>
+            /// <param name="filename">name of the sqlite database file to be used</param>
+            /// <returns></returns>
             public static LogStorage CreateLogStorage(string filename)
             {
                 try
@@ -2219,26 +2224,59 @@ namespace IEC61850
                 this.self = self;
             }
 
+            /// <summary>
+            /// Set the maximum number of log entries for this log
+            /// </summary>
+            /// <param name="maxEntries">the maximum number of log entries</param>
             private void SetMaxLogEntries(int maxEntries)
             {
                 LogStorage_setMaxLogEntries(self, maxEntries);
             }
 
+            /// <summary>
+            /// Get the maximum allowed number of log entries for this log
+            /// </summary>
+            /// <returns>the maximum number of log entries</returns>
             private int GetMaxLogEntries()
             {
                 return LogStorage_getMaxLogEntries(self);
             }
+
+            /// <summary>
+            /// Manually add an entry to the log
+            /// </summary>
+            /// <remarks>Usually this has not to be done by the user
+            /// but is done automatically by the library</remarks>
+            /// <param name="time">the entry time of the new entry in ms</param>
+            /// <returns>the entryID of the new log entry</returns>
             public int AddEntry(long time)
             {
                 return LogStorage_addEntry(self, time);
             }
 
+            /// <summary>
+            /// Add new entry data to an existing log entry
+            /// </summary>
+            /// <param name="entryID">the ID of the log entry where the data will be added</param>
+            /// <param name="dataRef">the data reference of the log entry data</param>
+            /// <param name="data">the data content as an unstructured binary data block</param>
+            /// <param name="dataSize">the size of the binary data block</param>
+            /// <param name="reasonCode">the reasonCode of the LogEntryData</param>
+            /// <returns>true if the entry data was successfully added, false otherwise</returns>
             public bool AddEntryData(int entryID, string dataRef, byte[] data, int dataSize, int reasonCode)
             {
-
                 return LogStorage_addEntryData(self, entryID, dataRef, data, dataSize, reasonCode);
             }
 
+            /// <summary>
+            /// Get log entries specified by a time range
+            /// </summary>
+            /// <param name="startingTime">start time of the time range</param>
+            /// <param name="endingTime">end time of the time range</param>
+            /// <param name="entryCallback"></param>
+            /// <param name="entryDataCallback"></param>
+            /// <param name="parameter"></param>
+            /// <returns></returns>
             public bool GetEntries(long startingTime, long endingTime, LogEntryCallback entryCallback, LogEntryDataCallback entryDataCallback, object parameter)
             {
                 return LogStorage_getEntries(self, startingTime, endingTime, entryCallback, entryDataCallback, parameter);

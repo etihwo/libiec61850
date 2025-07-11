@@ -131,7 +131,7 @@ LogStorage_getMaxLogEntries(LogStorage self);
  * \brief Add an entry to the log
  *
  * \param self the pointer of the LogStorage instance
- * \param timestamp the entry time of the new entry
+ * \param timestamp the entry time of the new entry (ms timestamp)
  *
  * \return the entryID of the new entry
  */
