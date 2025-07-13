@@ -2943,6 +2943,36 @@ namespace IEC61850
                 return false;
             }
 
+            public delegate void InternalEditSettingGroupConfirmationHandler(object parameter, SettingGroupControlBlock sgcb, uint editSg);
+
+            private InternalEditSettingGroupConfirmationHandler internalEditSettingGroupConfirmationHandler = null;
+
+            private object editSettingGroupConfirmationHandlerParameter = null;
+
+            private EditSettingGroupConfirmationHandler editSettingGroupConfirmationHandler = null;
+
+            public void SetEditSettingGroupConfirmationHandler(InternalEditSettingGroupConfirmationHandler handler, SettingGroupControlBlock settingGroupControlBlock, object parameter)
+            {
+                internalEditSettingGroupConfirmationHandler = handler;
+                editSettingGroupConfirmationHandlerParameter = parameter;
+
+                if (editSettingGroupConfirmationHandler == null)
+                {
+                    editSettingGroupConfirmationHandler = new EditSettingGroupConfirmationHandler(InternalEditSettingGroupConfirmationImplementation);
+
+                   IedServer_setEditSettingGroupConfirmationHandler(self, settingGroupControlBlock.self, editSettingGroupConfirmationHandler, IntPtr.Zero);
+                }
+            }
+
+            private void InternalEditSettingGroupConfirmationImplementation(IntPtr parameter, IntPtr sgcb, uint editSg)
+            {
+                if (sgcb != IntPtr.Zero)
+                {
+                    internalEditSettingGroupConfirmationHandler(editSettingGroupChangedHandlerParameter, new SettingGroupControlBlock(sgcb), editSg);
+                }
+            }
+
+
             //------------
 
             //public delegate bool InternalSVCBEventHandler(SampledValuesControlBlock sampledValuesControlBlock, SMVEvent sMVEvent, object parameter);

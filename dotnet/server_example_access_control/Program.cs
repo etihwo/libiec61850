@@ -251,8 +251,14 @@ namespace server_access_control
                 return true;
             }
 
+            void editSGConfirmationHandler(object parameter, SettingGroupControlBlock sgcb, uint editSg)
+            {
+                Console.WriteLine("Received edit sg confirm for sg " + editSg + "\n");
+            }
+
             iedServer.SetActiveSettingGroupChangedHandler(activeSGChangedHandler, settingGroupControlBlock, null);
             iedServer.SetEditSettingGroupChangedHandler(editSGChangedHandler, settingGroupControlBlock, null);
+            iedServer.SetEditSettingGroupConfirmationHandler(editSGConfirmationHandler, settingGroupControlBlock, null);
 
             iedServer.Start(102);
 
