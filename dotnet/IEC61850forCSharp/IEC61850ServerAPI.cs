@@ -2881,7 +2881,6 @@ namespace IEC61850
 
             private ActiveSettingGroupChangedHandler activeSettingGroupChangedHandler = null;
 
-
             public void SetActiveSettingGroupChangedHandler(InternalActiveSettingGroupChangedHandler handler,SettingGroupControlBlock settingGroupControlBlock, object parameter)
             {
                 internalActiveSettingGroupChangedHandler = handler;
@@ -2904,6 +2903,41 @@ namespace IEC61850
                     this.clientConnections.TryGetValue(connection, out con);
 
                     return internalActiveSettingGroupChangedHandler(activeSettingGroupChangedHandlerParameter, new SettingGroupControlBlock(sgcb), newActSg, con);
+                }
+
+                return false;
+            }
+
+            public delegate bool InternalEditSettingGroupChangedHandler(object parameter, SettingGroupControlBlock sgcb, uint newEditSg, ClientConnection connection);
+
+            private InternalEditSettingGroupChangedHandler internalEditSettingGroupChangedHandler = null;
+
+            private object editSettingGroupChangedHandlerParameter = null;
+
+            private EditSettingGroupChangedHandler editSettingGroupChangedHandler = null;
+
+            public void SetEditSettingGroupChangedHandler(InternalEditSettingGroupChangedHandler handler, SettingGroupControlBlock settingGroupControlBlock, object parameter)
+            {
+                internalEditSettingGroupChangedHandler = handler;
+                editSettingGroupChangedHandlerParameter = parameter;
+
+                if (editSettingGroupChangedHandler == null)
+                {
+                    editSettingGroupChangedHandler = new EditSettingGroupChangedHandler(InternalEditSettingGroupChangedImplementation);
+
+                    IedServer_setEditSettingGroupChangedHandler(self, settingGroupControlBlock.self, editSettingGroupChangedHandler, IntPtr.Zero);
+                }
+            }
+
+            private bool InternalEditSettingGroupChangedImplementation(IntPtr parameter, IntPtr sgcb, uint newEditSg, IntPtr connection)
+            {
+                if (sgcb != IntPtr.Zero && connection != IntPtr.Zero)
+                {
+                    ClientConnection con = null;
+
+                    this.clientConnections.TryGetValue(connection, out con);
+
+                    return internalEditSettingGroupChangedHandler(editSettingGroupChangedHandlerParameter, new SettingGroupControlBlock(sgcb), newEditSg, con);
                 }
 
                 return false;

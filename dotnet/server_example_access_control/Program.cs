@@ -244,7 +244,15 @@ namespace server_access_control
                 return true;
             }
 
+            bool editSGChangedHandler(object parameter, SettingGroupControlBlock sgcb, uint newEditSg, ClientConnection connection)
+            {
+                Console.WriteLine("Set edit setting group to " + newEditSg + "\n");
+
+                return true;
+            }
+
             iedServer.SetActiveSettingGroupChangedHandler(activeSGChangedHandler, settingGroupControlBlock, null);
+            iedServer.SetEditSettingGroupChangedHandler(editSGChangedHandler, settingGroupControlBlock, null);
 
             iedServer.Start(102);
 
