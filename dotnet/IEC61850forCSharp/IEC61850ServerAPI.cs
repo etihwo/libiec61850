@@ -23,11 +23,14 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
+using IEC61850.Client;
 using IEC61850.Common;
 using IEC61850.TLS;
+using static System.Collections.Specialized.BitVector32;
 using static System.Net.Mime.MediaTypeNames;
 using static IEC61850.Client.IedConnection;
 
@@ -315,6 +318,9 @@ namespace IEC61850
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr LogicalDevice_createEx(string name, IntPtr parent, string ldName);
 
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern IntPtr LogicalDevice_getSettingGroupControlBlock(IntPtr self);
+
             public IedModel IedModel { get; }
 
             public LogicalDevice (IntPtr self, IedModel iedModel) : base (self)
@@ -345,6 +351,20 @@ namespace IEC61850
                 this.IedModel = parent;
 
                 self = LogicalDevice_createEx(inst, parent.self, ldName);
+            }
+
+            /// <summary>
+            /// Get the setting group control block (SGCB) of the logical device
+            /// </summary>
+            /// <returns>the SGCB instance or NULL if no SGCB is available</returns>
+            public SettingGroupControlBlock GetSettingGroupControlBlock()
+            {
+                IntPtr sgcb = LogicalDevice_getSettingGroupControlBlock(this.self);
+
+                if(sgcb == IntPtr.Zero)
+                    return null;
+
+                return new SettingGroupControlBlock(sgcb);
             }
         }
 
@@ -1689,6 +1709,11 @@ namespace IEC61850
             {
                 self = SettingGroupControlBlock_create(parent.self, (byte) actSG, (byte)  numOfSGs);
             }
+
+            public SettingGroupControlBlock(IntPtr self)
+            {
+                this.self = self ;
+            }
         }
 
         public class ClientConnection 
@@ -2401,6 +2426,55 @@ namespace IEC61850
             public static extern void IedServer_setDirectoryAccessHandler(IntPtr self, IedServer_DirectoryAccessHandler handler, IntPtr parameter);
 
             /// <summary>
+            ///  Set the callback handler for the SetActSG event
+            /// </summary>
+            /// <param name="self">the instance of IedServer to operate on</param>
+            /// <param name="sgcb">the handle of the setting group control block of the setting group</param>
+            /// <param name="handler">the user provided callback handler</param>
+            /// <param name="parameter">a user provided parameter that is passed to the control handler</param>
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            public static extern void IedServer_setActiveSettingGroupChangedHandler(IntPtr self, IntPtr sgcb, ActiveSettingGroupChangedHandler handler, IntPtr parameter);
+
+            /// <summary>
+            /// Set the callback handler for the SetEditSG event
+            /// </summary>
+            /// <param name="self">the instance of IedServer to operate on</param>
+            /// <param name="sgcb">the handle of the setting group control block of the setting group</param>
+            /// <param name="handler">the user provided callback handler</param>
+            /// <param name="parameter">a user provided parameter that is passed to the control handler</param>
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            public static extern void IedServer_setEditSettingGroupChangedHandler(IntPtr self, IntPtr sgcb, EditSettingGroupChangedHandler handler, IntPtr parameter);
+
+            /// <summary>
+            /// Set the callback handler for the COnfEditSG event
+            /// </summary>
+            /// <param name="self">the instance of IedServer to operate on</param>
+            /// <param name="sgcb">the handle of the setting group control block of the setting group</param>
+            /// <param name="handler">the user provided callback handler</param>
+            /// <param name="parameter">a user provided parameter that is passed to the control handler</param>
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            public static extern void IedServer_setEditSettingGroupConfirmationHandler(IntPtr self, IntPtr sgcb, EditSettingGroupConfirmationHandler handler, IntPtr parameter);
+
+            ///// <summary>
+            ///// Set a handler for SVCB control block events (enable/disable)
+            ///// </summary>
+            ///// <param name="self">the instance of IedServer to operate on.</param>
+            ///// <param name="svcb">the SVCB control block instance</param>
+            ///// <param name="handler">the event handler to be used</param>
+            ///// <param name="parameter">user provided parameter that is passed to the handler</param>
+            //[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            //public static extern void IedServer_setSVCBHandler(IntPtr self, IntPtr svcb, SVCBEventHandler handler, IntPtr parameter);
+
+            ///// <summary>
+            ///// callback handler for SVCB events
+            ///// </summary>
+            ///// <param name="svcb">the related SVCB instance</param>
+            ///// <param name="eventType">event type</param>
+            ///// <param name="parameter">user defined parameter</param>
+            //[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+            //public delegate void SVCBEventHandler(IntPtr svcb, int eventType, IntPtr parameter);
+
+            /// <summary>
             /// callback handler to control client read access to data attributes
             ///  User provided callback function to control MMS client read access to IEC 61850
             ///  data objects.The application is to allow read access to data objects for specific clients only.
@@ -2415,6 +2489,41 @@ namespace IEC61850
             /// <returns>DATA_ACCESS_ERROR_SUCCESS if access is accepted, DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED if access is denied</returns>
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
             public delegate MmsDataAccessError ReadAccessHandler(IntPtr ld, IntPtr ln, IntPtr dataObject, int fc, IntPtr connection, IntPtr parameter);
+
+            /// <summary>
+            /// Callback handler that is invoked when the active setting group is about to be changed by an external client.
+            /// This function is called BEFORE the active setting group is changed. The user can reject to change the active setting group by returning false.
+            /// </summary>
+            /// <param name="parameter">user provided parameter</param>
+            /// <param name="sgcb">sgcb the setting group control block of the setting group that is about to be changed</param>
+            /// <param name="newActSg">newActSg the new active setting group</param>
+            /// <param name="connection">connection the client connection that requests the change</param>
+            /// <returns>true if the change is accepted, false otherwise</returns>
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+            public delegate bool ActiveSettingGroupChangedHandler(IntPtr parameter, IntPtr sgcb, uint newActSg, IntPtr connection);
+
+            /// <summary>
+            /// Callback handler that is invoked when the edit setting group is about to be changed by an external client.
+            /// In this function the user should update all SE data attributes associated with the given SettingGroupControlBlock.
+            /// This function is called BEFORE the active setting group is changed.The user can reject to change the
+            /// edit setting group by returning false. This can be used to implement RBAC.
+            /// </summary>
+            /// <param name="parameter">user provided parameter</param>
+            /// <param name="sgcb">the setting group control block of the setting group that is about to be changed</param>
+            /// <param name="newEditSg">the new edit setting group</param>
+            /// <param name="connection">the client connection that requests the change</param>
+            /// <returns>true if the change is accepted, false otherwise</returns>
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+            public delegate bool EditSettingGroupChangedHandler(IntPtr parameter, IntPtr sgcb, uint newEditSg, IntPtr connection);
+
+            /// <summary>
+            /// Callback handler that is invoked when the edit setting group has been confirmed by an  external client.
+            /// </summary>
+            /// <param name="parameter">user provided parameter</param>
+            /// <param name="sgcb">the setting group control block of the setting group that is about to be changed</param>
+            /// <param name="editSg">the edit setting group that has been confirmed</param>
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+            public delegate void EditSettingGroupConfirmationHandler(IntPtr parameter, IntPtr sgcb, uint editSg);
 
             /// <summary>
             /// Callback that is called when the client is calling a dataset operation (create, delete, read, write, list directory)
@@ -2761,6 +2870,120 @@ namespace IEC61850
 
                 return false;
             }
+
+            //------------- Setting group
+
+            public delegate bool InternalActiveSettingGroupChangedHandler(object parameter, SettingGroupControlBlock sgcb, uint newActSg, ClientConnection connection);
+
+            private InternalActiveSettingGroupChangedHandler internalActiveSettingGroupChangedHandler = null;
+
+            private object activeSettingGroupChangedHandlerParameter = null;
+
+            private ActiveSettingGroupChangedHandler activeSettingGroupChangedHandler = null;
+
+
+            public void SetActiveSettingGroupChangedHandler(InternalActiveSettingGroupChangedHandler handler,SettingGroupControlBlock settingGroupControlBlock, object parameter)
+            {
+                internalActiveSettingGroupChangedHandler = handler;
+                activeSettingGroupChangedHandlerParameter = parameter;
+
+                if (activeSettingGroupChangedHandler == null)
+                {
+                    activeSettingGroupChangedHandler = new ActiveSettingGroupChangedHandler(InternalActiveSettingGroupChangedImplementation);
+
+                    IedServer_setActiveSettingGroupChangedHandler(self, settingGroupControlBlock.self, activeSettingGroupChangedHandler, IntPtr.Zero);
+                }
+            }
+
+            private bool InternalActiveSettingGroupChangedImplementation(IntPtr parameter, IntPtr sgcb, uint newActSg, IntPtr connection)
+            {
+                if (sgcb != IntPtr.Zero && connection != IntPtr.Zero)
+                {
+                    ClientConnection con = null;
+
+                    this.clientConnections.TryGetValue(connection, out con);
+
+                    return internalActiveSettingGroupChangedHandler(activeSettingGroupChangedHandlerParameter, new SettingGroupControlBlock(sgcb), newActSg, con);
+                }
+
+                return false;
+            }
+
+            //------------
+
+            //public delegate bool InternalSVCBEventHandler(SampledValuesControlBlock sampledValuesControlBlock, SMVEvent sMVEvent, object parameter);
+
+            //private InternalSVCBEventHandler internalSVCBEventHandler = null;
+
+            //private object sVCBEventHandlerParameter = null;
+
+            //private SVCBEventHandler sVCBEventHandler = null;
+
+            //internal class SVCHandlerInfo
+            //{
+            //    public SampledValuesControlBlock sampledValuesControlBlock = null;
+            //    public GCHandle handle;
+
+            //    public InternalSVCBEventHandler internalSVCBEventHandler = null;
+            //    public object svcHandlerParameter = null;
+
+            //    public SVCHandlerInfo(SampledValuesControlBlock sampledValuesControlBlock)
+            //    {
+            //        this.sampledValuesControlBlock = sampledValuesControlBlock;
+            //        this.handle = GCHandle.Alloc(this);
+            //    }
+
+            //    ~SVCHandlerInfo()
+            //    {
+            //        this.handle.Free();
+            //    }
+            //}
+
+            //private Dictionary<SampledValuesControlBlock, SVCHandlerInfo> svcHandlers = new Dictionary<SampledValuesControlBlock, SVCHandlerInfo>();
+
+            //private SVCHandlerInfo GetSVCHandlerInfo(SampledValuesControlBlock sampledValuesControlBlock)
+            //{
+            //    SVCHandlerInfo info;
+
+            //    svcHandlers.TryGetValue(sampledValuesControlBlock, out info);
+
+            //    if (info == null)
+            //    {
+            //        info = new SVCHandlerInfo(sampledValuesControlBlock);
+            //        svcHandlers.Add(sampledValuesControlBlock, info);
+            //    }
+
+            //    return info;
+            //}
+
+            //public void SetSVCBHandler(InternalSVCBEventHandler handler, SampledValuesControlBlock sampledValuesControlBlock, object parameter)
+            //{
+            //    SVCHandlerInfo info = GetSVCHandlerInfo(sampledValuesControlBlock);
+
+            //    info.internalSVCBEventHandler = handler;
+            //    info.svcHandlerParameter = parameter;
+
+            //    if (sVCBEventHandler == null)
+            //        sVCBEventHandler = new SVCBEventHandler(InternalSVCBEventHandlerImplementation);
+
+            //    IedServer_setSVCBHandler(self, sampledValuesControlBlock.Self, sVCBEventHandler, GCHandle.ToIntPtr(info.handle));
+            //}
+
+            //public enum SMVEvent
+            //{
+            //    IEC61850_SVCB_EVENT_ENABLE = 1,
+            //    IEC61850_SVCB_EVENT_DISABLE = 0,
+            //}
+
+            //private void InternalSVCBEventHandlerImplementation(IntPtr svcb, int eventType, IntPtr parameter)
+            //{
+            //    GCHandle handle = GCHandle.FromIntPtr(parameter);
+
+            //    SVCHandlerInfo info = (SVCHandlerInfo)handle.Target;
+
+            //    if (info != null && info.internalSVCBEventHandler != null)
+            //       info.internalSVCBEventHandler(info.sampledValuesControlBlock,(SMVEvent)eventType, info.svcHandlerParameter);
+            //}
 
             public delegate MmsDataAccessError InternalReadAccessHandler(LogicalDevice ld, LogicalNode ln, DataObject dataObject, FunctionalConstraint fc, ClientConnection connection, object parameter);
 

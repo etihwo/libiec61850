@@ -13,6 +13,8 @@ using System.Net;
 using static IEC61850.Server.IedServer;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
+using IEC61850.Client;
+using ReportControlBlock = IEC61850.Server.ReportControlBlock;
 
 namespace server_access_control
 {
@@ -215,6 +217,34 @@ namespace server_access_control
             }
 
             iedServer.SetDirectoryAccessHandler(directoryAccessHandler, null);
+
+            /* Handler for Sampled values control block
+             */
+
+           //void sVCBEventHandler(SampledValuesControlBlock svcb, SMVEvent smvEvent, object parameter)
+           //{
+           //     Console.WriteLine(svcb.GetNoASDU() + " event: "+  smvEvent.ToString() );
+           //}
+
+            //implement IedModel_getSVControlBlock && SVControlBlock
+            //SampledValuesControlBlock sampledValuesControlBlock = (SampledValuesControlBlock)iedModel.GetModelNodeByShortObjectReference("GenericIO/GGIO1.SPCSO1");
+
+
+            //iedServer.SetSVCBHandler(sVCBEventHandler,)
+
+            //SettingGroups
+
+            LogicalDevice logicalDevice = (LogicalDevice)iedModel.GetModelNodeByShortObjectReference("GenericIO"); ;
+            SettingGroupControlBlock settingGroupControlBlock = logicalDevice.GetSettingGroupControlBlock();
+
+            bool activeSGChangedHandler(object parameter, SettingGroupControlBlock sgcb, uint newActSg, ClientConnection connection)
+            {
+                Console.WriteLine("Switch to setting group "+ newActSg +"\n");
+
+                return true;
+            }
+
+            iedServer.SetActiveSettingGroupChangedHandler(activeSGChangedHandler, settingGroupControlBlock, null);
 
             iedServer.Start(102);
 
