@@ -20,6 +20,14 @@ namespace server_access_control
 {
     class MainClass
     {
+        struct PTOC1Settings
+        {
+            public float strVal;
+            public int opDlTmms;
+            public int rsDlTmms;
+            public int rstTms;
+        }
+
         public static void Main(string[] args)
         {
             bool running = true;
@@ -132,15 +140,8 @@ namespace server_access_control
             /* Install handler to control access to control blocks (RCBs, LCBs, GoCBs, SVCBs, SGCBs)*/
             bool ControlBlockAccessCallBack(object parameter, ClientConnection connection, ACSIClass acsiClass, LogicalDevice ld, LogicalNode ln, string objectName, string subObjectName, ControlBlockAccessType accessType)
             {
-                IedServer iedServer1 = parameter as IedServer;
-
                 Console.WriteLine(acsiClass.ToString() + " "+ accessType.ToString() + " access " +  ld.GetName() + ln.GetName() +"/"+ objectName + "." + subObjectName);
 
-                if (objectName == "EventsIndexed03")
-                    return false;
-
-
-                Console.WriteLine("Control block access callback");
                 return true;
             }
 
@@ -237,10 +238,29 @@ namespace server_access_control
             LogicalDevice logicalDevice = (LogicalDevice)iedModel.GetModelNodeByShortObjectReference("GenericIO"); ;
             SettingGroupControlBlock settingGroupControlBlock = logicalDevice.GetSettingGroupControlBlock();
 
+            List<PTOC1Settings> ptoc1Settings = new List<PTOC1Settings>();
+            ptoc1Settings.Add(new PTOC1Settings { strVal = 1.0f, opDlTmms = 500, rsDlTmms = 500, rstTms = 500 });
+            ptoc1Settings.Add(new PTOC1Settings { strVal = 2.0f, opDlTmms = 1500, rsDlTmms = 2500, rstTms = 750 });
+            ptoc1Settings.Add(new PTOC1Settings { strVal = 3.0f, opDlTmms = 500, rsDlTmms = 1500, rstTms = 750 });
+            ptoc1Settings.Add(new PTOC1Settings { strVal = 3.5f, opDlTmms = 1250, rsDlTmms = 1750, rstTms = 500 });
+            ptoc1Settings.Add(new PTOC1Settings { strVal = 3.75f, opDlTmms = 1250, rsDlTmms = 1750, rstTms = 750 });
+
+            void LoadActiveSgValues(int actSG)
+            {
+                DataAttribute dataAttribute = (DataAttribute)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.StrVal.setMag.f");
+                iedServer.UpdateFloatAttributeValue(dataAttribute, ptoc1Settings[actSG - 1].strVal);
+                dataAttribute = (DataAttribute)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.OpDlTmms.setVal");
+                iedServer.UpdateInt32AttributeValue(dataAttribute, ptoc1Settings[actSG - 1].opDlTmms);
+                dataAttribute = (DataAttribute)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.RsDlTmms.setVal");
+                iedServer.UpdateInt32AttributeValue(dataAttribute, ptoc1Settings[actSG - 1].rsDlTmms);
+                dataAttribute = (DataAttribute)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.RstTms.setVal");
+                iedServer.UpdateInt32AttributeValue(dataAttribute, ptoc1Settings[actSG - 1].rstTms);
+            }
+
             bool activeSGChangedHandler(object parameter, SettingGroupControlBlock sgcb, uint newActSg, ClientConnection connection)
             {
                 Console.WriteLine("Switch to setting group "+ newActSg +"\n");
-
+                LoadActiveSgValues(Convert.ToInt32(newActSg));
                 return true;
             }
 
