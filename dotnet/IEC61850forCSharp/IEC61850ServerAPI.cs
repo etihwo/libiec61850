@@ -2462,6 +2462,15 @@ namespace IEC61850
             public static extern void IedServer_setActiveSettingGroupChangedHandler(IntPtr self, IntPtr sgcb, ActiveSettingGroupChangedHandler handler, IntPtr parameter);
 
             /// <summary>
+            ///  Get the active setting group number
+            /// </summary>
+            /// <param name="self">the instance of IedServer to operate on</param>
+            /// <param name="sgcb">the handle of the setting group control block of the setting group</param>
+            /// <returns>the number of the active setting group</returns>
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            public static extern uint IedServer_getActiveSettingGroup(IntPtr self, IntPtr sgcb);
+
+            /// <summary>
             /// Set the callback handler for the SetEditSG event
             /// </summary>
             /// <param name="self">the instance of IedServer to operate on</param>
@@ -2918,6 +2927,11 @@ namespace IEC61850
 
                     IedServer_setActiveSettingGroupChangedHandler(self, settingGroupControlBlock.self, activeSettingGroupChangedHandler, IntPtr.Zero);
                 }
+            }
+
+            public int GetActiveSettingGroupChangedHandler(SettingGroupControlBlock settingGroupControlBlock)
+            {
+                return Convert.ToInt32(IedServer_getActiveSettingGroup(self, settingGroupControlBlock.self));
             }
 
             private bool InternalActiveSettingGroupChangedImplementation(IntPtr parameter, IntPtr sgcb, uint newActSg, IntPtr connection)

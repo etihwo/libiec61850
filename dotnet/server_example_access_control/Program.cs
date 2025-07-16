@@ -20,7 +20,7 @@ namespace server_access_control
 {
     class MainClass
     {
-        struct PTOC1Settings
+        class PTOC1Settings
         {
             public float strVal;
             public int opDlTmms;
@@ -281,6 +281,8 @@ namespace server_access_control
             {
                 Console.WriteLine("Switch to setting group "+ newActSg +"\n");
 
+                LoadActiveSgValues(Convert.ToInt32(newActSg));
+
                 return true;
             }
 
@@ -296,6 +298,34 @@ namespace server_access_control
             void editSGConfirmationHandler(object parameter, SettingGroupControlBlock sgcb, uint editSg)
             {
                 Console.WriteLine("Received edit sg confirm for sg " + editSg + "\n");
+
+                int edit = Convert.ToInt32(editSg);
+
+                DataObject strVal = (DataObject)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.StrVal");
+                DataAttribute setMagF = strVal.GetChildWithFc("setMag.f", FunctionalConstraint.SE);
+                MmsValue setMagFValue = iedServer.GetAttributeValue(setMagF);
+
+                DataObject opDlTmms = (DataObject)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.OpDlTmms");
+                DataAttribute setVal = opDlTmms.GetChildWithFc("setVal", FunctionalConstraint.SE);
+                MmsValue setValValue = iedServer.GetAttributeValue(setVal);
+
+                DataObject rsDlTmms = (DataObject)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.RsDlTmms");
+                DataAttribute rsDlTmmsSetVal = rsDlTmms.GetChildWithFc("setVal", FunctionalConstraint.SE);
+                MmsValue rsDlTmmsSetValValue = iedServer.GetAttributeValue(rsDlTmmsSetVal);
+
+                DataObject rstTms = (DataObject)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.RstTms");
+                DataAttribute rstTmsSetVal = rstTms.GetChildWithFc("setVal", FunctionalConstraint.SE);
+                MmsValue rstTmsSetValVaue = iedServer.GetAttributeValue(rstTmsSetVal);
+
+                ptoc1Settings[edit - 1].strVal = setMagFValue.ToFloat();
+                ptoc1Settings[edit - 1].opDlTmms = setValValue.ToInt32();
+                ptoc1Settings[edit - 1].rsDlTmms = rsDlTmmsSetValValue.ToInt32();
+                ptoc1Settings[edit - 1].rstTms = rsDlTmmsSetValValue.ToInt32();
+
+                if (iedServer.GetActiveSettingGroupChangedHandler(sgcb) == edit)
+                {
+                    LoadActiveSgValues(edit);
+                }
             }
 
             iedServer.SetActiveSettingGroupChangedHandler(activeSGChangedHandler, settingGroupControlBlock, null);
