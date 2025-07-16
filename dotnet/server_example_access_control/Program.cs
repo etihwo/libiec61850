@@ -247,26 +247,48 @@ namespace server_access_control
 
             void LoadActiveSgValues(int actSG)
             {
+                
                 DataAttribute dataAttribute = (DataAttribute)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.StrVal.setMag.f");
                 iedServer.UpdateFloatAttributeValue(dataAttribute, ptoc1Settings[actSG - 1].strVal);
-                dataAttribute = (DataAttribute)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.OpDlTmms.setVal");
+                dataAttribute = (DataAttribute)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.opDlTmms.setVal");
                 iedServer.UpdateInt32AttributeValue(dataAttribute, ptoc1Settings[actSG - 1].opDlTmms);
-                dataAttribute = (DataAttribute)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.RsDlTmms.setVal");
+                dataAttribute = (DataAttribute)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.rsDlTmms.setVal");
                 iedServer.UpdateInt32AttributeValue(dataAttribute, ptoc1Settings[actSG - 1].rsDlTmms);
-                dataAttribute = (DataAttribute)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.RstTms.setVal");
+                dataAttribute = (DataAttribute)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.rstTms.setVal");
                 iedServer.UpdateInt32AttributeValue(dataAttribute, ptoc1Settings[actSG - 1].rstTms);
+            }
+
+            void LoadEditSgValues(int actSG)
+            {
+                DataObject strVal = (DataObject)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.StrVal");
+                DataAttribute setMagF = strVal.GetChildWithFc("setMag.f", FunctionalConstraint.SE);
+                iedServer.UpdateFloatAttributeValue(setMagF, ptoc1Settings[actSG - 1].strVal);
+
+                DataObject opDlTmms = (DataObject)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.OpDlTmms");
+                DataAttribute setVal = opDlTmms.GetChildWithFc("setVal", FunctionalConstraint.SE);
+                iedServer.UpdateInt32AttributeValue(setVal, ptoc1Settings[actSG - 1].opDlTmms);
+
+                DataObject rsDlTmms = (DataObject)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.RsDlTmms");
+                DataAttribute rsDlTmms_setVal = rsDlTmms.GetChildWithFc("setVal", FunctionalConstraint.SE);
+                iedServer.UpdateInt32AttributeValue(rsDlTmms_setVal, ptoc1Settings[actSG - 1].rsDlTmms);
+
+                DataObject rstTms = (DataObject)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.RstTms");
+                DataAttribute rstTms_setVal = rstTms.GetChildWithFc("setVal", FunctionalConstraint.SE);
+                iedServer.UpdateInt32AttributeValue(rstTms_setVal, ptoc1Settings[actSG - 1].rstTms);
             }
 
             bool activeSGChangedHandler(object parameter, SettingGroupControlBlock sgcb, uint newActSg, ClientConnection connection)
             {
                 Console.WriteLine("Switch to setting group "+ newActSg +"\n");
-                LoadActiveSgValues(Convert.ToInt32(newActSg));
+
                 return true;
             }
 
             bool editSGChangedHandler(object parameter, SettingGroupControlBlock sgcb, uint newEditSg, ClientConnection connection)
             {
                 Console.WriteLine("Set edit setting group to " + newEditSg + "\n");
+
+                LoadEditSgValues(Convert.ToInt32(newEditSg));
 
                 return true;
             }
