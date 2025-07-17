@@ -1317,6 +1317,9 @@ IedServer_updateAttributeValue(IedServer self, DataAttribute* dataAttribute, Mms
     assert(dataAttribute != NULL);
     assert(MmsValue_getType(dataAttribute->mmsValue) == MmsValue_getType(value));
 
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
     if (MmsValue_equals(dataAttribute->mmsValue, value) == false)
     {
         if (dataAttribute->type == IEC61850_BOOLEAN)
@@ -1350,6 +1353,12 @@ IedServer_updateFloatAttributeValue(IedServer self, DataAttribute* dataAttribute
     assert(MmsValue_getType(dataAttribute->mmsValue) == MMS_FLOAT);
     assert(self != NULL);
 
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_FLOAT)
+        return;
+
     float currentValue = MmsValue_toFloat(dataAttribute->mmsValue);
 
     if (currentValue != value)
@@ -1374,6 +1383,12 @@ IedServer_updateInt32AttributeValue(IedServer self, DataAttribute* dataAttribute
     assert(MmsValue_getType(dataAttribute->mmsValue) == MMS_INTEGER);
     assert(self != NULL);
 
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_INTEGER)
+        return;
+
     int32_t currentValue = MmsValue_toInt32(dataAttribute->mmsValue);
 
     if (currentValue != value)
@@ -1395,6 +1410,12 @@ IedServer_updateInt32AttributeValue(IedServer self, DataAttribute* dataAttribute
 void
 IedServer_updateDbposValue(IedServer self, DataAttribute* dataAttribute, Dbpos value)
 {
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_BIT_STRING)
+        return;
+
     Dbpos currentValue = Dbpos_fromMmsValue(dataAttribute->mmsValue);
 
     if (currentValue != value)
@@ -1419,6 +1440,12 @@ IedServer_updateInt64AttributeValue(IedServer self, DataAttribute* dataAttribute
     assert(dataAttribute != NULL);
     assert(MmsValue_getType(dataAttribute->mmsValue) == MMS_INTEGER);
     assert(self != NULL);
+
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_INTEGER)
+        return;
 
     int64_t currentValue = MmsValue_toInt64(dataAttribute->mmsValue);
 
@@ -1445,6 +1472,12 @@ IedServer_updateUnsignedAttributeValue(IedServer self, DataAttribute* dataAttrib
     assert(MmsValue_getType(dataAttribute->mmsValue) == MMS_UNSIGNED);
     assert(self != NULL);
 
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_UNSIGNED)
+        return;
+
     uint32_t currentValue = MmsValue_toUint32(dataAttribute->mmsValue);
 
     if (currentValue != value)
@@ -1470,6 +1503,12 @@ IedServer_updateBitStringAttributeValue(IedServer self, DataAttribute* dataAttri
     assert(MmsValue_getType(dataAttribute->mmsValue) == MMS_BIT_STRING);
     assert(self != NULL);
 
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_BIT_STRING)
+        return;
+
     uint32_t currentValue = MmsValue_getBitStringAsInteger(dataAttribute->mmsValue);
 
     if (currentValue != value)
@@ -1494,6 +1533,12 @@ IedServer_updateBooleanAttributeValue(IedServer self, DataAttribute* dataAttribu
     assert(self != NULL);
     assert(dataAttribute != NULL);
     assert(MmsValue_getType(dataAttribute->mmsValue) == MMS_BOOLEAN);
+
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_BOOLEAN)
+        return;
 
     bool currentValue = MmsValue_getBoolean(dataAttribute->mmsValue);
 
@@ -1529,6 +1574,12 @@ IedServer_updateVisibleStringAttributeValue(IedServer self, DataAttribute* dataA
     assert(MmsValue_getType(dataAttribute->mmsValue) == MMS_VISIBLE_STRING);
     assert(self != NULL);
 
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_VISIBLE_STRING)
+        return;
+
     const char* currentValue = MmsValue_toString(dataAttribute->mmsValue);
 
     if (strcmp(currentValue, value))
@@ -1553,6 +1604,12 @@ IedServer_updateUTCTimeAttributeValue(IedServer self, DataAttribute* dataAttribu
     assert(dataAttribute != NULL);
     assert(MmsValue_getType(dataAttribute->mmsValue) == MMS_UTC_TIME);
     assert(self != NULL);
+
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_UTC_TIME)
+        return;
 
     uint64_t currentValue = MmsValue_getUtcTimeInMs(dataAttribute->mmsValue);
 
@@ -1579,6 +1636,12 @@ IedServer_updateTimestampAttributeValue(IedServer self, DataAttribute* dataAttri
     assert(MmsValue_getType(dataAttribute->mmsValue) == MMS_UTC_TIME);
     assert(self != NULL);
 
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_UTC_TIME)
+        return;
+
     if (memcmp(dataAttribute->mmsValue->value.utcTime, timestamp->val, 8))
     {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
@@ -1602,6 +1665,12 @@ IedServer_updateQuality(IedServer self, DataAttribute* dataAttribute, Quality qu
     assert(MmsValue_getType(dataAttribute->mmsValue) == MMS_BIT_STRING);
     assert(MmsValue_getBitStringSize(dataAttribute->mmsValue) >= 12);
     assert(MmsValue_getBitStringSize(dataAttribute->mmsValue) <= 15);
+
+    if ((dataAttribute == NULL) || (dataAttribute->mmsValue == NULL))
+        return;
+
+    if (MmsValue_getType(dataAttribute->mmsValue) != MMS_BIT_STRING)
+        return;
 
     uint32_t oldQuality = MmsValue_getBitStringAsInteger(dataAttribute->mmsValue);
 
@@ -1814,8 +1883,26 @@ IedServer_getFunctionalConstrainedData(IedServer self, DataObject* dataObject, F
     {
         nameLen = strlen(dataObject->name);
         currentStart -= nameLen;
+
+        if (currentStart < buffer)
+        {
+            if (DEBUG_IED_SERVER)
+                printf("IED_SERVER: object path name too long (> 64 bytes)!\n");
+
+            goto exit_function;
+        }
+
         memcpy(currentStart, dataObject->name, nameLen);
         currentStart--;
+
+        if (currentStart < buffer)
+        {
+            if (DEBUG_IED_SERVER)
+                printf("IED_SERVER: object path name too long (> 64 bytes)!\n");
+
+            goto exit_function;
+        }
+
         *currentStart = '$';
 
         if (dataObject->parent->modelType == DataObjectModelType)
@@ -1825,6 +1912,17 @@ IedServer_getFunctionalConstrainedData(IedServer self, DataObject* dataObject, F
     }
 
     char* fcString = FunctionalConstraint_toString(fc);
+
+    if (fcString == NULL)
+        goto exit_function;
+
+    if (currentStart - 3 < buffer)
+    {
+        if (DEBUG_IED_SERVER)
+            printf("IED_SERVER: object path name too long (> 64 bytes)!\n");
+
+        goto exit_function;
+    }
 
     currentStart--;
     *currentStart = fcString[1];
@@ -1838,6 +1936,15 @@ IedServer_getFunctionalConstrainedData(IedServer self, DataObject* dataObject, F
     nameLen = strlen(ln->name);
 
     currentStart -= nameLen;
+
+    if (currentStart < buffer)
+    {
+        if (DEBUG_IED_SERVER)
+            printf("IED_SERVER: object path name too long (> 64 bytes)!\n");
+
+        goto exit_function;
+    }
+
     memcpy(currentStart, ln->name, nameLen);
 
     LogicalDevice* ld = (LogicalDevice*) ln->parent;
