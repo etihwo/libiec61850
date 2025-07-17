@@ -1,7 +1,7 @@
 /*
  *  ied_server.c
  *
- *  Copyright 2013-2024 Michael Zillgith
+ *  Copyright 2013-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -245,21 +245,36 @@ exit_function:
     return success;
 }
 
+#define OBJ_REF_MAX_SIZE 129
+
 static void
 installDefaultValuesForDataAttribute(IedServer self, LogicalDevice* ld, DataAttribute* dataAttribute,
         char* objectReference, int position, int idx, char* componentId, int compIdPos)
 {
+    objectReference[position] = 0;
+
     if (dataAttribute->name)
     {
-        if (idx == -1) {
-            sprintf(objectReference + position, ".%s", dataAttribute->name);
+        if (idx == -1)
+        {
+            objectReference[position] = 0;
+
+            StringUtils_appendString(objectReference, OBJ_REF_MAX_SIZE + 1, ".");
+            StringUtils_appendString(objectReference, OBJ_REF_MAX_SIZE + 1, dataAttribute->name);
         }
         else
         {
+            componentId[compIdPos] = 0;
+
             if (compIdPos == 0)
-                sprintf(componentId, "%s", dataAttribute->name);
+            {
+                StringUtils_appendString(componentId, OBJ_REF_MAX_SIZE + 1, dataAttribute->name);
+            }
             else
-                sprintf(componentId + compIdPos, "$%s", dataAttribute->name);
+            {
+                StringUtils_appendString(componentId, OBJ_REF_MAX_SIZE + 1, "$");
+                StringUtils_appendString(componentId, OBJ_REF_MAX_SIZE + 1, dataAttribute->name);
+            }
         }
     }
     else
@@ -360,6 +375,8 @@ static void
 installDefaultValuesForDataObject(IedServer self, LogicalDevice* ld, DataObject* dataObject,
         char* objectReference, int position, int idx, char* componentId, int compIdPos)
 {
+    objectReference[position] = 0;
+
     if (dataObject->elementCount > 0)
     {
         if (DEBUG_IED_SERVER)
@@ -367,7 +384,9 @@ installDefaultValuesForDataObject(IedServer self, LogicalDevice* ld, DataObject*
 
         ModelNode* arrayElemNode = dataObject->firstChild;
 
-        sprintf(objectReference + position, ".%s", dataObject->name);
+        StringUtils_appendString(objectReference, OBJ_REF_MAX_SIZE + 1, ".");
+        StringUtils_appendString(objectReference, OBJ_REF_MAX_SIZE + 1, dataObject->name);
+
         int childPosition = strlen(objectReference);
 
         int arrayIdx = 0;
@@ -387,14 +406,18 @@ installDefaultValuesForDataObject(IedServer self, LogicalDevice* ld, DataObject*
     {
         if (idx == -1)
         {
-            sprintf(objectReference + position, ".%s", dataObject->name);
+            StringUtils_appendString(objectReference, OBJ_REF_MAX_SIZE + 1, ".");
+            StringUtils_appendString(objectReference, OBJ_REF_MAX_SIZE + 1, dataObject->name);
         }
         else
         {
             if (compIdPos == 0)
-                sprintf(componentId, "%s", dataObject->name);
+                StringUtils_appendString(componentId, OBJ_REF_MAX_SIZE + 1, dataObject->name);
             else
-                sprintf(componentId + compIdPos, "$%s", dataObject->name);
+            {
+                StringUtils_appendString(componentId, OBJ_REF_MAX_SIZE + 1, "$");
+                StringUtils_appendString(componentId, OBJ_REF_MAX_SIZE + 1, dataObject->name);
+            }
         }
     }
 
@@ -426,27 +449,31 @@ installDefaultValuesInCache(IedServer self)
 {
     IedModel* model = self->model;
 
-    char componentId[130];
+    char componentId[OBJ_REF_MAX_SIZE + 1];
     componentId[0] = 0;
 
-    char objectReference[130];
+    char objectReference[OBJ_REF_MAX_SIZE + 1];
 
     LogicalDevice* logicalDevice = model->firstChild;
 
     while (logicalDevice)
     {
         if (logicalDevice->ldName)
-            sprintf(objectReference, "%s", logicalDevice->ldName);
+            StringUtils_copyStringMax(objectReference, OBJ_REF_MAX_SIZE + 1, logicalDevice->ldName);
         else
-            sprintf(objectReference, "%s", logicalDevice->name);
+            StringUtils_copyStringMax(objectReference, OBJ_REF_MAX_SIZE + 1, logicalDevice->name);
 
         LogicalNode* logicalNode = (LogicalNode*) logicalDevice->firstChild;
+
+        StringUtils_appendString(objectReference, OBJ_REF_MAX_SIZE + 1, "/");
 
         char* nodeReference = objectReference + strlen(objectReference);
 
         while (logicalNode)
         {
-            sprintf(nodeReference, "/%s", logicalNode->name);
+            *nodeReference = 0;
+
+            StringUtils_appendString(objectReference, OBJ_REF_MAX_SIZE + 1, logicalNode->name);
 
             DataObject* dataObject = (DataObject*) logicalNode->firstChild;
 
