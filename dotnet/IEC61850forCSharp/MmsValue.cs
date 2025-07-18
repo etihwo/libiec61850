@@ -206,7 +206,13 @@ namespace IEC61850
 			static extern void MmsValue_setElement(IntPtr complexValue, int index, IntPtr elementValue);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-            static extern IntPtr MmsVariableSpecification_getChildValue(IntPtr self, IntPtr value, string childId);
+            static extern IntPtr MmsVariableSpecification_getChildValue(IntPtr self, IntPtr value, string childId);           
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern int MmsValue_encodeMmsData(IntPtr self, byte[] buffer, int bufPos, bool encode);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern int MmsValue_decodeMmsData(IntPtr self, int bufPos, int bufferLength, IntPtr endBufPo);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr MmsValue_clone(IntPtr self);
@@ -220,8 +226,19 @@ namespace IEC61850
 				valueReference = value;
 				this.responsableForDeletion = false;
 			}
-				
-			internal MmsValue (IntPtr value, bool responsableForDeletion)
+
+            public int EncodeMmsData(byte[] buffer, int bufPos, bool encode)
+            {
+                return MmsValue_encodeMmsData(this.valueReference, buffer, bufPos, encode);
+            }
+
+            public int DecodeMmsData(int bufPos, int bufferLength, IntPtr endBufPo)
+            {
+
+                return MmsValue_decodeMmsData(this.valueReference, bufPos, bufferLength, endBufPo);
+            }
+
+            internal MmsValue (IntPtr value, bool responsableForDeletion)
 			{
 				valueReference = value;
 				this.responsableForDeletion = responsableForDeletion;

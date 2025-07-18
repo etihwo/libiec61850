@@ -4158,7 +4158,6 @@ sendNextReportEntrySegment(ReportControl* self)
     /* add reason code to report if requested */
     if (withReasonCode)
     {
-
         /* move to start position in report buffer */
         currentReportBufferPos = valuesInReportBuffer + dataLen;
 

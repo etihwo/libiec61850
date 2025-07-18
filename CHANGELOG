@@ -1,8 +1,15 @@
 Changes to version 1.6.1
 ------------------------
 
--.NET Tools: in the Tools folder you can find the .net project to generate Static and Dynamic Models
+New features and improvements:
+
+- .NET API: IEC61850ServerAPI -> LogStorage function wrapper added.
+- .NET API: MmsValue -> MmsValue_encodeMmsData and MmsValue_decodeMmsData added.
+- .NET API: Fixed issue of not printing log entries in log_client and log_server examples.
+- .NET Tools: in the Tools folder you can find the .net project to generate Static and Dynamic Models
 - SCLParser: also available on tools, you can load your SCL model and use it with our library
+
+
 
 Changes to version 1.6.0
 ------------------------
