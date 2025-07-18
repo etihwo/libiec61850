@@ -31,9 +31,7 @@
       </ConnectedAP>
     </SubNetwork>
   </Communication>
-	2 simpleIO_Ltrk_tests.icd  simpleIO -apaccessPoint1 -out model -modelprefix MODEL
-		
-				<IED name="simpleIO">
+  <IED name="simpleIO">
     <Services>
       <DynAssociation/>
       <GetDirectory/>
