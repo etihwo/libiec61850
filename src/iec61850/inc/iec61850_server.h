@@ -826,6 +826,18 @@ LIB61850_API void*
 ClientConnection_getSecurityToken(ClientConnection self);
 
 /**
+ * \brief Abort/Close the client connection
+ *
+ * \note After calling this function the ClientConnection instance can no longer be used.
+ *
+ * \param self the ClientConnection instance
+ *
+ * \return true, when the client connection has been closed, false otherwise
+ */
+LIB61850_API bool
+ClientConnection_abort(ClientConnection self);
+
+/**
  * \brief User provided callback function that is invoked whenever a new client connects or an existing connection is closed
  *        or detected as lost.
  *

@@ -925,3 +925,9 @@ MmsServerConnection_getFilesystemBasepath(MmsServerConnection self)
     return CONFIG_VIRTUAL_FILESTORE_BASEPATH;
 #endif
 }
+
+MmsServer
+MmsServerConnection_getServer(MmsServerConnection self)
+{
+    return self->server;
+}
