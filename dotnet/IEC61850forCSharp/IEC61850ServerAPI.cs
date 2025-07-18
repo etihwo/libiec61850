@@ -30,6 +30,7 @@ using System.Security.Cryptography;
 using System.Xml.Linq;
 using IEC61850.Client;
 using IEC61850.Common;
+using IEC61850.Model;
 using IEC61850.TLS;
 using static System.Collections.Specialized.BitVector32;
 using static System.Net.Mime.MediaTypeNames;
@@ -85,6 +86,9 @@ namespace IEC61850
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr IedModel_getDeviceByInst(IntPtr self, string ldInst);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern IntPtr IedModel_getSVControlBlock(IntPtr self, IntPtr parentLN, string svcbName);
 
             internal IntPtr self = IntPtr.Zero;
 
@@ -304,6 +308,16 @@ namespace IEC61850
                     return null;
 
                 return GetModelNodeFromNodeRef (nodeRef);
+            }
+
+            public SVControlBlock GetSVControlBlock(LogicalNode logicalNode, string svcbName)
+            {
+                IntPtr nodeRef = IedModel_getSVControlBlock(self, logicalNode.self, svcbName);
+
+                if (nodeRef == IntPtr.Zero)
+                    return null;
+
+                return new SVControlBlock(nodeRef);
             }
 
         }
@@ -2497,8 +2511,8 @@ namespace IEC61850
             ///// <param name="svcb">the SVCB control block instance</param>
             ///// <param name="handler">the event handler to be used</param>
             ///// <param name="parameter">user provided parameter that is passed to the handler</param>
-            //[DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-            //public static extern void IedServer_setSVCBHandler(IntPtr self, IntPtr svcb, SVCBEventHandler handler, IntPtr parameter);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            public static extern void IedServer_setSVCBHandler(IntPtr self, IntPtr svcb, SVCBEventHandler handler, IntPtr parameter);
 
             ///// <summary>
             ///// callback handler for SVCB events
@@ -2506,8 +2520,8 @@ namespace IEC61850
             ///// <param name="svcb">the related SVCB instance</param>
             ///// <param name="eventType">event type</param>
             ///// <param name="parameter">user defined parameter</param>
-            //[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            //public delegate void SVCBEventHandler(IntPtr svcb, int eventType, IntPtr parameter);
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+            public delegate void SVCBEventHandler(IntPtr svcb, int eventType, IntPtr parameter);
 
             /// <summary>
             /// callback handler to control client read access to data attributes
@@ -3015,79 +3029,74 @@ namespace IEC61850
 
             //------------
 
-            //public delegate bool InternalSVCBEventHandler(SampledValuesControlBlock sampledValuesControlBlock, SMVEvent sMVEvent, object parameter);
+            public delegate void InternalSVCBEventHandler(SVControlBlock sampledValuesControlBlock, SMVEvent sMVEvent, object parameter);
 
-            //private InternalSVCBEventHandler internalSVCBEventHandler = null;
+            private InternalSVCBEventHandler internalSVCBEventHandler = null;
 
-            //private object sVCBEventHandlerParameter = null;
+            private object sVCBEventHandlerParameter = null;
 
-            //private SVCBEventHandler sVCBEventHandler = null;
+            private SVCBEventHandler sVCBEventHandler = null;
 
-            //internal class SVCHandlerInfo
-            //{
-            //    public SampledValuesControlBlock sampledValuesControlBlock = null;
-            //    public GCHandle handle;
+            internal class SVCHandlerInfo
+            {
+                public SVControlBlock sampledValuesControlBlock = null;
+                public GCHandle handle;
 
-            //    public InternalSVCBEventHandler internalSVCBEventHandler = null;
-            //    public object svcHandlerParameter = null;
+                public InternalSVCBEventHandler internalSVCBEventHandler = null;
+                public object svcHandlerParameter = null;
 
-            //    public SVCHandlerInfo(SampledValuesControlBlock sampledValuesControlBlock)
-            //    {
-            //        this.sampledValuesControlBlock = sampledValuesControlBlock;
-            //        this.handle = GCHandle.Alloc(this);
-            //    }
+                public SVCHandlerInfo(SVControlBlock sampledValuesControlBlock)
+                {
+                    this.sampledValuesControlBlock = sampledValuesControlBlock;
+                    this.handle = GCHandle.Alloc(this);
+                }
 
-            //    ~SVCHandlerInfo()
-            //    {
-            //        this.handle.Free();
-            //    }
-            //}
+                ~SVCHandlerInfo()
+                {
+                    this.handle.Free();
+                }
+            }
 
-            //private Dictionary<SampledValuesControlBlock, SVCHandlerInfo> svcHandlers = new Dictionary<SampledValuesControlBlock, SVCHandlerInfo>();
+            private Dictionary<SVControlBlock, SVCHandlerInfo> svcHandlers = new Dictionary<SVControlBlock, SVCHandlerInfo>();
 
-            //private SVCHandlerInfo GetSVCHandlerInfo(SampledValuesControlBlock sampledValuesControlBlock)
-            //{
-            //    SVCHandlerInfo info;
+            private SVCHandlerInfo GetSVCHandlerInfo(SVControlBlock sampledValuesControlBlock)
+            {
+                SVCHandlerInfo info;
 
-            //    svcHandlers.TryGetValue(sampledValuesControlBlock, out info);
+                svcHandlers.TryGetValue(sampledValuesControlBlock, out info);
 
-            //    if (info == null)
-            //    {
-            //        info = new SVCHandlerInfo(sampledValuesControlBlock);
-            //        svcHandlers.Add(sampledValuesControlBlock, info);
-            //    }
+                if (info == null)
+                {
+                    info = new SVCHandlerInfo(sampledValuesControlBlock);
+                    svcHandlers.Add(sampledValuesControlBlock, info);
+                }
 
-            //    return info;
-            //}
+                return info;
+            }
 
-            //public void SetSVCBHandler(InternalSVCBEventHandler handler, SampledValuesControlBlock sampledValuesControlBlock, object parameter)
-            //{
-            //    SVCHandlerInfo info = GetSVCHandlerInfo(sampledValuesControlBlock);
+            public void SetSVCBHandler(InternalSVCBEventHandler handler, SVControlBlock sampledValuesControlBlock, object parameter)
+            {
+                SVCHandlerInfo info = GetSVCHandlerInfo(sampledValuesControlBlock);
 
-            //    info.internalSVCBEventHandler = handler;
-            //    info.svcHandlerParameter = parameter;
+                info.internalSVCBEventHandler = handler;
+                info.svcHandlerParameter = parameter;
 
-            //    if (sVCBEventHandler == null)
-            //        sVCBEventHandler = new SVCBEventHandler(InternalSVCBEventHandlerImplementation);
+                if (sVCBEventHandler == null)
+                    sVCBEventHandler = new SVCBEventHandler(InternalSVCBEventHandlerImplementation);
 
-            //    IedServer_setSVCBHandler(self, sampledValuesControlBlock.Self, sVCBEventHandler, GCHandle.ToIntPtr(info.handle));
-            //}
+                IedServer_setSVCBHandler(self, sampledValuesControlBlock.Self, sVCBEventHandler, GCHandle.ToIntPtr(info.handle));
+            }
 
-            //public enum SMVEvent
-            //{
-            //    IEC61850_SVCB_EVENT_ENABLE = 1,
-            //    IEC61850_SVCB_EVENT_DISABLE = 0,
-            //}
 
-            //private void InternalSVCBEventHandlerImplementation(IntPtr svcb, int eventType, IntPtr parameter)
-            //{
-            //    GCHandle handle = GCHandle.FromIntPtr(parameter);
+            private void InternalSVCBEventHandlerImplementation(IntPtr svcb, int eventType, IntPtr parameter)
+            {
+                GCHandle handle = GCHandle.FromIntPtr(parameter);
 
-            //    SVCHandlerInfo info = (SVCHandlerInfo)handle.Target;
+                SVCHandlerInfo info = (SVCHandlerInfo)handle.Target;
 
-            //    if (info != null && info.internalSVCBEventHandler != null)
-            //       info.internalSVCBEventHandler(info.sampledValuesControlBlock,(SMVEvent)eventType, info.svcHandlerParameter);
-            //}
+                if (info != null && info.internalSVCBEventHandler != null)
+                    info.internalSVCBEventHandler(info.sampledValuesControlBlock, (SMVEvent)eventType, info.svcHandlerParameter);
+            }
 
             public delegate MmsDataAccessError InternalReadAccessHandler(LogicalDevice ld, LogicalNode ln, DataObject dataObject, FunctionalConstraint fc, ClientConnection connection, object parameter);
 

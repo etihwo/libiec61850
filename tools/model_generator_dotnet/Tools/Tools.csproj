@@ -16,6 +16,7 @@
     <None Remove="ICDFiles\sampleModel.icd" />
     <None Remove="ICDFiles\sampleModel_errors.icd" />
     <None Remove="ICDFiles\sampleModel_with_dataset.icd" />
+    <None Remove="ICDFiles\simpleIO_access_control.icd" />
     <None Remove="ICDFiles\simpleIO_control_tests.cid" />
     <None Remove="ICDFiles\simpleIO_direct_control.cid" />
     <None Remove="ICDFiles\simpleIO_direct_control.icd" />
@@ -47,6 +48,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </EmbeddedResource>
     <EmbeddedResource Include="ICDFiles\sampleModel_with_dataset.icd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ICDFiles\simpleIO_access_control.icd">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </EmbeddedResource>
     <EmbeddedResource Include="ICDFiles\simpleIO_control_tests.cid">

@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 using IEC61850.Client;
 using ReportControlBlock = IEC61850.Server.ReportControlBlock;
+using IEC61850.Model;
 
 namespace server_access_control
 {
@@ -222,18 +223,16 @@ namespace server_access_control
             /* Handler for Sampled values control block
              */
 
-           //void sVCBEventHandler(SampledValuesControlBlock svcb, SMVEvent smvEvent, object parameter)
-           //{
-           //     Console.WriteLine(svcb.GetNoASDU() + " event: "+  smvEvent.ToString() );
-           //}
+            void SVCBEventHandler(SVControlBlock svcb, SMVEvent smvEvent, object parameter)
+            {
+                Console.WriteLine("SVControlBlock event " + smvEvent.ToString());
+            }
 
-            //implement IedModel_getSVControlBlock && SVControlBlock
-            //SampledValuesControlBlock sampledValuesControlBlock = (SampledValuesControlBlock)iedModel.GetModelNodeByShortObjectReference("GenericIO/GGIO1.SPCSO1");
+            //LogicalNode logicalNode = (LogicalNode)iedModel.GetModelNodeByShortObjectReference("GenericIO/GGIO1");
+            //SVControlBlock sampledValuesControlBlock = iedModel.GetSVControlBlock(logicalNode, "MSVCB01");
+            //iedServer.SetSVCBHandler(SVCBEventHandler, sampledValuesControlBlock, null);
 
-
-            //iedServer.SetSVCBHandler(sVCBEventHandler,)
-
-            //SettingGroups
+            /*SettingGroups*/
 
             LogicalDevice logicalDevice = (LogicalDevice)iedModel.GetModelNodeByShortObjectReference("GenericIO"); ;
             SettingGroupControlBlock settingGroupControlBlock = logicalDevice.GetSettingGroupControlBlock();
@@ -250,11 +249,11 @@ namespace server_access_control
                 
                 DataAttribute dataAttribute = (DataAttribute)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.StrVal.setMag.f");
                 iedServer.UpdateFloatAttributeValue(dataAttribute, ptoc1Settings[actSG - 1].strVal);
-                dataAttribute = (DataAttribute)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.opDlTmms.setVal");
+                dataAttribute = (DataAttribute)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.OpDlTmms.setVal");
                 iedServer.UpdateInt32AttributeValue(dataAttribute, ptoc1Settings[actSG - 1].opDlTmms);
-                dataAttribute = (DataAttribute)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.rsDlTmms.setVal");
+                dataAttribute = (DataAttribute)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.RsDlTmms.setVal");
                 iedServer.UpdateInt32AttributeValue(dataAttribute, ptoc1Settings[actSG - 1].rsDlTmms);
-                dataAttribute = (DataAttribute)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.rstTms.setVal");
+                dataAttribute = (DataAttribute)iedModel.GetModelNodeByShortObjectReference("GenericIO/PTOC1.RstTms.setVal");
                 iedServer.UpdateInt32AttributeValue(dataAttribute, ptoc1Settings[actSG - 1].rstTms);
             }
 

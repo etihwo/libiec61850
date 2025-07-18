@@ -8,12 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="model.cfg" />
+    <None Remove="model..cfg" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="model.cfg">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <EmbeddedResource Include="model..cfg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
   </ItemGroup>
 
