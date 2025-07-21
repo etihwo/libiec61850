@@ -142,7 +142,7 @@ namespace server_access_control
             /* Install handler to control access to control blocks (RCBs, LCBs, GoCBs, SVCBs, SGCBs)*/
             bool ControlBlockAccessCallBack(object parameter, ClientConnection connection, ACSIClass acsiClass, LogicalDevice ld, LogicalNode ln, string objectName, string subObjectName, ControlBlockAccessType accessType)
             {
-                Console.WriteLine(acsiClass.ToString() + " "+ accessType.ToString() + " access " +  ld.GetName() + ln.GetName() +"/"+ objectName + "." + subObjectName);
+                Console.WriteLine(acsiClass.ToString() + " "+ accessType.ToString() + " access " +  ld.GetName() + ln.GetName() +"/"+ objectName + "." + subObjectName + "\n");
 
                 return true;
             }
@@ -220,18 +220,6 @@ namespace server_access_control
             }
 
             iedServer.SetDirectoryAccessHandler(directoryAccessHandler, null);
-
-            /* Handler for Sampled values control block
-             */
-
-            void SVCBEventHandler(SVControlBlock svcb, SMVEvent smvEvent, object parameter)
-            {
-                Console.WriteLine("SVControlBlock event " + smvEvent.ToString());
-            }
-
-            //LogicalNode logicalNode = (LogicalNode)iedModel.GetModelNodeByShortObjectReference("GenericIO/GGIO1");
-            //SVControlBlock sampledValuesControlBlock = iedModel.GetSVControlBlock(logicalNode, "MSVCB01");
-            //iedServer.SetSVCBHandler(SVCBEventHandler, sampledValuesControlBlock, null);
 
             /*SettingGroups*/
 
@@ -338,7 +326,7 @@ namespace server_access_control
 
             void sVCBEventHandler(SVControlBlock sampledValuesControlBlock, SMVEvent sMVEvent, object parameter)
             {
-                Console.WriteLine("control called");
+                Console.WriteLine("control called " + sampledValuesControlBlock.Name + " Event: " + sMVEvent.ToString() + "\n");
             }
 
             iedServer.SetSVCBHandler(sVCBEventHandler, sampledValuesControlBlock_1, null);

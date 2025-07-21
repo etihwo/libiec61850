@@ -26,6 +26,9 @@ namespace IEC61850
             static extern IntPtr SVControlBlock_create(string name, IntPtr parent, string svID,string dataSet, UInt32 confRev, uint smpMod,
             UInt16 smpRate, uint optFlds, bool isUnicast);
 
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern IntPtr SVControlBlock_getName(IntPtr self);
+
             /// <summary>
             /// create a new Multicast/Unicast Sampled Value (SV) control block (SvCB)
             /// Create a new Sampled Value control block(SvCB) and add it to the given logical node(LN)
@@ -54,6 +57,14 @@ namespace IEC61850
             public SVControlBlock(IntPtr self)
             {
                 this.self = self;
+            }
+
+            public string Name
+            {
+                get
+                {
+                    return Marshal.PtrToStringAnsi(SVControlBlock_getName(self));
+                }
             }
 
         }
