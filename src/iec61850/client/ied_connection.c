@@ -963,6 +963,25 @@ IedConnection_close(IedConnection self)
     }
 }
 
+static void
+deleteControlObjectClients(IedConnection self)
+{
+    while (LinkedList_size(self->clientControls) > 0)
+    {
+        LinkedList elem = LinkedList_getNext(self->clientControls);
+
+        if (elem)
+        {
+            ControlObjectClient coClient = (ControlObjectClient)LinkedList_getData(elem);
+
+            if (coClient)
+            {
+                ControlObjectClient_destroy(coClient);
+            }
+        }
+    }
+}
+
 void
 IedConnection_destroy(IedConnection self)
 {
@@ -978,7 +997,9 @@ IedConnection_destroy(IedConnection self)
 
     GLOBAL_FREEMEM(self->outstandingCalls);
 
-    LinkedList_destroyDeep(self->clientControls, (LinkedListValueDeleteFunction)ControlObjectClient_destroy);
+    deleteControlObjectClients(self);
+
+    LinkedList_destroyStatic(self->clientControls);
 
     Semaphore_destroy(self->clientControlsLock);
     Semaphore_destroy(self->outstandingCallsLock);
