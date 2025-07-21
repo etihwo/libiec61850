@@ -838,6 +838,32 @@ LIB61850_API bool
 ClientConnection_abort(ClientConnection self);
 
 /**
+ * \brief Claim ownership of the ClientConnection instance to store and use it outside of a callback
+ *
+ * \note The application has to call \ref ClientConnection_release when the instance is no longer used
+ *       order to avoid memory leaks
+ *
+ * \param self the ClientConnection instance
+ *
+ * \return the connection instance when ownership is granted
+ */
+LIB61850_API ClientConnection
+ClientConnection_claimOwnership(ClientConnection self);
+
+/**
+ * \brief Release the ownership of the ClientConnection instance.
+ *
+ * This function will also destroy the ClientConnection instance when no other owners exist.
+ *
+ * \note The application should only call this function once for each call for \ref ClientConnection_claimOwnership
+ *       for a specific ClientConnection instance. The reference must not be used after calling this function!
+ *
+ * \param self the ClientConnection instance
+ */
+LIB61850_API void
+ClientConnection_release(ClientConnection self);
+
+/**
  * \brief User provided callback function that is invoked whenever a new client connects or an existing connection is closed
  *        or detected as lost.
  *

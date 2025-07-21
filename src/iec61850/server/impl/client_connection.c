@@ -1,7 +1,7 @@
 /*
  *  client_connection.c
  *
- *  Copyright 2013-2024 Michael Zillgith
+ *  Copyright 2013-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -32,6 +32,12 @@
 
 #include "libiec61850_platform_includes.h"
 
+#if __STDC_VERSION__ >= 201112L
+#include <stdatomic.h>
+#else
+#define _TLS_OWN_CNT_SEM 1
+#endif
+
 struct sClientConnection
 {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
@@ -40,6 +46,17 @@ struct sClientConnection
 
     int tasksCount;
     void* serverConnectionHandle;
+
+    bool isValid; /* connection is still valid and has not been closed in the meantime */
+
+#ifdef _TLS_OWN_CNT_SEM
+    #if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore ownerCountMutex;
+    #endif /*#if (CONFIG_MMS_THREADLESS_STACK != 1) */
+    int ownerCount;
+#else
+    _Atomic(int) ownerCount;
+#endif /* _TLS_OWN_CNT_SEM */
 };
 
 ClientConnection
@@ -51,22 +68,32 @@ private_ClientConnection_create(void* serverConnectionHandle)
     {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
         self->tasksCountMutex = Semaphore_create(1);
+
+        #ifdef _TLS_OWN_CNT_SEM
+        self->ownerCount = Semaphore_create(1);
+        #endif
 #endif
 
+        self->ownerCount = 1;
         self->tasksCount = 0;
         self->serverConnectionHandle = serverConnectionHandle;
+        self->isValid = true;
     }
 
     return self;
 }
 
-void
+static void
 private_ClientConnection_destroy(ClientConnection self)
 {
     if (self)
     {
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
         Semaphore_destroy(self->tasksCountMutex);
+
+        #ifdef _TLS_OWN_CNT_SEM
+        Semaphore_destroy(self->ownerCountMutex);
+        #endif
 #endif
 
         GLOBAL_FREEMEM(self);
@@ -128,24 +155,123 @@ private_ClientConnection_getServerConnectionHandle(ClientConnection self)
 const char*
 ClientConnection_getPeerAddress(ClientConnection self)
 {
-    MmsServerConnection mmsConnection = (MmsServerConnection) self->serverConnectionHandle;
+    if (self->isValid)
+    {
+        MmsServerConnection mmsConnection = (MmsServerConnection) self->serverConnectionHandle;
 
-    return MmsServerConnection_getClientAddress(mmsConnection);
+        return MmsServerConnection_getClientAddress(mmsConnection);
+    }
+    else
+    {
+        return NULL;
+    }
 }
 
 const char*
 ClientConnection_getLocalAddress(ClientConnection self)
 {
-    MmsServerConnection mmsConnection = (MmsServerConnection) self->serverConnectionHandle;
+    if (self->isValid)
+    {
+        MmsServerConnection mmsConnection = (MmsServerConnection) self->serverConnectionHandle;
 
-    return MmsServerConnection_getLocalAddress(mmsConnection);
+        return MmsServerConnection_getLocalAddress(mmsConnection);
+    }
+    else
+    {
+        return NULL;
+    }
 }
-
 
 void*
 ClientConnection_getSecurityToken(ClientConnection self)
 {
-    MmsServerConnection mmsConnection = (MmsServerConnection) self->serverConnectionHandle;
+    if (self->isValid)
+    {
+        MmsServerConnection mmsConnection = (MmsServerConnection) self->serverConnectionHandle;
 
-    return MmsServerConnection_getSecurityToken(mmsConnection);
+        return MmsServerConnection_getSecurityToken(mmsConnection);
+    }
+    else
+    {
+        return NULL;
+    }
+}
+
+bool
+ClientConnection_abort(ClientConnection self)
+{
+    //TODO set only a flag and let the connection thread close the connection!?
+    //     this could be required for thread safety
+
+    bool aborted = false;
+
+    if (self->isValid)
+    {
+        MmsServerConnection mmsConnection = (MmsServerConnection) self->serverConnectionHandle;
+
+        if (mmsConnection)
+        {
+            MmsServer mmsServer = MmsServerConnection_getServer(mmsConnection);
+
+            aborted = MmsServer_abortConnection(mmsServer, mmsConnection);
+
+            if (aborted)
+            {
+                /* remove reference to underlying connection. Instance cannot be used any longer */
+                self->serverConnectionHandle = NULL;
+            }
+        }
+    }
+
+    return aborted;
+}
+
+ClientConnection
+ClientConnection_claimOwnership(ClientConnection self)
+{
+#ifdef _TLS_OWN_CNT_SEM
+    #if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_wait(self->ownerCountMutex);
+    #endif
+    self->ownerCount++;
+    #if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_post(self->ownerCountMutex);
+    #endif
+#else
+    atomic_fetch_add(&(self->ownerCount), 1);
+#endif
+
+    return self;
+}
+
+void
+ClientConnection_release(ClientConnection self)
+{
+    if (self)
+    {
+#ifdef _TLS_OWN_CNT_SEM
+
+        int cnt;
+
+        #if (CONFIG_MMS_THREADLESS_STACK != 1)
+        Semaphore_wait(self->ownerCountMutex);
+        #endif
+
+        cnt = self->ownerCount;
+        self->ownerCount--;
+
+        #if (CONFIG_MMS_THREADLESS_STACK != 1)
+        Semaphore_post(self->ownerCountMutex);
+        #endif
+
+        if (cnt == 1) {
+            private_ClientConnection_destroy(self);
+        }
+#else
+        if (atomic_fetch_sub(&(self->ownerCount), 1) == 1)
+        {
+            private_ClientConnection_destroy(self);
+        }
+#endif /* #ifdef _TLS_OWN_CNT_SEM */
+    }
 }

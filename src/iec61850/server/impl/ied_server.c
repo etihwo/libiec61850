@@ -808,7 +808,7 @@ IedServer_destroy(IedServer self)
         if (self->mmsMapping)
             MmsMapping_destroy(self->mmsMapping);
 
-        LinkedList_destroyDeep(self->clientConnections, (LinkedListValueDeleteFunction) private_ClientConnection_destroy);
+        LinkedList_destroyDeep(self->clientConnections, (LinkedListValueDeleteFunction) ClientConnection_release);
 
 #if (CONFIG_MMS_THREADLESS_STACK != 1)
         Semaphore_destroy(self->dataModelLock);
