@@ -16,6 +16,7 @@ using System.Reflection.Metadata;
 using IEC61850.Client;
 using ReportControlBlock = IEC61850.Server.ReportControlBlock;
 using IEC61850.Model;
+using System.Data.Common;
 
 namespace server_access_control
 {
@@ -330,6 +331,18 @@ namespace server_access_control
             iedServer.SetActiveSettingGroupChangedHandler(activeSGChangedHandler, settingGroupControlBlock, null);
             iedServer.SetEditSettingGroupChangedHandler(editSGChangedHandler, settingGroupControlBlock, null);
             iedServer.SetEditSettingGroupConfirmationHandler(editSGConfirmationHandler, settingGroupControlBlock, null);
+
+            LogicalNode logicalNode = (LogicalNode)iedModel.GetModelNodeByShortObjectReference("GenericIO/LLN0");
+            SVControlBlock sampledValuesControlBlock_1 = iedModel.GetSVControlBlock(logicalNode, "SMV1");
+            SVControlBlock sampledValuesControlBlock_2 = iedModel.GetSVControlBlock(logicalNode, "SMV2");
+
+            void sVCBEventHandler(SVControlBlock sampledValuesControlBlock, SMVEvent sMVEvent, object parameter)
+            {
+                Console.WriteLine("control called");
+            }
+
+            iedServer.SetSVCBHandler(sVCBEventHandler, sampledValuesControlBlock_1, null);
+            iedServer.SetSVCBHandler(sVCBEventHandler, sampledValuesControlBlock_2, null);
 
             iedServer.Start(102);
 

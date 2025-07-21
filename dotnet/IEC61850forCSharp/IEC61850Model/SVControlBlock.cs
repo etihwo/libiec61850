@@ -46,6 +46,11 @@ namespace IEC61850
                 this.parent = parent;
             }
 
+            /// <summary>
+            /// create a new Multicast/Unicast Sampled Value (SV) control block (SvCB)
+            /// Create a new Sampled Value control block(SvCB) and add it to the given logical node(LN)
+            /// </summary>
+            /// <param name="self">the svcontrol instance</param>
             public SVControlBlock(IntPtr self)
             {
                 this.self = self;
