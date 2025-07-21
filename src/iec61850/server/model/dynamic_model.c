@@ -587,6 +587,13 @@ SVControlBlock_create(const char* name, LogicalNode* parent, const char* svID, c
     return self;
 }
 
+
+const char*
+SVControlBlock_getName(SVControlBlock* self)
+{
+    return self->name;
+}
+
 void
 SVControlBlock_addPhyComAddress(SVControlBlock* self, PhyComAddress* phyComAddress)
 {

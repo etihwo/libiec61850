@@ -1,8 +1,11 @@
+
 Changes to version 1.6.1
 ------------------------
 
 New features and improvements:
 
+- .NET API: SVControlBlock added
+- .NET API: Added additional callbacks to control external access to the data model (required to implement RBAC)
 - .NET API: IEC61850ServerAPI -> LogStorage function wrapper added.
 - .NET API: MmsValue -> MmsValue_encodeMmsData and MmsValue_decodeMmsData added.
 - .NET API: Fixed issue of not printing log entries in log_client and log_server examples.

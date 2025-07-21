@@ -96,8 +96,9 @@ namespace IEC61850
 
 			private bool isDisposed = false;
 
+            public IntPtr Self { get => self;}
 
-			internal SampledValuesControlBlock(IntPtr iedConnection, string objectReference)
+            internal SampledValuesControlBlock(IntPtr iedConnection, string objectReference)
 			{
 				self = ClientSVControlBlock_create (iedConnection, objectReference);
 				this.objectReference = objectReference;
