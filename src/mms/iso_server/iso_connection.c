@@ -479,7 +479,7 @@ handleTcpConnection(void* parameter)
     while(self->state == ISO_CON_STATE_RUNNING)
         IsoConnection_handleTcpConnection(self, false);
 
-    IsoServer_closeConnection(self->isoServer, self);
+    IsoServer_closeConnectionIndication(self->isoServer, self);
 
     finalizeIsoConnection(self);
 
