@@ -57,6 +57,20 @@ struct sClientConnection
 #endif /* _TLS_OWN_CNT_SEM */
 };
 
+void
+private_ClientConnection_invalidate(ClientConnection self)
+{
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_wait(self->accessMutex);
+#endif
+
+    self->serverConnectionHandle = NULL;
+
+#if (CONFIG_MMS_THREADLESS_STACK != 1)
+    Semaphore_post(self->accessMutex);
+#endif
+}
+
 ClientConnection
 private_ClientConnection_create(void* serverConnectionHandle)
 {

@@ -3354,6 +3354,8 @@ mmsConnectionHandler(void* parameter, MmsServerConnection connection, MmsServerE
         unselectAllSettingGroups(self, connection);
 #endif
 
+        private_ClientConnection_invalidate(clientConnection);
+
         ClientConnection_release(clientConnection);
     }
     else if (event == MMS_SERVER_NEW_CONNECTION) {

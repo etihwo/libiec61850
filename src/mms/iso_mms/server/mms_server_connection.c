@@ -818,7 +818,6 @@ MmsServerConnection_init(MmsServerConnection connection, MmsServer server, IsoCo
 void
 MmsServerConnection_destroy(MmsServerConnection self)
 {
-
 #if (MMS_FILE_SERVICE == 1)
     int frsmIndex = 0;
 
