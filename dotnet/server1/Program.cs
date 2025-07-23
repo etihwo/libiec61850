@@ -101,22 +101,16 @@ namespace server1
             void ConnectionCallBack(IedServer server, ClientConnection clientConnection, bool connected, object parameter)
             {
                 string allowedIp = parameter as string;
-                string ipAddress = clientConnection.GetPeerAddress();
-                if (allowedIp == ipAddress)
+                string ipAddress = clientConnection.GetLocalAddress();
+                if (allowedIp != ipAddress)
                 {
-
+                    clientConnection.Abort();
                 }
-                else
-                {
-
-                }
-
-
             }
 
             var connectionCallBack = new ConnectionIndicationHandler(ConnectionCallBack);
 
-            iedServer.SetConnectionIndicationHandler(connectionCallBack, "127.0.0.2");
+            iedServer.SetConnectionIndicationHandler(connectionCallBack, "127.0.0.1:103");
 
             iedServer.Start(102);
 
