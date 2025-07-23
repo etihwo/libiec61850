@@ -1756,7 +1756,7 @@ namespace IEC61850
             }
         }
 
-        public class ClientConnection 
+        public class ClientConnection : IDisposable
         {
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr ClientConnection_getPeerAddress(IntPtr self);
@@ -1764,31 +1764,90 @@ namespace IEC61850
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr ClientConnection_getLocalAddress(IntPtr self);
 
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            [return: MarshalAs(UnmanagedType.I1)]
+            static extern bool ClientConnection_abort(IntPtr self);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern IntPtr ClientConnection_claimOwnership(IntPtr self);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void ClientConnection_release(IntPtr self);
+
             internal IntPtr self;
 
-            internal ClientConnection (IntPtr self) {
-                this.self = self;
+            internal ClientConnection(IntPtr self)
+            {
+                this.self = ClientConnection_claimOwnership(self);
             }
 
             public string GetPeerAddress()
             {
-                IntPtr peerAddrPtr = ClientConnection_getPeerAddress (self);
+                lock (this)
+                {
+                    if (self != IntPtr.Zero)
+                    {
+                        IntPtr peerAddrPtr = ClientConnection_getPeerAddress(self);
 
-                if (peerAddrPtr != IntPtr.Zero)
-                    return Marshal.PtrToStringAnsi (peerAddrPtr);
-                else
-                    return null;
+                        if (peerAddrPtr != IntPtr.Zero)
+                            return Marshal.PtrToStringAnsi(peerAddrPtr);
+                    }
+                }
+
+                return null;
             }
 
             public string GetLocalAddress()
             {
-                IntPtr localAddrPtr = ClientConnection_getLocalAddress(self);
+                lock (this)
+                {
+                    if (self != IntPtr.Zero)
+                    {
+                        IntPtr localAddrPtr = ClientConnection_getLocalAddress(self);
 
-                if (localAddrPtr != IntPtr.Zero)
-                    return Marshal.PtrToStringAnsi(localAddrPtr);
-                else
-                    return null;
+                        if (localAddrPtr != IntPtr.Zero)
+                            return Marshal.PtrToStringAnsi(localAddrPtr);
+                    }
+                }
+
+                return null;
             }
+
+            /// <summary>
+            /// Abort/Close the client connection
+            /// </summary>
+            /// <returns>true, when connection has been closed, false when connection was already close</returns>
+            public bool Abort()
+            {
+                lock (this)
+                {
+                    if (self != IntPtr.Zero)
+                    {
+                        return ClientConnection_abort(self);
+                    }
+                }
+
+                return false;
+            }
+
+            public void Dispose()
+            {
+                lock (this)
+                {
+                    if (self != IntPtr.Zero)
+                    {
+                        ClientConnection_release(self);
+
+                        self = IntPtr.Zero;
+                    }
+                }
+            }
+
+            ~ClientConnection ()
+            {
+                Dispose();
+            }
+
         }
 
         public class MmsGooseControlBlock
