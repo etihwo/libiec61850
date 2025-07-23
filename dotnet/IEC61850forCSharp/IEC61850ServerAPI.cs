@@ -2470,7 +2470,7 @@ namespace IEC61850
             static extern IntPtr IedServer_getFunctionalConstrainedData(IntPtr self, IntPtr dataObject, int fc);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-            public static extern void IedServer_setListObjectsAccessHandler(IntPtr self, IedServer_ListObjectsAccessHandler handler, IntPtr parameter);
+            static extern void IedServer_setListObjectsAccessHandler(IntPtr self, IedServer_ListObjectsAccessHandler handler, IntPtr parameter);
 
             /// <summary>
             /// Set a handler to control read and write access to control blocks and logs
@@ -2479,7 +2479,7 @@ namespace IEC61850
             /// <param name="handler">handler the callback handler to be used</param>
             /// <param name="parameter">a user provided parameter that is passed to the handler</param>
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-            public static extern void IedServer_setControlBlockAccessHandler(IntPtr self, IedServer_ControlBlockAccessHandler handler, IntPtr parameter);
+            static extern void IedServer_setControlBlockAccessHandler(IntPtr self, IedServer_ControlBlockAccessHandler handler, IntPtr parameter);
 
             /// <summary>
             /// Install the global read access handler
@@ -2489,7 +2489,7 @@ namespace IEC61850
             /// <param name="handler">the callback function that is invoked if a client tries to read a data object</param>
             /// <param name="parameter">a user provided parameter that is passed to the callback function</param>
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-            public static extern void IedServer_setReadAccessHandler(IntPtr self, ReadAccessHandler handler, IntPtr parameter);
+            static extern void IedServer_setReadAccessHandler(IntPtr self, ReadAccessHandler handler, IntPtr parameter);
 
             /// <summary>
             /// Set a handler to control access to a dataset (create, delete, read, write, list directory)
@@ -2498,10 +2498,10 @@ namespace IEC61850
             /// <param name="handler">the callback handler to be used</param>
             /// <param name="parameter">a user provided parameter that is passed to the handler</param>
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-            public static extern void IedServer_setDataSetAccessHandler(IntPtr self, IedServer_DataSetAccessHandler handler, IntPtr parameter);
+            static extern void IedServer_setDataSetAccessHandler(IntPtr self, IedServer_DataSetAccessHandler handler, IntPtr parameter);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-            public static extern void IedServer_setDirectoryAccessHandler(IntPtr self, IedServer_DirectoryAccessHandler handler, IntPtr parameter);
+            static extern void IedServer_setDirectoryAccessHandler(IntPtr self, IedServer_DirectoryAccessHandler handler, IntPtr parameter);
 
             /// <summary>
             ///  Set the callback handler for the SetActSG event
@@ -2511,7 +2511,7 @@ namespace IEC61850
             /// <param name="handler">the user provided callback handler</param>
             /// <param name="parameter">a user provided parameter that is passed to the control handler</param>
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-            public static extern void IedServer_setActiveSettingGroupChangedHandler(IntPtr self, IntPtr sgcb, ActiveSettingGroupChangedHandler handler, IntPtr parameter);
+            static extern void IedServer_setActiveSettingGroupChangedHandler(IntPtr self, IntPtr sgcb, ActiveSettingGroupChangedHandler handler, IntPtr parameter);
 
             /// <summary>
             ///  Get the active setting group number
@@ -2520,7 +2520,7 @@ namespace IEC61850
             /// <param name="sgcb">the handle of the setting group control block of the setting group</param>
             /// <returns>the number of the active setting group</returns>
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-            public static extern uint IedServer_getActiveSettingGroup(IntPtr self, IntPtr sgcb);
+            static extern uint IedServer_getActiveSettingGroup(IntPtr self, IntPtr sgcb);
 
             /// <summary>
             /// Set the callback handler for the SetEditSG event
@@ -2530,7 +2530,7 @@ namespace IEC61850
             /// <param name="handler">the user provided callback handler</param>
             /// <param name="parameter">a user provided parameter that is passed to the control handler</param>
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-            public static extern void IedServer_setEditSettingGroupChangedHandler(IntPtr self, IntPtr sgcb, EditSettingGroupChangedHandler handler, IntPtr parameter);
+            static extern void IedServer_setEditSettingGroupChangedHandler(IntPtr self, IntPtr sgcb, EditSettingGroupChangedHandler handler, IntPtr parameter);
 
             /// <summary>
             /// Set the callback handler for the COnfEditSG event
@@ -2540,7 +2540,7 @@ namespace IEC61850
             /// <param name="handler">the user provided callback handler</param>
             /// <param name="parameter">a user provided parameter that is passed to the control handler</param>
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-            public static extern void IedServer_setEditSettingGroupConfirmationHandler(IntPtr self, IntPtr sgcb, EditSettingGroupConfirmationHandler handler, IntPtr parameter);
+            static extern void IedServer_setEditSettingGroupConfirmationHandler(IntPtr self, IntPtr sgcb, EditSettingGroupConfirmationHandler handler, IntPtr parameter);
 
             ///// <summary>
             ///// Set a handler for SVCB control block events (enable/disable)
@@ -2550,7 +2550,7 @@ namespace IEC61850
             ///// <param name="handler">the event handler to be used</param>
             ///// <param name="parameter">user provided parameter that is passed to the handler</param>
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-            public static extern void IedServer_setSVCBHandler(IntPtr self, IntPtr svcb, SVCBEventHandler handler, IntPtr parameter);
+            static extern void IedServer_setSVCBHandler(IntPtr self, IntPtr svcb, SVCBEventHandler handler, IntPtr parameter);
 
             ///// <summary>
             ///// callback handler for SVCB events
@@ -2559,7 +2559,7 @@ namespace IEC61850
             ///// <param name="eventType">event type</param>
             ///// <param name="parameter">user defined parameter</param>
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            public delegate void SVCBEventHandler(IntPtr svcb, int eventType, IntPtr parameter);
+            private delegate void SVCBEventHandler(IntPtr svcb, int eventType, IntPtr parameter);
 
             /// <summary>
             /// callback handler to control client read access to data attributes
@@ -2575,7 +2575,7 @@ namespace IEC61850
             /// <param name="parameter">the user provided parameter</param>
             /// <returns>DATA_ACCESS_ERROR_SUCCESS if access is accepted, DATA_ACCESS_ERROR_OBJECT_ACCESS_DENIED if access is denied</returns>
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            public delegate MmsDataAccessError ReadAccessHandler(IntPtr ld, IntPtr ln, IntPtr dataObject, int fc, IntPtr connection, IntPtr parameter);
+            private delegate MmsDataAccessError ReadAccessHandler(IntPtr ld, IntPtr ln, IntPtr dataObject, int fc, IntPtr connection, IntPtr parameter);
 
             /// <summary>
             /// Callback handler that is invoked when the active setting group is about to be changed by an external client.
@@ -2587,7 +2587,7 @@ namespace IEC61850
             /// <param name="connection">connection the client connection that requests the change</param>
             /// <returns>true if the change is accepted, false otherwise</returns>
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            public delegate bool ActiveSettingGroupChangedHandler(IntPtr parameter, IntPtr sgcb, uint newActSg, IntPtr connection);
+            private delegate bool ActiveSettingGroupChangedHandler(IntPtr parameter, IntPtr sgcb, uint newActSg, IntPtr connection);
 
             /// <summary>
             /// Callback handler that is invoked when the edit setting group is about to be changed by an external client.
@@ -2601,7 +2601,7 @@ namespace IEC61850
             /// <param name="connection">the client connection that requests the change</param>
             /// <returns>true if the change is accepted, false otherwise</returns>
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            public delegate bool EditSettingGroupChangedHandler(IntPtr parameter, IntPtr sgcb, uint newEditSg, IntPtr connection);
+            private delegate bool EditSettingGroupChangedHandler(IntPtr parameter, IntPtr sgcb, uint newEditSg, IntPtr connection);
 
             /// <summary>
             /// Callback handler that is invoked when the edit setting group has been confirmed by an  external client.
@@ -2610,7 +2610,7 @@ namespace IEC61850
             /// <param name="sgcb">the setting group control block of the setting group that is about to be changed</param>
             /// <param name="editSg">the edit setting group that has been confirmed</param>
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            public delegate void EditSettingGroupConfirmationHandler(IntPtr parameter, IntPtr sgcb, uint editSg);
+            private delegate void EditSettingGroupConfirmationHandler(IntPtr parameter, IntPtr sgcb, uint editSg);
 
             /// <summary>
             /// Callback that is called when the client is calling a dataset operation (create, delete, read, write, list directory)
@@ -2622,7 +2622,7 @@ namespace IEC61850
             /// <param name="datasetRef"></param>
             /// <returns>true to allow operation, false to deny operation</returns>
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            public delegate bool IedServer_DataSetAccessHandler(IntPtr parameter, IntPtr connection, int operation, string datasetRef);
+            private delegate bool IedServer_DataSetAccessHandler(IntPtr parameter, IntPtr connection, int operation, string datasetRef);
 
             /// <summary>
             /// Callback that is called when a client is invoking a read or write service to a control block or log
@@ -2638,10 +2638,10 @@ namespace IEC61850
             /// <param name="accessType">access type (read=IEC61850_CB_ACCESS_TYPE_READ or write=IEC61850_CB_ACCESS_TYPE_WRITE)</param>
             /// <returns>true to include the object in the service response, otherwise false</returns>
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            public delegate bool IedServer_ControlBlockAccessHandler(IntPtr parameter, IntPtr connection, int acsiClass, IntPtr ld, IntPtr ln, string objectName, string subObjectName, int accessType);
+            private delegate bool IedServer_ControlBlockAccessHandler(IntPtr parameter, IntPtr connection, int acsiClass, IntPtr ld, IntPtr ln, string objectName, string subObjectName, int accessType);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            public delegate bool IedServer_DirectoryAccessHandler(IntPtr parameter, IntPtr connection, int category, IntPtr logicalDevice);
+            private delegate bool IedServer_DirectoryAccessHandler(IntPtr parameter, IntPtr connection, int category, IntPtr logicalDevice);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
             public delegate bool IedServer_ListObjectsAccessHandler(IntPtr parameter, ClientConnection connection, ACSIClass acsiClass, LogicalDevice ld, LogicalNode ln, string objectName, string subObjectName, FunctionalConstraint fc);
