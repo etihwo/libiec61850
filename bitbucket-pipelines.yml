@@ -1,4 +1,4 @@
-image:  gcc:10.2
+image:  atlassian/default-image:4
 
 clone:
   depth: full              # SonarCloud scanner needs the full history to assign issues properly
