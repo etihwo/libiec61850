@@ -765,15 +765,13 @@ parseGoosePayload(GooseReceiver self, uint8_t* buffer, int apduLength)
 
             uint8_t tag = buffer[bufPos++];
             bufPos = BerDecoder_decodeLength(buffer, &elementLength, bufPos, apduLength);
+
             if (bufPos < 0)
             {
                 if (DEBUG_GOOSE_SUBSCRIBER)
                     printf("GOOSE_SUBSCRIBER: Malformed message: failed to decode BER length tag!\n");
                 return 0;
             }
-
-            if (bufPos == -1)
-                goto exit_with_fault;
 
             switch (tag)
             {
@@ -1422,6 +1420,8 @@ GooseReceiver_tick(GooseReceiver self)
 #if (CONFIG_IEC61850_R_GOOSE == 1)
     }
 #endif /* (CONFIG_IEC61850_R_GOOSE == 1) */
+
+    return false;
 }
 
 void
