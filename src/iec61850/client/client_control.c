@@ -78,7 +78,8 @@ convertToMmsAndInsertFC(char* newItemId, const char* originalObjectName, const c
     int srcIndex = 0;
     int dstIndex = 0;
 
-    while (originalObjectName[srcIndex] != '.') {
+    while (originalObjectName[srcIndex] != '.')
+    {
         newItemId[dstIndex] = originalObjectName[srcIndex];
         srcIndex++;
         dstIndex++;
@@ -90,7 +91,8 @@ convertToMmsAndInsertFC(char* newItemId, const char* originalObjectName, const c
     newItemId[dstIndex++] = '$';
     srcIndex++;
 
-    while (srcIndex < originalLength) {
+    while (srcIndex < originalLength)
+    {
         if (originalObjectName[srcIndex] == '.')
             newItemId[dstIndex] = '$';
         else
@@ -124,7 +126,8 @@ ControlObjectClient_createEx(const char* objectReference, IedConnection connecti
     MmsVariableSpecification* ctlVal = NULL;
     MmsVariableSpecification* t = NULL;
 
-    if (MmsVariableSpecification_getType(controlObjectSpec) == MMS_STRUCTURE) {
+    if (MmsVariableSpecification_getType(controlObjectSpec) == MMS_STRUCTURE)
+    {
         MmsVariableSpecification* oper = MmsVariableSpecification_getNamedVariableRecursive(controlObjectSpec, "Oper");
 
         if (oper)
@@ -136,7 +139,8 @@ ControlObjectClient_createEx(const char* objectReference, IedConnection connecti
             if (ctlVal == NULL)
                 ctlVal = MmsVariableSpecification_getNamedVariableRecursive(oper, "setMag");
 
-            if (ctlVal) {
+            if (ctlVal)
+            {
                 if (MmsVariableSpecification_getType(ctlVal) == MMS_STRUCTURE)
                     isAPC = true;
             }
@@ -157,14 +161,16 @@ ControlObjectClient_createEx(const char* objectReference, IedConnection connecti
         /* TODO Add additional checks dependent on control model */
     }
 
-    if (hasOper == false) {
+    if (hasOper == false)
+    {
         if (DEBUG_IED_CLIENT)
             printf("IED_CLIENT: control is missing required element \"Oper\"\n");
 
         goto exit_function;
     }
 
-    if ((ctlVal == NULL) || (t == NULL)) {
+    if ((ctlVal == NULL) || (t == NULL))
+    {
         if (DEBUG_IED_CLIENT)
             printf("IED_CLIENT:   \"Oper\" is missing required element\n");
         goto exit_function;
@@ -188,7 +194,8 @@ ControlObjectClient_createEx(const char* objectReference, IedConnection connecti
         self->analogValue = NULL;
 
     /* Check for T element type (Binary time -> Ed.1,UTC time -> Ed.2) */
-    if (t) {
+    if (t)
+    {
         if (MmsVariableSpecification_getType(t) == MMS_BINARY_TIME)
             self->edition = 1;
         else
@@ -224,7 +231,8 @@ ControlObjectClient_create(const char* objectReference, IedConnection connection
 
     uint32_t ctlModel = IedConnection_readUnsigned32Value(connection, &error, reference, IEC61850_FC_CF);
 
-    if (error != IED_ERROR_OK) {
+    if (error != IED_ERROR_OK)
+    {
         if (DEBUG_IED_CLIENT)
             printf("IED_CLIENT: ControlObjectClient_create: failed to get %s from server\n", reference);
 
@@ -234,7 +242,8 @@ ControlObjectClient_create(const char* objectReference, IedConnection connection
     MmsVariableSpecification* ctlVarSpec =
             IedConnection_getVariableSpecification(connection, &error, objectReference, IEC61850_FC_CO);
 
-    if (error != IED_ERROR_OK) {
+    if (error != IED_ERROR_OK)
+    {
         if (DEBUG_IED_CLIENT)
             printf("IED_CLIENT: ControlObjectClient_create: failed to get data directory of control object\n");
 
@@ -353,7 +362,8 @@ createOriginValue(ControlObjectClient self)
 
     MmsValue* orIdent;
 
-    if (self->orIdent != NULL) {
+    if (self->orIdent)
+    {
         int octetStringLen = strlen(self->orIdent);
         orIdent = MmsValue_newOctetString(0, octetStringLen);
 
@@ -398,8 +408,10 @@ prepareOperParameters(ControlObjectClient self, MmsValue* ctlVal, uint64_t operT
     operParameters = MmsValue_createEmptyStructure(operElementCount);
 
     /* support simplified usage of APC controls - user doesn't need to create the structure */
-    if (self->analogValue != NULL) {
-        if (MmsValue_getType(ctlVal) != MMS_STRUCTURE) {
+    if (self->analogValue != NULL)
+    {
+        if (MmsValue_getType(ctlVal) != MMS_STRUCTURE)
+        {
             MmsValue_setElement(self->analogValue, 0, ctlVal);
             ctlVal = self->analogValue;
         }
@@ -409,7 +421,8 @@ prepareOperParameters(ControlObjectClient self, MmsValue* ctlVal, uint64_t operT
 
     int index = 1;
 
-    if (self->hasTimeActivatedMode) {
+    if (self->hasTimeActivatedMode)
+    {
         MmsValue* operTm = MmsValue_newUtcTimeByMsTime(operTime);
         MmsValue_setElement(operParameters, index++, operTm);
     }
@@ -423,7 +436,8 @@ prepareOperParameters(ControlObjectClient self, MmsValue* ctlVal, uint64_t operT
         self->ctlNum++;
     }
 
-    if (self->hasCtlNum) {
+    if (self->hasCtlNum)
+    {
         MmsValue* ctlNum = MmsValue_newUnsignedFromUint32(self->ctlNum);
         MmsValue_setElement(operParameters, index++, ctlNum);
     }
@@ -440,13 +454,15 @@ prepareOperParameters(ControlObjectClient self, MmsValue* ctlVal, uint64_t operT
 
     MmsValue* ctlTime;
 
-    if (self->edition == 2) {
+    if (self->edition == 2)
+    {
         ctlTime = MmsValue_newUtcTimeByMsTime(timestamp);
 
         if (self->connection)
             MmsValue_setUtcTimeQuality(ctlTime, self->connection->timeQuality);
     }
-    else {
+    else
+    {
         ctlTime = MmsValue_newBinaryTime(false);
         MmsValue_setBinaryTime(ctlTime, timestamp);
     }
@@ -481,7 +497,8 @@ ControlObjectClient_operate(ControlObjectClient self, MmsValue* ctlVal, uint64_t
 {
     bool success = false;
 
-    if (ctlVal == NULL) {
+    if (ctlVal == NULL)
+    {
         if (DEBUG_IED_CLIENT)
             printf("IED_CLIENT: operate - (ctlVal == NULL)!\n");
 
@@ -513,7 +530,8 @@ ControlObjectClient_operate(ControlObjectClient self, MmsValue* ctlVal, uint64_t
     self->lastMmsError = mmsError;
     self->lastAccessError = writeResult;
 
-    if (mmsError != MMS_ERROR_NONE) {
+    if (mmsError != MMS_ERROR_NONE)
+    {
         if (DEBUG_IED_CLIENT)
             printf("IED_CLIENT: operate failed!\n");
 
@@ -541,8 +559,8 @@ internalOperateHandler(uint32_t invokeId, void* parameter, MmsError err, MmsData
 
     IedConnectionOutstandingCall call = iedConnection_lookupOutstandingCall(self->connection, invokeId);
 
-    if (call) {
-
+    if (call)
+    {
         ControlObjectClient_ControlActionHandler handler = (ControlObjectClient_ControlActionHandler) call->callback;
 
         IedClientError iedError = iedConnection_mapMmsErrorToIedError(err);
@@ -552,7 +570,8 @@ internalOperateHandler(uint32_t invokeId, void* parameter, MmsError err, MmsData
         self->lastMmsError = err;
         self->lastAccessError = accessError;
 
-        if (iedError == IED_ERROR_OK) {
+        if (iedError == IED_ERROR_OK)
+        {
             iedError = iedConnection_mapDataAccessErrorToIedError(accessError);
 
             if (iedError == IED_ERROR_OK)
@@ -563,7 +582,8 @@ internalOperateHandler(uint32_t invokeId, void* parameter, MmsError err, MmsData
 
         iedConnection_releaseOutstandingCall(self->connection, call);
     }
-    else {
+    else
+    {
         if (DEBUG_IED_CLIENT)
             printf("IED_CLIENT: internal error - no matching outstanding call (ID: %u)!\n", invokeId);
     }
