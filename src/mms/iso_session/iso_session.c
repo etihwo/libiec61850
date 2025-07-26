@@ -458,12 +458,13 @@ IsoSession_createAcceptSpdu(IsoSession* self, BufferChain buffer, BufferChain pa
 void
 IsoSession_createRefuseSpdu(IsoSession* self, BufferChain buffer, BufferChain payload, uint8_t reasonCode)
 {
+    (void)self;
+    (void)payload;
+
     int offset = 0;
     uint8_t* buf = buffer->buffer;
-    int lengthOffset;
 
     buf[offset++] = 12; /* REFUSE SPDU */
-    lengthOffset = offset;
     offset++;
 
     offset = encodeConnectionIdentifier(buf, offset, reasonCode);

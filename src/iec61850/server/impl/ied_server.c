@@ -449,9 +449,6 @@ installDefaultValuesInCache(IedServer self)
 {
     IedModel* model = self->model;
 
-    char componentId[OBJ_REF_MAX_SIZE + 1];
-    componentId[0] = 0;
-
     char objectReference[OBJ_REF_MAX_SIZE + 1];
 
     LogicalDevice* logicalDevice = model->firstChild;
@@ -481,6 +478,7 @@ installDefaultValuesInCache(IedServer self)
 
             while (dataObject)
             {
+                char componentId[OBJ_REF_MAX_SIZE + 1];
                 componentId[0] = 0;
                 installDefaultValuesForDataObject(self, logicalDevice, dataObject, objectReference, refPosition, -1, componentId, 0);
 

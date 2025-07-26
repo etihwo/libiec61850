@@ -1001,9 +1001,9 @@ parseGoosePayload(GooseReceiver self, uint8_t* buffer, int apduLength)
         return 0;
     }
 
-exit_with_fault:
     if (DEBUG_GOOSE_SUBSCRIBER)
         printf("GOOSE_SUBSCRIBER: Invalid goose payload\n");
+
     return -1;
 }
 
@@ -1247,7 +1247,8 @@ GooseReceiver_start(GooseReceiver self)
             Thread_destroy(self->thread);
             self->thread = NULL;
         }
-        else {
+        else
+        {
             if (DEBUG_GOOSE_SUBSCRIBER)
                 printf("GOOSE_SUBSCRIBER: Starting GOOSE receiver failed for interface %s\n", self->interfaceId);
         }
@@ -1318,7 +1319,8 @@ GooseReceiver_startThreadless(GooseReceiver self)
             return (EthernetSocket)0;
         }
     }
-    else {
+    else
+    {
 #endif /* (CONFIG_IEC61850_R_GOOSE == 1) */
 
 #if (CONFIG_IEC61850_L2_GOOSE == 1)

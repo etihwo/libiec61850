@@ -465,7 +465,7 @@ iedConnection_doesControlObjectMatch(const char* objRef, const char* cntrlObj)
 }
 
 static bool
-doesReportMatchControlObject(char* domainName, char* itemName, const char* objectRef)
+doesReportMatchControlObject(const char* domainName, const char* itemName, const char* objectRef)
 {
     int i = 0;
 
