@@ -82,7 +82,7 @@ private_ClientConnection_create(void* serverConnectionHandle)
         self->accessMutex = Semaphore_create(1);
 
         #ifdef _TLS_OWN_CNT_SEM
-        self->ownerCount = Semaphore_create(1);
+        self->ownerCountMutex = Semaphore_create(1);
         #endif
 #endif
 
