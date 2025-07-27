@@ -3,7 +3,7 @@
  *
  *  Implementation of the ClientReportControlBlock class
  *
- *  Copyright 2014-2024 Michael Zillgith
+ *  Copyright 2014-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -1144,6 +1144,12 @@ IedConnection_setGoCBValuesAsync(IedConnection self, IedClientError* error, Clie
     else
     {
         struct sWriteGoCBVariablesParameter* param = (struct sWriteGoCBVariablesParameter*) GLOBAL_MALLOC(sizeof(struct sWriteGoCBVariablesParameter));
+
+        if (param == NULL)
+        {
+            *error = IED_ERROR_UNKNOWN;
+            goto exit_function;
+        }
 
         call->specificParameter2.pointer = param;
 
