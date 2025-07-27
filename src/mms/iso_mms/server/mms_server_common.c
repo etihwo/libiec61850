@@ -1,7 +1,7 @@
 /*
  *  mms_server_common.c
  *
- *  Copyright 2013-2024 Michael Zillgith
+ *  Copyright 2013-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -329,8 +329,8 @@ mmsServer_getComponentOfArrayElement(AlternateAccess_t* alternateAccess, MmsVari
                         {
                             if (componentId)
                             {
-                                strcat(componentId, structSpec->typeSpec.structure.elements[i]->name);
-                                strcat(componentId, "$");
+                                StringUtils_appendString(componentId, 65, structSpec->typeSpec.structure.elements[i]->name);
+                                StringUtils_appendString(componentId, 65, "$");
                             }
 
                             retValue =
@@ -343,7 +343,7 @@ mmsServer_getComponentOfArrayElement(AlternateAccess_t* alternateAccess, MmsVari
                         {
                             if (componentId)
                             {
-                                strcat(componentId, structSpec->typeSpec.structure.elements[i]->name);
+                                StringUtils_appendString(componentId, 65, structSpec->typeSpec.structure.elements[i]->name);
                             }
 
                             retValue = value;
