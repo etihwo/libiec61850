@@ -91,6 +91,9 @@ AcseAuthenticationParameter_destroy(AcseAuthenticationParameter self);
 LIB61850_API void
 AcseAuthenticationParameter_setAuthMechanism(AcseAuthenticationParameter self, AcseAuthenticationMechanism mechanism);
 
+LIB61850_API AcseAuthenticationMechanism
+AcseAuthenticationParameter_getAuthMechanism(AcseAuthenticationParameter self);
+
 LIB61850_API void
 AcseAuthenticationParameter_setPassword(AcseAuthenticationParameter self, char* password);
 

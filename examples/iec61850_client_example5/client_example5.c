@@ -84,6 +84,8 @@ main(int argc, char** argv)
         printf("Failed to connect to %s:%i\n", hostname, tcpPort);
     }
 
+    while (true);
+
     IedConnection_destroy(con);
 
     AcseAuthenticationParameter_destroy(auth);

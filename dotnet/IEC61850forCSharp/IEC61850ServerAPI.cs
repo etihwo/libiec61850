@@ -25,7 +25,10 @@ using IEC61850.Model;
 using IEC61850.TLS;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Data.Common;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 
 // IEC 61850 API for the libiec61850 .NET wrapper library
 namespace IEC61850
@@ -1750,6 +1753,9 @@ namespace IEC61850
         public class ClientConnection : IDisposable
         {
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern IntPtr ClientConnection_getSecurityToken(IntPtr self);
+
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr ClientConnection_getPeerAddress(IntPtr self);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
@@ -1770,6 +1776,31 @@ namespace IEC61850
             internal ClientConnection(IntPtr self)
             {
                 this.self = ClientConnection_claimOwnership(self);
+            }
+
+            /// <summary>
+            /// Get the security token associated with this connection
+            /// The security token is an opaque handle that is associated with the connection.It is provided by the
+            /// authenticator (if one is present). If no security token is used then this function returns NULL
+            /// </summary>
+            /// <returns>the security token or NULL</returns>
+            public object GetSecurityToken()
+            {
+                lock (this)
+                {
+                    if (self != IntPtr.Zero)
+                    {
+                        IntPtr token = ClientConnection_getSecurityToken(self);
+
+                        if (token != IntPtr.Zero)
+                        {
+                            GCHandle handle = GCHandle.FromIntPtr(token);
+                            return handle as object;
+                        }
+                    }
+                }
+
+                return null;
             }
 
             public string GetPeerAddress()
@@ -2612,6 +2643,29 @@ namespace IEC61850
             private delegate void IedServer_SVCBEventHandler(IntPtr svcb, int eventType, IntPtr parameter);
 
             /// <summary>
+            /// set the authenticator for this server
+            /// This function sets a user specified authenticator that is used to identify and authenticate clients that
+            /// wants to connect.The authenticator is called on each connection attempt.Depending on the return value
+            /// connections are accepted.
+            /// </summary>
+            /// <param name="self">the instance of IedServer to operate on.</param>
+            /// <param name="authenticator">the user provided authenticator callback</param>
+            /// <param name="authenticatorParameter">user provided parameter that is passed to the authenticator</param>
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void IedServer_setAuthenticator(IntPtr self, IedServer_AcseAuthenticator authenticator, IntPtr authenticatorParameter);
+
+            /// <summary>
+            /// Callback function to authenticate a client
+            /// </summary>
+            /// <param name="parameter">user provided parameter - set when user registers the authenticator</param>
+            /// <param name="authParameter">the authentication parameters provided by the client</param>
+            /// <param name="securityToken">pointer where to store an application specific security token - can be ignored if not used.</param>
+            /// <param name="appReference">ISO application reference (ap-title + ae-qualifier)</param>
+            /// <returns>true if client connection is accepted, false otherwise</returns>
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+            private delegate bool IedServer_AcseAuthenticator(IntPtr parameter, IntPtr authParameter, IntPtr securityToken, IntPtr appReference);
+
+            /// <summary>
             /// callback handler to control client read access to data attributes
             ///  User provided callback function to control MMS client read access to IEC 61850
             ///  data objects.The application is to allow read access to data objects for specific clients only.
@@ -3166,7 +3220,6 @@ namespace IEC61850
                 IedServer_setSVCBHandler(self, sampledValuesControlBlock.Self, internalSVCBEventHandler, GCHandle.ToIntPtr(info.handle));
             }
 
-
             private void InternalSVCBEventHandlerImplementation(IntPtr svcb, int eventType, IntPtr parameter)
             {
                 GCHandle handle = GCHandle.FromIntPtr(parameter);
@@ -3175,6 +3228,38 @@ namespace IEC61850
 
                 if (info != null && info.sVCBEventHandler != null)
                     info.sVCBEventHandler(info.sampledValuesControlBlock, (SMVEvent)eventType, info.svcHandlerParameter);
+            }
+
+            //TODO -> Add appReference
+            public delegate bool AcseAuthenticatorHandler(object parameter, AcseAuthenticationParameter authParameter, object securityToken, IsoApplicationReference isoApplicationReference);
+
+            private AcseAuthenticatorHandler acseAuthenticatorHandler = null;
+            private object acseAuthenticatorHandlerParameter = null;
+            private IedServer_AcseAuthenticator iedServer_AcseAuthenticator = null;
+
+            public void SetAuthenticator(AcseAuthenticatorHandler acseAuthenticatorHandler, object acseAuthenticatorHandlerParameter)
+            {
+                this.acseAuthenticatorHandler = acseAuthenticatorHandler;
+                this.acseAuthenticatorHandlerParameter= acseAuthenticatorHandlerParameter;
+
+                if(iedServer_AcseAuthenticator == null)
+                {
+                    iedServer_AcseAuthenticator = new IedServer_AcseAuthenticator(InternalAcseAuthenticator);
+                    IedServer_setAuthenticator(self, iedServer_AcseAuthenticator, IntPtr.Zero);
+                }
+            }
+
+            private bool InternalAcseAuthenticator(IntPtr parameter, IntPtr authParameter, IntPtr securityToken, IntPtr appReference)
+            {
+                if(acseAuthenticatorHandler != null && authParameter != IntPtr.Zero && appReference != IntPtr.Zero)
+                {
+                    AcseAuthenticationParameter acseAuthenticationParameter = new AcseAuthenticationParameter(authParameter);
+                    IsoApplicationReference isoApplicationReference = new IsoApplicationReference(appReference);
+                    GCHandle token = GCHandle.FromIntPtr(securityToken);
+                    return acseAuthenticatorHandler(acseAuthenticatorHandlerParameter, acseAuthenticationParameter, token as object, isoApplicationReference);
+                }
+
+                return false;
             }
 
             public delegate MmsDataAccessError ReadAccessHandler(LogicalDevice ld, LogicalNode ln, DataObject dataObject, FunctionalConstraint fc, ClientConnection connection, object parameter);

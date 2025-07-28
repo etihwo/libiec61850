@@ -17,6 +17,7 @@ using IEC61850.Client;
 using ReportControlBlock = IEC61850.Server.ReportControlBlock;
 using IEC61850.Model;
 using System.Data.Common;
+using IEC61850;
 
 namespace server_access_control
 {
@@ -142,12 +143,23 @@ namespace server_access_control
             /* Install handler to control access to control blocks (RCBs, LCBs, GoCBs, SVCBs, SGCBs)*/
             bool ControlBlockAccessCallBack(object parameter, ClientConnection connection, ACSIClass acsiClass, LogicalDevice ld, LogicalNode ln, string objectName, string subObjectName, ControlBlockAccessType accessType)
             {
+                string password = parameter as string;
+                object securityToken = connection.GetSecurityToken();
+
+                if(securityToken != null)
+                {
+                    if ((securityToken as string == password))
+                        Console.WriteLine("Correct securityToken");
+                    else
+                        Console.WriteLine("Incorrect securityToken");
+                }
+
                 Console.WriteLine(acsiClass.ToString() + " "+ accessType.ToString() + " access " +  ld.GetName() + ln.GetName() +"/"+ objectName + "." + subObjectName + "\n");
 
                 return true;
             }
 
-            iedServer.SetControlBlockAccessHandler(ControlBlockAccessCallBack, iedServer);
+            iedServer.SetControlBlockAccessHandler(ControlBlockAccessCallBack, "securityToken_password");
 
             /* By default access to variables with FC=DC and FC=CF is not allowed.
             * This allow to write to simpleIOGenericIO/GGIO1.NamPlt.vendor variable used
@@ -331,6 +343,22 @@ namespace server_access_control
 
             iedServer.SetSVCBHandler(sVCBEventHandler, sampledValuesControlBlock_1, null);
             iedServer.SetSVCBHandler(sVCBEventHandler, sampledValuesControlBlock_2, null);
+
+            
+            bool clientAuthenticator (object parameter, AcseAuthenticationParameter authParameter, object securityToken, IsoApplicationReference isoApplicationReference)
+            {
+                Console.WriteLine("ACSE Authenticator:\n");
+
+                IEC61850.AcseAuthenticationMechanism acseAuthenticationMechanism = authParameter.GetAuthMechanism();
+
+                if (acseAuthenticationMechanism == IEC61850.AcseAuthenticationMechanism.ACSE_AUTH_PASSWORD)
+                {
+
+                }
+                return false;
+            }
+
+            iedServer.SetAuthenticator(clientAuthenticator, null);
 
             iedServer.Start(102);
 

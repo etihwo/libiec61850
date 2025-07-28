@@ -63,6 +63,12 @@ AcseAuthenticationParameter_setAuthMechanism(AcseAuthenticationParameter self, A
     self->mechanism = mechanism;
 }
 
+AcseAuthenticationMechanism
+AcseAuthenticationParameter_getAuthMechanism(AcseAuthenticationParameter self)
+{
+    return self->mechanism;
+}
+
 IsoConnectionParameters
 IsoConnectionParameters_create()
 {
