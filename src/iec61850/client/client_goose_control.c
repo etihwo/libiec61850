@@ -985,7 +985,8 @@ IedConnection_setGoCBValuesAsync(IedConnection self, IedClientError* error, Clie
 
     if (MmsMapping_getMmsDomainFromObjectReference(goCB->objectReference, domainId) == NULL)
     {
-        *error = IED_ERROR_OBJECT_REFERENCE_INVALID;;
+        *error = IED_ERROR_OBJECT_REFERENCE_INVALID;
+        return 0;
     }
 
     char* itemIdStart = goCB->objectReference + strlen(domainId) + 1;
@@ -995,7 +996,7 @@ IedConnection_setGoCBValuesAsync(IedConnection self, IedClientError* error, Clie
     if (separator == NULL)
     {
         *error = IED_ERROR_OBJECT_REFERENCE_INVALID;
-        goto exit_function;
+        return 0;
     }
 
     int separatorOffset = separator - itemIdStart;
