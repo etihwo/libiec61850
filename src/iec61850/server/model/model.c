@@ -38,7 +38,7 @@ setAttributeValuesToNull(ModelNode* node)
 
     ModelNode* child = node->firstChild;
 
-    while (child != NULL)
+    while (child)
     {
         setAttributeValuesToNull(child);
         child = child->sibling;
@@ -56,15 +56,15 @@ IedModel_setAttributeValuesToNull(IedModel* iedModel)
 {
     LogicalDevice* ld = iedModel->firstChild;
 
-    while (ld != NULL)
+    while (ld)
     {
         LogicalNode* ln = (LogicalNode*)ld->firstChild;
 
-        while (ln != NULL)
+        while (ln)
         {
             ModelNode* node = ln->firstChild;
 
-            while (node != NULL)
+            while (node)
             {
                 setAttributeValuesToNull(node);
                 node = node->sibling;
@@ -87,7 +87,7 @@ IedModel_getLogicalDeviceCount(IedModel* self)
 
     int ldCount = 1;
 
-    while (logicalDevice->sibling != NULL)
+    while (logicalDevice->sibling)
     {
         logicalDevice = (LogicalDevice*)logicalDevice->sibling;
         ldCount++;
@@ -117,7 +117,7 @@ IedModel_lookupDataSet(IedModel* self, const char* dataSetReference /* e.g. ied1
 
     memcpy(domainName, self->name, modelNameLen);
 
-    while (dataSet != NULL)
+    while (dataSet)
     {
         LogicalDevice* ld = IedModel_getDeviceByInst(self, dataSet->logicalDeviceName);
 
@@ -227,7 +227,7 @@ ModelNode_getDataAttributeByMmsValue(ModelNode* self, MmsValue* value)
 {
     ModelNode* node = self->firstChild;
 
-    while (node != NULL)
+    while (node)
     {
         if (node->modelType == DataAttributeModelType)
         {
@@ -239,7 +239,7 @@ ModelNode_getDataAttributeByMmsValue(ModelNode* self, MmsValue* value)
 
         DataAttribute* da = ModelNode_getDataAttributeByMmsValue(node, value);
 
-        if (da != NULL)
+        if (da)
             return da;
 
         node = node->sibling;
@@ -253,11 +253,11 @@ IedModel_lookupDataAttributeByMmsValue(IedModel* model, MmsValue* value)
 {
     LogicalDevice* ld = model->firstChild;
 
-    while (ld != NULL)
+    while (ld)
     {
         DataAttribute* da = ModelNode_getDataAttributeByMmsValue((ModelNode*)ld, value);
 
-        if (da != NULL)
+        if (da)
             return da;
 
         ld = (LogicalDevice*)ld->sibling;
@@ -273,7 +273,7 @@ getChildWithShortAddress(ModelNode* node, uint32_t sAddr)
 
     child = node->firstChild;
 
-    while (child != NULL)
+    while (child)
     {
         if (child->modelType == DataAttributeModelType)
         {
@@ -285,7 +285,7 @@ getChildWithShortAddress(ModelNode* node, uint32_t sAddr)
 
         ModelNode* childChild = getChildWithShortAddress(child, sAddr);
 
-        if (childChild != NULL)
+        if (childChild)
             return childChild;
 
         child = child->sibling;
@@ -301,19 +301,19 @@ IedModel_getModelNodeByShortAddress(IedModel* model, uint32_t sAddr)
 
     LogicalDevice* ld = (LogicalDevice*)model->firstChild;
 
-    while (ld != NULL)
+    while (ld)
     {
         LogicalNode* ln = (LogicalNode*)ld->firstChild;
 
-        while (ln != NULL)
+        while (ln)
         {
             ModelNode* doNode = ln->firstChild;
 
-            while (doNode != NULL)
+            while (doNode)
             {
                 ModelNode* matchingNode = getChildWithShortAddress(doNode, sAddr);
 
-                if (matchingNode != NULL)
+                if (matchingNode)
                     return matchingNode;
 
                 doNode = doNode->sibling;
@@ -339,7 +339,7 @@ IedModel_getModelNodeByObjectReference(IedModel* model, const char* objectRefere
 
     char* separator = strchr(objRef, '/');
 
-    if (separator != NULL)
+    if (separator)
         *separator = 0;
 
     LogicalDevice* ld = IedModel_getDevice(model, objRef);
@@ -362,7 +362,7 @@ IedModel_getSVControlBlock(IedModel* self, LogicalNode* parentLN, const char* sv
 
     SVControlBlock* svCb = self->svCBs;
 
-    while (svCb != NULL)
+    while (svCb)
     {
         if ((svCb->parent == parentLN) && (strcmp(svCb->name, svcbName) == 0))
         {
@@ -389,7 +389,7 @@ IedModel_getModelNodeByShortObjectReference(IedModel* model, const char* objectR
 
     char* separator = strchr(objRef, '/');
 
-    if (separator != NULL)
+    if (separator)
         *separator = 0;
 
     char ldInst[65];
@@ -418,7 +418,7 @@ DataObject_hasFCData(DataObject* dataObject, FunctionalConstraint fc)
 {
     ModelNode* modelNode = dataObject->firstChild;
 
-    while (modelNode != NULL)
+    while (modelNode)
     {
         if (modelNode->modelType == DataAttributeModelType)
         {
@@ -444,7 +444,7 @@ LogicalNode_hasFCData(LogicalNode* node, FunctionalConstraint fc)
 {
     DataObject* dataObject = (DataObject*)node->firstChild;
 
-    while (dataObject != NULL)
+    while (dataObject)
     {
         if (DataObject_hasFCData(dataObject, fc))
             return true;
@@ -481,7 +481,7 @@ LogicalNode_getDataSet(LogicalNode* self, const char* dataSetName)
 
     DataSet* ds = iedModel->dataSets;
 
-    while (ds != NULL)
+    while (ds)
     {
         if (strcmp(ds->logicalDeviceName, ld->name) == 0)
         {
@@ -505,7 +505,7 @@ LogicalDevice_getLogicalNodeCount(LogicalDevice* logicalDevice)
 
     LogicalNode* logicalNode = (LogicalNode*)logicalDevice->firstChild;
 
-    while (logicalNode != NULL)
+    while (logicalNode)
     {
         logicalNode = (LogicalNode*)logicalNode->sibling;
         lnCount++;
@@ -721,7 +721,7 @@ ModelNode_getChildCount(ModelNode* modelNode)
 
     ModelNode* child = modelNode->firstChild;
 
-    while (child != NULL)
+    while (child)
     {
         childCount++;
         child = child->sibling;
@@ -810,7 +810,7 @@ ModelNode_getChild(ModelNode* self, const char* name)
 
     int nameElementLength = 0;
 
-    if (separator != NULL)
+    if (separator)
         nameElementLength = (separator - name);
     else
         nameElementLength = strlen(name);
@@ -884,7 +884,7 @@ ModelNode_getChildWithFc(ModelNode* self, const char* name, FunctionalConstraint
 
     int nameElementLength = 0;
 
-    if (separator != NULL)
+    if (separator)
         nameElementLength = (separator - name);
     else
         nameElementLength = strlen(name);
@@ -893,7 +893,7 @@ ModelNode_getChildWithFc(ModelNode* self, const char* name, FunctionalConstraint
 
     ModelNode* matchingNode = NULL;
 
-    while (nextNode != NULL)
+    while (nextNode)
     {
         int nodeNameLen = strlen(nextNode->name);
 
@@ -1010,7 +1010,7 @@ LogicalDevice_getSettingGroupControlBlock(LogicalDevice* self)
 
     SettingGroupControlBlock* sgcb = model->sgcbs;
 
-    while (sgcb != NULL)
+    while (sgcb)
     {
         if (sgcb->parent == ln)
             return sgcb;
