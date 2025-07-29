@@ -97,6 +97,12 @@ AcseAuthenticationParameter_getAuthMechanism(AcseAuthenticationParameter self);
 LIB61850_API void
 AcseAuthenticationParameter_setPassword(AcseAuthenticationParameter self, char* password);
 
+LIB61850_API const char*
+AcseAuthenticationParameter_getPassword(AcseAuthenticationParameter self);
+
+LIB61850_API int
+AcseAuthenticationParameter_getPasswordLength(AcseAuthenticationParameter self);
+
 
 /**
  * \brief Callback function to authenticate a client

@@ -347,18 +347,41 @@ namespace server_access_control
             
             bool clientAuthenticator (object parameter, AcseAuthenticationParameter authParameter, object securityToken, IsoApplicationReference isoApplicationReference)
             {
+                List<string> passwords = parameter as List<string>;
                 Console.WriteLine("ACSE Authenticator:\n");
 
                 IEC61850.AcseAuthenticationMechanism acseAuthenticationMechanism = authParameter.GetAuthMechanism();
 
                 if (acseAuthenticationMechanism == IEC61850.AcseAuthenticationMechanism.ACSE_AUTH_PASSWORD)
                 {
-
+                    int passwordLenght = authParameter.GetPasswordLenght();
+                    string password = authParameter.GetPassword();
+                    if (passwordLenght == passwords.First().Length)
+                    {
+                        if (password == passwords.First())
+                        {
+                            securityToken = passwords.First();
+                            return true;
+                        }
+                    }
+                    else if (passwordLenght == passwords[1].Length)
+                    {
+                        if (password == passwords[1])
+                        {
+                            securityToken = passwords[1];
+                            return true;
+                        }
+                    }
                 }
+
                 return false;
             }
 
-            iedServer.SetAuthenticator(clientAuthenticator, null);
+            List<string> passwords = new List<string>();
+            passwords.Add("user1@testpw");
+            passwords.Add("user2@testpw");
+
+            iedServer.SetAuthenticator(clientAuthenticator, passwords);
 
             iedServer.Start(102);
 

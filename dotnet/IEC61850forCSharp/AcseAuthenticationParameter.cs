@@ -61,6 +61,12 @@ namespace IEC61850
         [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
         static extern int AcseAuthenticationParameter_getAuthMechanism(IntPtr self);
 
+        [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+        static extern IntPtr AcseAuthenticationParameter_getPassword(IntPtr self);
+
+        [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+        static extern int AcseAuthenticationParameter_getPasswordLength(IntPtr self);
+
         private IntPtr self = IntPtr.Zero;
 
         public AcseAuthenticationParameter()
@@ -86,6 +92,21 @@ namespace IEC61850
         public AcseAuthenticationMechanism GetAuthMechanism()
         {
             return (AcseAuthenticationMechanism)AcseAuthenticationParameter_getAuthMechanism(self);
+        }
+
+        public string GetPassword()
+        {
+            IntPtr password = AcseAuthenticationParameter_getPassword(self);
+
+            if (password != IntPtr.Zero)
+                return Marshal.PtrToStringAnsi(password);
+            else
+                return null;
+        }
+
+        public int GetPasswordLenght()
+        {
+            return AcseAuthenticationParameter_getPasswordLength(self);
         }
     }
 

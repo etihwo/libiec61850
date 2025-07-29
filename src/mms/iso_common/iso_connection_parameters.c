@@ -57,6 +57,30 @@ AcseAuthenticationParameter_setPassword(AcseAuthenticationParameter self, char* 
     self->value.password.passwordLength = strlen(password);
 }
 
+const char*
+AcseAuthenticationParameter_getPassword(AcseAuthenticationParameter self)
+{
+    if (self == NULL)
+        return NULL;
+
+    if (self->mechanism != ACSE_AUTH_PASSWORD)
+        return NULL;
+
+    return (char*)self->value.password.octetString;
+}
+
+int
+AcseAuthenticationParameter_getPasswordLength(AcseAuthenticationParameter self)
+{
+    if (self == NULL)
+        return 0;
+
+    if (self->mechanism != ACSE_AUTH_PASSWORD)
+        return 0;
+
+    return self->value.password.passwordLength;
+}
+
 void
 AcseAuthenticationParameter_setAuthMechanism(AcseAuthenticationParameter self, AcseAuthenticationMechanism mechanism)
 {
