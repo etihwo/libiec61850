@@ -114,9 +114,70 @@ namespace IEC61850
     {
         private IntPtr self = IntPtr.Zero;
 
+        [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+        static extern int IsoApplicationReference_getAeQualifier(IntPtr self);
+
+        [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+        static extern IntPtr IsoApplicationReference_getApTitle(IntPtr self);
+
         public IsoApplicationReference(IntPtr self)
         {
             this.self= self;
+        }
+
+        public int GetAeQualifier()
+        {
+            return IsoApplicationReference_getAeQualifier(self);
+        }
+
+        public ItuObjectIdentifier GetApTitle()
+        {
+            IntPtr identfier = IsoApplicationReference_getApTitle(self);
+
+            if (identfier == IntPtr.Zero)
+                return null;
+
+            return new ItuObjectIdentifier(identfier);
+        }
+
+    }
+
+    public class ItuObjectIdentifier
+    {
+        private IntPtr self = IntPtr.Zero;
+
+        [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+        static extern int ItuObjectIdentifier_getArcCount(IntPtr self);
+
+        [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+        static extern IntPtr ItuObjectIdentifier_getArc(IntPtr self);
+
+        public ItuObjectIdentifier(IntPtr self)
+        {
+            this.self = self;
+        }
+
+        public int GetArcCount()
+        {
+            return ItuObjectIdentifier_getArcCount(self);
+        }
+
+        public ushort[] GetArcs()
+        {
+            int count = ItuObjectIdentifier_getArcCount(self);
+            if (count <= 0 || count > 10) return Array.Empty<ushort>();
+
+            IntPtr arcPtr = ItuObjectIdentifier_getArc(self);
+
+            ushort[] arcs = new ushort[count];
+
+            short[] temp = new short[count];
+            Marshal.Copy(arcPtr, temp, 0, count);
+
+            for (int i = 0; i < count; i++)
+                arcs[i] = (ushort)temp[i];
+
+            return arcs;
         }
     }
 }

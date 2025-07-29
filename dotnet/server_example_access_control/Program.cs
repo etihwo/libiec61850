@@ -8,6 +8,7 @@
 using System;
 using IEC61850.Server;
 using IEC61850.Common;
+using IEC61850;
 using System.Threading;
 using System.Net;
 using static IEC61850.Server.IedServer;
@@ -17,7 +18,7 @@ using IEC61850.Client;
 using ReportControlBlock = IEC61850.Server.ReportControlBlock;
 using IEC61850.Model;
 using System.Data.Common;
-using IEC61850;
+using System.Security.Cryptography;
 
 namespace server_access_control
 {
@@ -348,7 +349,26 @@ namespace server_access_control
             bool clientAuthenticator (object parameter, AcseAuthenticationParameter authParameter, object securityToken, IsoApplicationReference isoApplicationReference)
             {
                 List<string> passwords = parameter as List<string>;
+
+                int aeQualifier = isoApplicationReference.GetAeQualifier();
+                ItuObjectIdentifier ituObjectIdentifier = isoApplicationReference.GetApTitle();
+                int arcCount = ituObjectIdentifier.GetArcCount();
+                ushort[] arc = ituObjectIdentifier.GetArcs();
+
                 Console.WriteLine("ACSE Authenticator:\n");
+
+                string appTitle = "";
+                for (int i = 0; i < arcCount; i++)
+                {
+                    appTitle += arc[i];
+
+                    if (i != (arcCount - 1))
+                        appTitle += ".";
+                }
+
+                Console.WriteLine("  client ap-title: " + appTitle);
+
+                Console.WriteLine("\n  client ae-qualifier: "+ aeQualifier + " \n");
 
                 IEC61850.AcseAuthenticationMechanism acseAuthenticationMechanism = authParameter.GetAuthMechanism();
 

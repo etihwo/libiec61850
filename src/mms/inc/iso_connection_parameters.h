@@ -103,8 +103,19 @@ AcseAuthenticationParameter_getPassword(AcseAuthenticationParameter self);
 LIB61850_API int
 AcseAuthenticationParameter_getPasswordLength(AcseAuthenticationParameter self);
 
+LIB61850_API int
+IsoApplicationReference_getAeQualifier(IsoApplicationReference self);
 
-/**
+LIB61850_API const ItuObjectIdentifier*
+IsoApplicationReference_getApTitle(const IsoApplicationReference* self);
+
+LIB61850_API int
+ItuObjectIdentifier_getArcCount(ItuObjectIdentifier* self);
+
+LIB61850_API const uint16_t*
+ItuObjectIdentifier_getArc(ItuObjectIdentifier* self);
+
+ /**
  * \brief Callback function to authenticate a client
  *
  * \param parameter user provided parameter - set when user registers the authenticator

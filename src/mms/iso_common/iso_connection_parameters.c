@@ -93,6 +93,38 @@ AcseAuthenticationParameter_getAuthMechanism(AcseAuthenticationParameter self)
     return self->mechanism;
 }
 
+LIB61850_API int
+IsoApplicationReference_getAeQualifier(IsoApplicationReference self)
+{
+    return self.aeQualifier;
+}
+
+LIB61850_API const ItuObjectIdentifier*
+IsoApplicationReference_getApTitle(const IsoApplicationReference* self)
+{
+    if (self == NULL)
+        return NULL;
+    return &(self->apTitle);
+}
+
+LIB61850_API int
+ItuObjectIdentifier_getArcCount(ItuObjectIdentifier* self)
+{
+    if (self == NULL)
+        return NULL;
+
+    return self->arcCount;
+}
+
+LIB61850_API const uint16_t*
+ItuObjectIdentifier_getArc(ItuObjectIdentifier* self)
+{
+    if (self == NULL)
+        return NULL;
+
+    return self->arc;
+}
+
 IsoConnectionParameters
 IsoConnectionParameters_create()
 {
