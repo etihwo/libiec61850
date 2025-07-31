@@ -11,6 +11,12 @@
 #include <time.h>
 #include <windows.h>
 
+#ifdef __GNUC__
+#ifdef __MINGW32__
+ULONGLONG GetTickCount64();
+#endif
+#endif
+
 uint64_t
 Hal_getTimeInMs()
 {
@@ -62,7 +68,7 @@ Hal_setTimeInNs(nsSinceEpoch nsTime)
 msSinceEpoch
 Hal_getMonotonicTimeInMs()
 {
-    return (msSinceEpoch)GetTickCount64;
+    return (msSinceEpoch)GetTickCount64();
 }
 
 nsSinceEpoch
