@@ -22,9 +22,7 @@
  */
 using IEC61850.Server;
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text;
 
 // IEC 61850 API for the libiec61850 .NET wrapper library
 namespace IEC61850
@@ -45,7 +43,7 @@ namespace IEC61850
             internal IntPtr Self { get => self; }
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-            static extern IntPtr SVControlBlock_create(string name, IntPtr parent, string svID,string dataSet, UInt32 confRev, uint smpMod,
+            static extern IntPtr SVControlBlock_create(string name, IntPtr parent, string svID, string dataSet, UInt32 confRev, uint smpMod,
             UInt16 smpRate, uint optFlds, bool isUnicast);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
@@ -67,7 +65,7 @@ namespace IEC61850
             public SVControlBlock(string name, IedModel parent, string svID, string dataSet, UInt32 confRev, uint smpMod,
                 UInt16 smpRate, uint optFlds, bool isUnicast)
             {
-                this.self = SVControlBlock_create(name, parent.self, svID, dataSet, confRev, smpMod, smpRate, optFlds, isUnicast);
+                self = SVControlBlock_create(name, parent.self, svID, dataSet, confRev, smpMod, smpRate, optFlds, isUnicast);
                 this.parent = parent;
             }
 
@@ -91,5 +89,5 @@ namespace IEC61850
 
         }
     }
-       
+
 }

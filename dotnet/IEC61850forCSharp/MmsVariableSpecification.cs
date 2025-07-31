@@ -1,7 +1,7 @@
 /*
  *  MmsVariableSpecification.cs
  *
- *  Copyright 2014-2024 Michael Zillgith
+ *  Copyright 2014-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -21,11 +21,9 @@
  *  See COPYING file for the complete license text.
  */
 using System;
-
-using System.Runtime.InteropServices;
-using System.Collections.Generic;
-
 using System.Collections;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace IEC61850
@@ -73,7 +71,7 @@ namespace IEC61850
             internal MmsVariableSpecification(IntPtr self, MmsVariableSpecification parent)
             {
                 this.self = self;
-                this.responsableForDeletion = false;
+                responsableForDeletion = false;
                 this.parent = parent;
             }
 
