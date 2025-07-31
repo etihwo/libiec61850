@@ -106,6 +106,7 @@ IsoApplicationReference_getApTitle(const IsoApplicationReference* self)
 {
     if (self == NULL)
         return NULL;
+
     return &(self->apTitle);
 }
 
@@ -113,7 +114,7 @@ LIB61850_API int
 ItuObjectIdentifier_getArcCount(ItuObjectIdentifier* self)
 {
     if (self == NULL)
-        return NULL;
+        return 0;
 
     return self->arcCount;
 }
