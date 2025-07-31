@@ -1,7 +1,7 @@
 ﻿/*
  *  IedServerConfig.cs
  *
- *  Copyright 2018 Michael Zillgith
+ *  Copyright 2018-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -21,9 +21,9 @@
  *  See COPYING file for the complete license text.
  */
 
+using IEC61850.Common;
 using System;
 using System.Runtime.InteropServices;
-using IEC61850.Common;
 
 namespace IEC61850.Server
 {

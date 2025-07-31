@@ -57,6 +57,8 @@ AcseAuthenticationParameter_setPassword(AcseAuthenticationParameter self, char* 
     self->value.password.passwordLength = strlen(password);
 }
 
+/* TODO
+->One function returning as string and another as by array*/
 const char*
 AcseAuthenticationParameter_getPassword(AcseAuthenticationParameter self)
 {

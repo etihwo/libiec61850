@@ -374,8 +374,11 @@ namespace server_access_control
 
                 if (acseAuthenticationMechanism == IEC61850.AcseAuthenticationMechanism.ACSE_AUTH_PASSWORD)
                 {
-                    int passwordLenght = authParameter.GetPasswordLenght();
-                    string password = authParameter.GetPassword();
+                    byte[] passArray = authParameter.GetPasswordByteArray();
+                    int passwordLenght = passArray.Length;
+
+                    string password = authParameter.GetPasswordString();
+
                     if (passwordLenght == passwords.First().Length)
                     {
                         if (password == passwords.First())

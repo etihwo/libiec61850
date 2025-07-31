@@ -1,7 +1,7 @@
 ﻿/*
  *  AcseAuthenticationParameter.cs
  *
- *  Copyright 2014 Michael Zillgith
+ *  Copyright 2025-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -21,7 +21,6 @@
  *  See COPYING file for the complete license text.
  */
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -45,7 +44,7 @@ namespace IEC61850
         /** Use TLS certificate for client authentication */
         ACSE_AUTH_TLS = 3
     }
-    
+
 
     public class AcseAuthenticationParameter
     {
@@ -54,10 +53,10 @@ namespace IEC61850
 
         [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
         static extern void AcseAuthenticationParameter_setAuthMechanism(IntPtr self, int mechanism);
-        
+
         [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
         static extern void AcseAuthenticationParameter_setPassword(IntPtr self, string password);
-        
+
         [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
         static extern int AcseAuthenticationParameter_getAuthMechanism(IntPtr self);
 
@@ -76,12 +75,12 @@ namespace IEC61850
 
         public AcseAuthenticationParameter(IntPtr self)
         {
-            this.self = self;  
+            this.self = self;
         }
 
         public void SetAuthMechanism(AcseAuthenticationMechanism acseAuthenticationMechanism)
         {
-            AcseAuthenticationParameter_setAuthMechanism(self,(int)acseAuthenticationMechanism);
+            AcseAuthenticationParameter_setAuthMechanism(self, (int)acseAuthenticationMechanism);
         }
 
         public void SetPassword(string password)
@@ -94,15 +93,38 @@ namespace IEC61850
             return (AcseAuthenticationMechanism)AcseAuthenticationParameter_getAuthMechanism(self);
         }
 
-        public string GetPassword()
+        public string GetPasswordString()
+        {
+            try
+            {
+                byte[] password = GetPasswordByteArray();
+
+                return Encoding.UTF8.GetString(password);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        public byte[] GetPasswordByteArray()
         {
             IntPtr password = AcseAuthenticationParameter_getPassword(self);
 
             if (password != IntPtr.Zero)
-                return Marshal.PtrToStringAnsi(password);
+            {
+                int lenght = GetPasswordLenght();
+                byte[] result = new byte[lenght];
+
+                Marshal.Copy(password, result, 0, lenght);
+
+                return result;
+
+            }
             else
                 return null;
         }
+
 
         public int GetPasswordLenght()
         {
@@ -122,7 +144,7 @@ namespace IEC61850
 
         public IsoApplicationReference(IntPtr self)
         {
-            this.self= self;
+            this.self = self;
         }
 
         public int GetAeQualifier()

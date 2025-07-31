@@ -60,7 +60,7 @@ main(int argc, char** argv)
     IsoConnectionParameters_setRemoteAddresses(parameters, remotePSelector, remoteSSelector, localTSelector);
     IsoConnectionParameters_setLocalAddresses(parameters, localPSelector, localSSelector, remoteTSelector);
 
-    char* password = "top secret";
+    char* password = "user1@testpw";
 
     /* use authentication */
     AcseAuthenticationParameter auth = AcseAuthenticationParameter_create();
