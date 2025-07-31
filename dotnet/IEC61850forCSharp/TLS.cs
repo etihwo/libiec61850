@@ -21,14 +21,9 @@
  *  See COPYING file for the complete license text.
  */
 using System;
-using System.Text;
 using System.Runtime.InteropServices;
-using System.Collections.Generic;
-using System.Collections;
-using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
-
-using IEC61850.Common;
+using System.Security.Cryptography.X509Certificates;
 
 /// <summary>
 /// IEC 61850 API for the libiec61850 .NET wrapper library
@@ -114,7 +109,7 @@ namespace IEC61850
                     {
                         if (isValid)
                         {
-                            return (TLSConfigVersion)TLSConnection_getTLSVersion((IntPtr)self);
+                            return (TLSConfigVersion)TLSConnection_getTLSVersion(self);
                         }
                         else
                         {
@@ -136,7 +131,7 @@ namespace IEC61850
                         if (isValid)
                         {
                             IntPtr peerAddrBuf = Marshal.AllocHGlobal(130);
-                            IntPtr peerAddrStr = TLSConnection_getPeerAddress(this.self, peerAddrBuf);
+                            IntPtr peerAddrStr = TLSConnection_getPeerAddress(self, peerAddrBuf);
 
                             string peerAddr = null;
 
@@ -331,8 +326,8 @@ namespace IEC61850
 
             public void SetEventHandler(TLSEventHandler handler, object parameter)
             {
-                this.eventHandler = handler;
-                this.eventHandlerParameter = parameter;
+                eventHandler = handler;
+                eventHandlerParameter = parameter;
 
                 if (internalTLSEventHandlerRef == null)
                 {

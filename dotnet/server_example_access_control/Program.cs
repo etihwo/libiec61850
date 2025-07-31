@@ -8,6 +8,7 @@
 using System;
 using IEC61850.Server;
 using IEC61850.Common;
+using IEC61850;
 using System.Threading;
 using System.Net;
 using static IEC61850.Server.IedServer;
@@ -17,6 +18,7 @@ using IEC61850.Client;
 using ReportControlBlock = IEC61850.Server.ReportControlBlock;
 using IEC61850.Model;
 using System.Data.Common;
+using System.Security.Cryptography;
 
 namespace server_access_control
 {
@@ -142,12 +144,23 @@ namespace server_access_control
             /* Install handler to control access to control blocks (RCBs, LCBs, GoCBs, SVCBs, SGCBs)*/
             bool ControlBlockAccessCallBack(object parameter, ClientConnection connection, ACSIClass acsiClass, LogicalDevice ld, LogicalNode ln, string objectName, string subObjectName, ControlBlockAccessType accessType)
             {
+                string password = parameter as string;
+                object securityToken = connection.GetSecurityToken();
+
+                if(securityToken != null)
+                {
+                    if ((securityToken as string == password))
+                        Console.WriteLine("Correct securityToken");
+                    else
+                        Console.WriteLine("Incorrect securityToken");
+                }
+
                 Console.WriteLine(acsiClass.ToString() + " "+ accessType.ToString() + " access " +  ld.GetName() + ln.GetName() +"/"+ objectName + "." + subObjectName + "\n");
 
                 return true;
             }
 
-            iedServer.SetControlBlockAccessHandler(ControlBlockAccessCallBack, iedServer);
+            iedServer.SetControlBlockAccessHandler(ControlBlockAccessCallBack, "securityToken_password");
 
             /* By default access to variables with FC=DC and FC=CF is not allowed.
             * This allow to write to simpleIOGenericIO/GGIO1.NamPlt.vendor variable used
@@ -331,6 +344,67 @@ namespace server_access_control
 
             iedServer.SetSVCBHandler(sVCBEventHandler, sampledValuesControlBlock_1, null);
             iedServer.SetSVCBHandler(sVCBEventHandler, sampledValuesControlBlock_2, null);
+
+            
+            bool clientAuthenticator (object parameter, AcseAuthenticationParameter authParameter, object securityToken, IsoApplicationReference isoApplicationReference)
+            {
+                List<string> passwords = parameter as List<string>;
+
+                int aeQualifier = isoApplicationReference.GetAeQualifier();
+                ItuObjectIdentifier ituObjectIdentifier = isoApplicationReference.GetApTitle();
+                int arcCount = ituObjectIdentifier.GetArcCount();
+                ushort[] arc = ituObjectIdentifier.GetArcs();
+
+                Console.WriteLine("ACSE Authenticator:\n");
+
+                string appTitle = "";
+                for (int i = 0; i < arcCount; i++)
+                {
+                    appTitle += arc[i];
+
+                    if (i != (arcCount - 1))
+                        appTitle += ".";
+                }
+
+                Console.WriteLine("  client ap-title: " + appTitle);
+
+                Console.WriteLine("\n  client ae-qualifier: "+ aeQualifier + " \n");
+
+                IEC61850.AcseAuthenticationMechanism acseAuthenticationMechanism = authParameter.GetAuthMechanism();
+
+                if (acseAuthenticationMechanism == IEC61850.AcseAuthenticationMechanism.ACSE_AUTH_PASSWORD)
+                {
+                    byte[] passArray = authParameter.GetPasswordByteArray();
+                    int passwordLenght = passArray.Length;
+
+                    string password = authParameter.GetPasswordString();
+
+                    if (passwordLenght == passwords.First().Length)
+                    {
+                        if (password == passwords.First())
+                        {
+                            securityToken = passwords.First();
+                            return true;
+                        }
+                    }
+                    else if (passwordLenght == passwords[1].Length)
+                    {
+                        if (password == passwords[1])
+                        {
+                            securityToken = passwords[1];
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            List<string> passwords = new List<string>();
+            passwords.Add("user1@testpw");
+            passwords.Add("user2@testpw");
+
+            iedServer.SetAuthenticator(clientAuthenticator, passwords);
 
             iedServer.Start(102);
 

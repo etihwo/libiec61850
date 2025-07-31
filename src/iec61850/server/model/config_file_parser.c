@@ -1,7 +1,7 @@
 /*
  *  config_file_parser.c
  *
- *  Copyright 2014-2024 Michael Zillgith
+ *  Copyright 2014-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *

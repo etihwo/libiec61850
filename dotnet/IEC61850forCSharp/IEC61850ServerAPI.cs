@@ -1,7 +1,7 @@
 ﻿/*
  *  IEC61850ServerAPI.cs
  *
- *  Copyright 2016-2024 Michael Zillgith
+ *  Copyright 2016-2025 Michael Zillgith
  *
  *  This file is part of libIEC61850.
  *
@@ -42,13 +42,14 @@ namespace IEC61850
             static extern IntPtr ConfigFileParser_createModelFromConfigFileEx(string filename);
 
             public static IedModel CreateModelFromConfigFile(string filePath)
-            { 
-                IntPtr retVal = ConfigFileParser_createModelFromConfigFileEx (filePath);
-                if (retVal == IntPtr.Zero) {
+            {
+                IntPtr retVal = ConfigFileParser_createModelFromConfigFileEx(filePath);
+                if (retVal == IntPtr.Zero)
+                {
                     return null;
                 }
 
-                return new IedModel (retVal);
+                return new IedModel(retVal);
             }
         }
 
@@ -102,7 +103,7 @@ namespace IEC61850
 
             ~IedModel()
             {
-                Dispose();    
+                Dispose();
             }
 
             /// <summary>
@@ -283,7 +284,7 @@ namespace IEC61850
                 if (nodeRef == IntPtr.Zero)
                     return null;
 
-                return GetModelNodeFromNodeRef (nodeRef);
+                return GetModelNodeFromNodeRef(nodeRef);
             }
 
             /// <summary>
@@ -298,7 +299,7 @@ namespace IEC61850
                 if (nodeRef == IntPtr.Zero)
                     return null;
 
-                return GetModelNodeFromNodeRef (nodeRef);
+                return GetModelNodeFromNodeRef(nodeRef);
             }
 
             public SVControlBlock GetSVControlBlock(LogicalNode logicalNode, string svcbName)
@@ -329,9 +330,9 @@ namespace IEC61850
 
             public IedModel IedModel { get; }
 
-            public LogicalDevice (IntPtr self, IedModel iedModel) : base (self)
+            public LogicalDevice(IntPtr self, IedModel iedModel) : base(self)
             {
-                this.IedModel = iedModel;
+                IedModel = iedModel;
             }
 
             /// <summary>
@@ -341,7 +342,7 @@ namespace IEC61850
             /// <param name="parent">Model containing this logical device</param>
             public LogicalDevice(string inst, IedModel parent)
             {
-                this.IedModel = parent;
+                IedModel = parent;
 
                 self = LogicalDevice_create(inst, parent.self);
             }
@@ -354,7 +355,7 @@ namespace IEC61850
             /// <param name="ldName">LD name (for functional naming). When set, the exernally visible domain name for this LD</param>
             public LogicalDevice(string inst, IedModel parent, string ldName)
             {
-                this.IedModel = parent;
+                IedModel = parent;
 
                 self = LogicalDevice_createEx(inst, parent.self, ldName);
             }
@@ -365,9 +366,9 @@ namespace IEC61850
             /// <returns>the SGCB instance or NULL if no SGCB is available</returns>
             public SettingGroupControlBlock GetSettingGroupControlBlock()
             {
-                IntPtr sgcb = LogicalDevice_getSettingGroupControlBlock(this.self);
+                IntPtr sgcb = LogicalDevice_getSettingGroupControlBlock(self);
 
-                if(sgcb == IntPtr.Zero)
+                if (sgcb == IntPtr.Zero)
                     return null;
 
                 return new SettingGroupControlBlock(sgcb);
@@ -384,7 +385,7 @@ namespace IEC61850
 
             internal Dictionary<IntPtr, ReportControlBlock> rcbs = new Dictionary<IntPtr, ReportControlBlock>();
 
-            public LogicalNode (IntPtr self, ModelNode parent) : base(self)
+            public LogicalNode(IntPtr self, ModelNode parent) : base(self)
             {
                 this.parent = parent;
             }
@@ -407,18 +408,20 @@ namespace IEC61850
             }
         }
 
-        public enum AccessPolicy {
+        public enum AccessPolicy
+        {
             ACCESS_POLICY_ALLOW = 0,
             ACCESS_POLICY_DENY = 1
         }
 
-        public enum DataAttributeType {
+        public enum DataAttributeType
+        {
             BOOLEAN = 0,
             INT8 = 1,
             INT16 = 2,
             INT32 = 3,
-            INT64 = 4, 
-            INT128 = 5, 
+            INT64 = 4,
+            INT128 = 5,
             INT8U = 6,
             INT16U = 7,
             INT24U = 8,
@@ -466,7 +469,7 @@ namespace IEC61850
         /// The CDC class contains helper functions to create DataObject instances for the
         /// most common Common Data Classes.
         /// </summary>
-        public class CDC 
+        public class CDC
         {
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr CDC_SPS_create(string name, IntPtr parent, uint options);
@@ -545,7 +548,7 @@ namespace IEC61850
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr CDC_APC_create(string name, IntPtr parent, uint options, uint controlOptions, [MarshalAs(UnmanagedType.I1)] bool isIntegerNotFloat);
-            
+
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr CDC_BCR_create(string name, IntPtr parent, uint options);
 
@@ -593,11 +596,11 @@ namespace IEC61850
                 IntPtr self = CDC_SPS_create(name, parent.self, options);
 
                 if (self != IntPtr.Zero)
-                    return new DataObject (self, parent);
+                    return new DataObject(self, parent);
                 else
                     return null;
             }
-            
+
             public static DataObject Create_CDC_DPS(ModelNode parent, string name, uint options)
             {
                 IntPtr self = CDC_DPS_create(name, parent.self, options);
@@ -753,7 +756,7 @@ namespace IEC61850
                 IntPtr self = CDC_INS_create(name, parent.self, options);
 
                 if (self != IntPtr.Zero)
-                    return new DataObject (self, parent);
+                    return new DataObject(self, parent);
                 else
                     return null;
             }
@@ -763,7 +766,7 @@ namespace IEC61850
                 IntPtr self = CDC_MV_create(name, parent.self, options, isIntegerNotFloat);
 
                 if (self != IntPtr.Zero)
-                    return new DataObject (self, parent);
+                    return new DataObject(self, parent);
                 else
                     return null;
             }
@@ -773,7 +776,7 @@ namespace IEC61850
                 IntPtr self = CDC_INC_create(name, parent.self, options, controlOptions);
 
                 if (self != IntPtr.Zero)
-                    return new DataObject (self, parent);
+                    return new DataObject(self, parent);
                 else
                     return null;
             }
@@ -783,7 +786,7 @@ namespace IEC61850
                 IntPtr self = CDC_LPL_create(name, parent.self, options);
 
                 if (self != IntPtr.Zero)
-                    return new DataObject (self, parent);
+                    return new DataObject(self, parent);
                 else
                     return null;
             }
@@ -793,7 +796,7 @@ namespace IEC61850
                 IntPtr self = CDC_DPL_create(name, parent.self, options);
 
                 if (self != IntPtr.Zero)
-                    return new DataObject (self, parent);
+                    return new DataObject(self, parent);
                 else
                     return null;
             }
@@ -933,7 +936,7 @@ namespace IEC61850
         {
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr DataObject_create(string name, IntPtr parent, int arrayElements);
-           
+
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr ModelNode_getChildWithFc(IntPtr self, string objectReference, int fc);
 
@@ -950,7 +953,7 @@ namespace IEC61850
             {
                 this.parent = parent;
 
-                self = DataObject_create (name, parent.self, arrayElements);
+                self = DataObject_create(name, parent.self, arrayElements);
             }
 
             /// <summary>
@@ -965,7 +968,7 @@ namespace IEC61850
             public DataAttribute GetChildWithFc(string objRef, FunctionalConstraint fc)
             {
                 DataAttribute dataAttribute = null;
-                IntPtr da = ModelNode_getChildWithFc(this.self, objRef, (int)fc);
+                IntPtr da = ModelNode_getChildWithFc(self, objRef, (int)fc);
 
                 if (da != IntPtr.Zero)
                 {
@@ -1011,12 +1014,12 @@ namespace IEC61850
             /// <param name="trgOps">the trigger options (dupd, dchg, qchg) that cause an event notification</param>
             /// <param name="arrayElements">the number of array elements if the data attribute is an array or 0</param>
             /// <param name="sAddr">an optional short address (deprecated)</param>
-            public DataAttribute (string name, ModelNode parent, DataAttributeType type, FunctionalConstraint fc, TriggerOptions trgOps,
+            public DataAttribute(string name, ModelNode parent, DataAttributeType type, FunctionalConstraint fc, TriggerOptions trgOps,
                 int arrayElements, UInt32 sAddr)
             {
                 this.parent = parent;
 
-                self = DataAttribute_create (name, parent.self, (int)type, (int)fc, (byte)trgOps, arrayElements, sAddr);
+                self = DataAttribute_create(name, parent.self, (int)type, (int)fc, (byte)trgOps, arrayElements, sAddr);
             }
 
             /// <summary>
@@ -1152,7 +1155,7 @@ namespace IEC61850
                 }
                 else
                 {
-                    if (this.parent != null)
+                    if (parent != null)
                         return parent.GetIedModel();
                     else
                         return null;
@@ -1292,7 +1295,7 @@ namespace IEC61850
 
                         if (childNode == null)
                         {
-                            childNode =  ModelNode.CreateInstance(modelNodePtr, this);
+                            childNode = ModelNode.CreateInstance(modelNodePtr, this);
 
                             if ((childNode != null) && (iedModel != null))
                             {
@@ -1324,14 +1327,16 @@ namespace IEC61850
 
                 IntPtr objRefPtr = ModelNode_getObjectReferenceEx(self, nativeMemory, withoutIedName);
 
-                if (objRefPtr != IntPtr.Zero) {
+                if (objRefPtr != IntPtr.Zero)
+                {
                     string objRef = Marshal.PtrToStringAnsi(objRefPtr);
 
                     Marshal.FreeHGlobal(nativeMemory);
 
                     return objRef;
                 }
-                else {
+                else
+                {
                     Marshal.FreeHGlobal(nativeMemory);
 
                     return null;
@@ -1738,17 +1743,20 @@ namespace IEC61850
 
             public SettingGroupControlBlock(LogicalNode parent, UInt32 actSG, UInt32 numOfSGs)
             {
-                self = SettingGroupControlBlock_create(parent.self, (byte) actSG, (byte)  numOfSGs);
+                self = SettingGroupControlBlock_create(parent.self, (byte)actSG, (byte)numOfSGs);
             }
 
             public SettingGroupControlBlock(IntPtr self)
             {
-                this.self = self ;
+                this.self = self;
             }
         }
 
         public class ClientConnection : IDisposable
         {
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern IntPtr ClientConnection_getSecurityToken(IntPtr self);
+
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr ClientConnection_getPeerAddress(IntPtr self);
 
@@ -1770,6 +1778,31 @@ namespace IEC61850
             internal ClientConnection(IntPtr self)
             {
                 this.self = ClientConnection_claimOwnership(self);
+            }
+
+            /// <summary>
+            /// Get the security token associated with this connection
+            /// The security token is an opaque handle that is associated with the connection.It is provided by the
+            /// authenticator (if one is present). If no security token is used then this function returns NULL
+            /// </summary>
+            /// <returns>the security token or NULL</returns>
+            public object GetSecurityToken()
+            {
+                lock (this)
+                {
+                    if (self != IntPtr.Zero)
+                    {
+                        IntPtr token = ClientConnection_getSecurityToken(self);
+
+                        if (token != IntPtr.Zero)
+                        {
+                            GCHandle handle = GCHandle.FromIntPtr(token);
+                            return handle;
+                        }
+                    }
+                }
+
+                return null;
             }
 
             public string GetPeerAddress()
@@ -1834,7 +1867,7 @@ namespace IEC61850
                 }
             }
 
-            ~ClientConnection ()
+            ~ClientConnection()
             {
                 Dispose();
             }
@@ -1884,7 +1917,7 @@ namespace IEC61850
 
                 if (lnModelNode != null && lnModelNode is LogicalNode)
                 {
-                    this.ln = lnModelNode as LogicalNode;
+                    ln = lnModelNode as LogicalNode;
                 }
             }
 
@@ -1961,17 +1994,17 @@ namespace IEC61850
         /// </summary>
         public class ControlAction
         {
-            [DllImport ("iec61850", CallingConvention = CallingConvention.Cdecl)]
-            static extern void ControlAction_setAddCause (IntPtr self, int addCause);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void ControlAction_setAddCause(IntPtr self, int addCause);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern void ControlAction_setError(IntPtr self, int error);
 
-            [DllImport ("iec61850", CallingConvention = CallingConvention.Cdecl)]
-            static extern int ControlAction_getOrCat (IntPtr self);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern int ControlAction_getOrCat(IntPtr self);
 
-            [DllImport ("iec61850", CallingConvention = CallingConvention.Cdecl)]
-            static extern IntPtr ControlAction_getOrIdent (IntPtr self, ref int size);
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern IntPtr ControlAction_getOrIdent(IntPtr self, ref int size);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr ControlAction_getClientConnection(IntPtr self);
@@ -2001,7 +2034,7 @@ namespace IEC61850
             private IedServer.ControlHandlerInfo info;
             private IedServer iedServer;
 
-            internal ControlAction (IntPtr self, IedServer.ControlHandlerInfo info, IedServer iedServer)
+            internal ControlAction(IntPtr self, IedServer.ControlHandlerInfo info, IedServer iedServer)
             {
                 this.self = self;
                 this.info = info;
@@ -2021,36 +2054,36 @@ namespace IEC61850
             /// Sets the add cause for the next command termination or application error message
             /// </summary>
             /// <param name="addCause">the additional cause code</param>
-            public void SetAddCause (ControlAddCause addCause)
+            public void SetAddCause(ControlAddCause addCause)
             {
-                ControlAction_setAddCause (self, (int)addCause);
+                ControlAction_setAddCause(self, (int)addCause);
             }
 
             /// <summary>
             /// Gets the originator category provided by the client
             /// </summary>
             /// <returns>The or cat.</returns>
-            public OrCat GetOrCat ()
+            public OrCat GetOrCat()
             {
-                return (OrCat)ControlAction_getOrCat (self);
+                return (OrCat)ControlAction_getOrCat(self);
             }
 
             /// <summary>
             ///  Get the originator identifier provided by the client
             /// </summary>
             /// <returns>The or ident.</returns>
-            public byte [] GetOrIdent ()
+            public byte[] GetOrIdent()
             {
                 int size = 0;
 
-                IntPtr orIdentPtr = ControlAction_getOrIdent (self, ref size);
+                IntPtr orIdentPtr = ControlAction_getOrIdent(self, ref size);
 
                 if (orIdentPtr == IntPtr.Zero)
                     return null;
 
-                byte [] orIdent = new byte [size];
+                byte[] orIdent = new byte[size];
 
-                Marshal.Copy (orIdentPtr, orIdent, 0, size);
+                Marshal.Copy(orIdentPtr, orIdent, 0, size);
 
                 return orIdent;
             }
@@ -2068,7 +2101,7 @@ namespace IEC61850
             /// Gets the control object that is subject to this action
             /// </summary>
             /// <returns>the controllable data object instance</returns>
-            public DataObject GetControlObject ()
+            public DataObject GetControlObject()
             {
                 return info.controlObject;
             }
@@ -2095,14 +2128,15 @@ namespace IEC61850
             /// Gets the client object associated with the client that caused the control action
             /// </summary>
             /// <returns>The client connection.</returns>
-            public ClientConnection GetClientConnection ()
+            public ClientConnection GetClientConnection()
             {
                 ClientConnection con = null;
 
-                IntPtr conPtr = ControlAction_getClientConnection (self);
+                IntPtr conPtr = ControlAction_getClientConnection(self);
 
-                if (conPtr != IntPtr.Zero) {
-                    iedServer.clientConnections.TryGetValue (conPtr, out con);
+                if (conPtr != IntPtr.Zero)
+                {
+                    iedServer.clientConnections.TryGetValue(conPtr, out con);
                 }
 
                 return con;
@@ -2191,7 +2225,7 @@ namespace IEC61850
 
         public delegate void RCBEventHandler(object parameter, ReportControlBlock rcb, ClientConnection con, RCBEventType eventType, string parameterName, MmsDataAccessError serviceError);
 
-        public delegate MmsDataAccessError WriteAccessHandler (DataAttribute dataAttr, MmsValue value, 
+        public delegate MmsDataAccessError WriteAccessHandler(DataAttribute dataAttr, MmsValue value,
             ClientConnection connection, object parameter);
 
         /// <summary>
@@ -2230,7 +2264,8 @@ namespace IEC61850
         /// <summary>
         /// Return type of ControlHandler and ControlWaitForExecutionHandler
         /// </summary>
-        public enum ControlHandlerResult {
+        public enum ControlHandlerResult
+        {
             /// <summary>
             /// check or operation failed
             /// </summary>
@@ -2245,11 +2280,12 @@ namespace IEC61850
             WAITING = 2
         }
 
-        public delegate ControlHandlerResult ControlWaitForExecutionHandler (ControlAction action, object parameter, MmsValue ctlVal, bool test, bool synchroCheck);
+        public delegate ControlHandlerResult ControlWaitForExecutionHandler(ControlAction action, object parameter, MmsValue ctlVal, bool test, bool synchroCheck);
 
-        public delegate ControlHandlerResult ControlHandler (ControlAction action, object parameter, MmsValue ctlVal, bool test);
+        public delegate ControlHandlerResult ControlHandler(ControlAction action, object parameter, MmsValue ctlVal, bool test);
 
-        public enum CheckHandlerResult {
+        public enum CheckHandlerResult
+        {
             /// <summary>
             /// check passed
             /// </summary>
@@ -2286,8 +2322,8 @@ namespace IEC61850
             DATASET_WRITE,
             DATASET_GET_DIRECTORY
         }
-        
-        public delegate CheckHandlerResult CheckHandler (ControlAction action, object parameter, MmsValue ctlVal, bool test, bool interlockCheck);
+
+        public delegate CheckHandlerResult CheckHandler(ControlAction action, object parameter, MmsValue ctlVal, bool test, bool interlockCheck);
 
         public static class SqliteLogStorage
         {
@@ -2455,13 +2491,13 @@ namespace IEC61850
         /// </summary>
         public class IedServer : IDisposable
         {
-            [DllImport ("iec61850", CallingConvention=CallingConvention.Cdecl)]
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern IntPtr IedServer_createWithConfig(IntPtr modelRef, IntPtr tlsConfiguration, IntPtr serverConfiguratio);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern void IedServer_setLocalIpAddress(IntPtr self, string localIpAddress);
 
-            [DllImport ("iec61850", CallingConvention=CallingConvention.Cdecl)]
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern void IedServer_start(IntPtr self, int tcpPort);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
@@ -2612,6 +2648,29 @@ namespace IEC61850
             private delegate void IedServer_SVCBEventHandler(IntPtr svcb, int eventType, IntPtr parameter);
 
             /// <summary>
+            /// set the authenticator for this server
+            /// This function sets a user specified authenticator that is used to identify and authenticate clients that
+            /// wants to connect.The authenticator is called on each connection attempt.Depending on the return value
+            /// connections are accepted.
+            /// </summary>
+            /// <param name="self">the instance of IedServer to operate on.</param>
+            /// <param name="authenticator">the user provided authenticator callback</param>
+            /// <param name="authenticatorParameter">user provided parameter that is passed to the authenticator</param>
+            [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
+            static extern void IedServer_setAuthenticator(IntPtr self, IedServer_AcseAuthenticator authenticator, IntPtr authenticatorParameter);
+
+            /// <summary>
+            /// Callback function to authenticate a client
+            /// </summary>
+            /// <param name="parameter">user provided parameter - set when user registers the authenticator</param>
+            /// <param name="authParameter">the authentication parameters provided by the client</param>
+            /// <param name="securityToken">pointer where to store an application specific security token - can be ignored if not used.</param>
+            /// <param name="appReference">ISO application reference (ap-title + ae-qualifier)</param>
+            /// <returns>true if client connection is accepted, false otherwise</returns>
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+            private delegate bool IedServer_AcseAuthenticator(IntPtr parameter, IntPtr authParameter, IntPtr securityToken, IntPtr appReference);
+
+            /// <summary>
             /// callback handler to control client read access to data attributes
             ///  User provided callback function to control MMS client read access to IEC 61850
             ///  data objects.The application is to allow read access to data objects for specific clients only.
@@ -2697,13 +2756,13 @@ namespace IEC61850
             public delegate bool IedServer_ListObjectsAccessHandler(IntPtr parameter, ClientConnection connection, ACSIClass acsiClass, LogicalDevice ld, LogicalNode ln, string objectName, string subObjectName, FunctionalConstraint fc);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            private delegate int InternalControlPerformCheckHandler (IntPtr action, IntPtr parameter, IntPtr ctlVal, [MarshalAs(UnmanagedType.I1)] bool test, [MarshalAs(UnmanagedType.I1)] bool interlockCheck);
+            private delegate int InternalControlPerformCheckHandler(IntPtr action, IntPtr parameter, IntPtr ctlVal, [MarshalAs(UnmanagedType.I1)] bool test, [MarshalAs(UnmanagedType.I1)] bool interlockCheck);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            private delegate int InternalControlWaitForExecutionHandler (IntPtr action, IntPtr parameter, IntPtr ctlVal, [MarshalAs(UnmanagedType.I1)] bool test, [MarshalAs(UnmanagedType.I1)] bool synchoCheck);
+            private delegate int InternalControlWaitForExecutionHandler(IntPtr action, IntPtr parameter, IntPtr ctlVal, [MarshalAs(UnmanagedType.I1)] bool test, [MarshalAs(UnmanagedType.I1)] bool synchoCheck);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            private delegate int InternalControlHandler (IntPtr action, IntPtr parameter, IntPtr ctlVal, [MarshalAs(UnmanagedType.I1)] bool test);
+            private delegate int InternalControlHandler(IntPtr action, IntPtr parameter, IntPtr ctlVal, [MarshalAs(UnmanagedType.I1)] bool test);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
             private delegate void InternalSelectStateChangedHandler(IntPtr action, IntPtr parameter, [MarshalAs(UnmanagedType.I1)] bool isSelected, int reason);
@@ -2715,7 +2774,7 @@ namespace IEC61850
             static extern void IedServer_setPerformCheckHandler(IntPtr self, IntPtr node, InternalControlPerformCheckHandler handler, IntPtr parameter);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
-            static extern void IedServer_setControlHandler (IntPtr self, IntPtr node, InternalControlHandler handler, IntPtr parameter);
+            static extern void IedServer_setControlHandler(IntPtr self, IntPtr node, InternalControlHandler handler, IntPtr parameter);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern void IedServer_setSelectStateChangedHandler(IntPtr self, IntPtr node, InternalSelectStateChangedHandler handler, IntPtr parameter);
@@ -2724,7 +2783,7 @@ namespace IEC61850
             static extern void IedServer_setWriteAccessPolicy(IntPtr self, FunctionalConstraint fc, AccessPolicy policy);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            private delegate int InternalWriteAccessHandler (IntPtr dataAttribute, IntPtr value, IntPtr connection, IntPtr parameter);
+            private delegate int InternalWriteAccessHandler(IntPtr dataAttribute, IntPtr value, IntPtr connection, IntPtr parameter);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern void IedServer_handleWriteAccess(IntPtr self, IntPtr dataAttribute,
@@ -2750,7 +2809,7 @@ namespace IEC61850
             }
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            private delegate void InternalConnectionHandler (IntPtr iedServer, IntPtr clientConnection, [MarshalAs(UnmanagedType.I1)] bool connected, IntPtr parameter);
+            private delegate void InternalConnectionHandler(IntPtr iedServer, IntPtr clientConnection, [MarshalAs(UnmanagedType.I1)] bool connected, IntPtr parameter);
 
             [DllImport("iec61850", CallingConvention = CallingConvention.Cdecl)]
             static extern void IedServer_setConnectionIndicationHandler(IntPtr self, InternalConnectionHandler handler, IntPtr parameter);
@@ -2795,7 +2854,8 @@ namespace IEC61850
             // hold references to managed LogStorage instances to avoid problems with GC
             private Dictionary<string, LogStorage> logStorages = new Dictionary<string, LogStorage>();
 
-            internal class ControlHandlerInfo {
+            internal class ControlHandlerInfo
+            {
                 public DataObject controlObject = null;
                 public GCHandle handle;
 
@@ -2814,58 +2874,59 @@ namespace IEC61850
                 public ControlHandlerInfo(DataObject controlObject)
                 {
                     this.controlObject = controlObject;
-                    this.handle = GCHandle.Alloc(this);
+                    handle = GCHandle.Alloc(this);
                 }
 
                 ~ControlHandlerInfo()
                 {
-                    this.handle.Free();
+                    handle.Free();
                 }
             }
 
-            private Dictionary<DataObject, ControlHandlerInfo> controlHandlers = new Dictionary<DataObject, ControlHandlerInfo> ();
+            private Dictionary<DataObject, ControlHandlerInfo> controlHandlers = new Dictionary<DataObject, ControlHandlerInfo>();
 
-            int InternalControlHandlerImpl (IntPtr action, IntPtr parameter, IntPtr ctlVal, bool test)
+            int InternalControlHandlerImpl(IntPtr action, IntPtr parameter, IntPtr ctlVal, bool test)
             {
-                GCHandle handle = GCHandle.FromIntPtr (parameter);
+                GCHandle handle = GCHandle.FromIntPtr(parameter);
 
                 ControlHandlerInfo info = (ControlHandlerInfo)handle.Target;
 
-                ControlAction controlAction = new ControlAction (action, info, this);
+                ControlAction controlAction = new ControlAction(action, info, this);
 
                 if (info != null && info.controlHandler != null)
-                    return (int)info.controlHandler (controlAction, info.controlHandlerParameter, new MmsValue (ctlVal), test);
+                    return (int)info.controlHandler(controlAction, info.controlHandlerParameter, new MmsValue(ctlVal), test);
                 else
                     return (int)ControlHandlerResult.FAILED;
             }
 
             int InternalCheckHandlerImpl(IntPtr action, IntPtr parameter, IntPtr ctlVal, bool test, bool interlockCheck)
             {
-                GCHandle handle = GCHandle.FromIntPtr (parameter);
+                GCHandle handle = GCHandle.FromIntPtr(parameter);
 
                 ControlHandlerInfo info = (ControlHandlerInfo)handle.Target;
 
-                if (info != null && info.checkHandler != null) 
+                if (info != null && info.checkHandler != null)
                 {
-                    ControlAction controlAction = new ControlAction (action, info, this);
+                    ControlAction controlAction = new ControlAction(action, info, this);
 
-                    return (int)info.checkHandler (controlAction, info.checkHandlerParameter, new MmsValue (ctlVal), test, interlockCheck); 
-                } else
+                    return (int)info.checkHandler(controlAction, info.checkHandlerParameter, new MmsValue(ctlVal), test, interlockCheck);
+                }
+                else
                     return (int)CheckHandlerResult.OBJECT_UNDEFINED;
             }
 
-            int InternalControlWaitForExecutionHandlerImpl (IntPtr action, IntPtr parameter, IntPtr ctlVal, bool test, bool synchoCheck)
+            int InternalControlWaitForExecutionHandlerImpl(IntPtr action, IntPtr parameter, IntPtr ctlVal, bool test, bool synchoCheck)
             {
-                GCHandle handle = GCHandle.FromIntPtr (parameter);
+                GCHandle handle = GCHandle.FromIntPtr(parameter);
 
                 ControlHandlerInfo info = (ControlHandlerInfo)handle.Target;
 
                 if (info != null && info.waitForExecHandler != null)
                 {
-                    ControlAction controlAction = new ControlAction (action, info, this);
+                    ControlAction controlAction = new ControlAction(action, info, this);
 
-                    return (int)info.waitForExecHandler (controlAction, info.waitForExecHandlerParameter, new MmsValue (ctlVal), test, synchoCheck);
-                } 
+                    return (int)info.waitForExecHandler(controlAction, info.waitForExecHandlerParameter, new MmsValue(ctlVal), test, synchoCheck);
+                }
                 else
                     return (int)ControlHandlerResult.FAILED;
             }
@@ -2884,13 +2945,14 @@ namespace IEC61850
                 }
             }
 
-            private struct WriteAccessHandlerInfo {
+            private struct WriteAccessHandlerInfo
+            {
                 public WriteAccessHandler handler;
                 public InternalWriteAccessHandler internalHandler;
                 public object parameter;
                 public DataAttribute dataAttribute;
 
-                public WriteAccessHandlerInfo (WriteAccessHandler h, object p, DataAttribute da, InternalWriteAccessHandler internalHandler) 
+                public WriteAccessHandlerInfo(WriteAccessHandler h, object p, DataAttribute da, InternalWriteAccessHandler internalHandler)
                 {
                     handler = h;
                     parameter = p;
@@ -2899,7 +2961,7 @@ namespace IEC61850
                 }
             }
 
-            int WriteAccessHandlerImpl (IntPtr dataAttribute, IntPtr value, IntPtr connection, IntPtr parameter)
+            int WriteAccessHandlerImpl(IntPtr dataAttribute, IntPtr value, IntPtr connection, IntPtr parameter)
             {
                 WriteAccessHandlerInfo info;
 
@@ -2915,7 +2977,7 @@ namespace IEC61850
                 }
                 else
                 {
-                    return (int) MmsDataAccessError.OBJECT_ACCESS_DENIED;
+                    return (int)MmsDataAccessError.OBJECT_ACCESS_DENIED;
                 }
             }
 
@@ -2938,7 +3000,7 @@ namespace IEC61850
                 {
                     ClientConnection con = null;
 
-                    this.clientConnections.TryGetValue(connection, out con);
+                    clientConnections.TryGetValue(connection, out con);
 
                     ModelNode ldModelNode = iedModel.GetModelNodeFromNodeRef(ld);
                     ModelNode lnModelNode = iedModel.GetModelNodeFromNodeRef(ln);
@@ -2994,13 +3056,13 @@ namespace IEC61850
                 }
             }
 
-            private bool InternalDataSetlHandlerImplementation (IntPtr parameter, IntPtr connection, int operation, string datasetRef)
+            private bool InternalDataSetlHandlerImplementation(IntPtr parameter, IntPtr connection, int operation, string datasetRef)
             {
                 if (dataSetAccessHandler != null && connection != IntPtr.Zero)
                 {
                     ClientConnection con = null;
 
-                    this.clientConnections.TryGetValue(connection, out con);
+                    clientConnections.TryGetValue(connection, out con);
 
                     return dataSetAccessHandler(dataSetAccessHandlerParameter, con, (DataSetOperation)operation, datasetRef);
                 }
@@ -3016,7 +3078,7 @@ namespace IEC61850
 
             private IedServer_ActiveSettingGroupChangedHandler internalActiveSettingGroupChangedHandler = null;
 
-            public void SetActiveSettingGroupChangedHandler(ActiveSettingGroupChangedHandler handler,SettingGroupControlBlock settingGroupControlBlock, object parameter)
+            public void SetActiveSettingGroupChangedHandler(ActiveSettingGroupChangedHandler handler, SettingGroupControlBlock settingGroupControlBlock, object parameter)
             {
                 activeSettingGroupChangedHandler = handler;
                 activeSettingGroupChangedHandlerParameter = parameter;
@@ -3040,7 +3102,7 @@ namespace IEC61850
                 {
                     ClientConnection con = null;
 
-                    this.clientConnections.TryGetValue(connection, out con);
+                    clientConnections.TryGetValue(connection, out con);
 
                     return activeSettingGroupChangedHandler(activeSettingGroupChangedHandlerParameter, new SettingGroupControlBlock(sgcb), newActSg, con);
                 }
@@ -3075,7 +3137,7 @@ namespace IEC61850
                 {
                     ClientConnection con = null;
 
-                    this.clientConnections.TryGetValue(connection, out con);
+                    clientConnections.TryGetValue(connection, out con);
 
                     return editSettingGroupChangedHandler(editSettingGroupChangedHandlerParameter, new SettingGroupControlBlock(sgcb), newEditSg, con);
                 }
@@ -3100,7 +3162,7 @@ namespace IEC61850
                 {
                     internalEditSettingGroupConfirmationHandler = new IedServer_EditSettingGroupConfirmationHandler(InternalEditSettingGroupConfirmationImplementation);
 
-                   IedServer_setEditSettingGroupConfirmationHandler(self, settingGroupControlBlock.self, internalEditSettingGroupConfirmationHandler, IntPtr.Zero);
+                    IedServer_setEditSettingGroupConfirmationHandler(self, settingGroupControlBlock.self, internalEditSettingGroupConfirmationHandler, IntPtr.Zero);
                 }
             }
 
@@ -3127,12 +3189,12 @@ namespace IEC61850
                 public SVCHandlerInfo(SVControlBlock sampledValuesControlBlock)
                 {
                     this.sampledValuesControlBlock = sampledValuesControlBlock;
-                    this.handle = GCHandle.Alloc(this);
+                    handle = GCHandle.Alloc(this);
                 }
 
                 ~SVCHandlerInfo()
                 {
-                    this.handle.Free();
+                    handle.Free();
                 }
             }
 
@@ -3166,7 +3228,6 @@ namespace IEC61850
                 IedServer_setSVCBHandler(self, sampledValuesControlBlock.Self, internalSVCBEventHandler, GCHandle.ToIntPtr(info.handle));
             }
 
-
             private void InternalSVCBEventHandlerImplementation(IntPtr svcb, int eventType, IntPtr parameter)
             {
                 GCHandle handle = GCHandle.FromIntPtr(parameter);
@@ -3175,6 +3236,38 @@ namespace IEC61850
 
                 if (info != null && info.sVCBEventHandler != null)
                     info.sVCBEventHandler(info.sampledValuesControlBlock, (SMVEvent)eventType, info.svcHandlerParameter);
+            }
+
+            //TODO -> Add appReference
+            public delegate bool AcseAuthenticatorHandler(object parameter, AcseAuthenticationParameter authParameter, object securityToken, IsoApplicationReference isoApplicationReference);
+
+            private AcseAuthenticatorHandler acseAuthenticatorHandler = null;
+            private object acseAuthenticatorHandlerParameter = null;
+            private IedServer_AcseAuthenticator iedServer_AcseAuthenticator = null;
+
+            public void SetAuthenticator(AcseAuthenticatorHandler acseAuthenticatorHandler, object acseAuthenticatorHandlerParameter)
+            {
+                this.acseAuthenticatorHandler = acseAuthenticatorHandler;
+                this.acseAuthenticatorHandlerParameter = acseAuthenticatorHandlerParameter;
+
+                if (iedServer_AcseAuthenticator == null)
+                {
+                    iedServer_AcseAuthenticator = new IedServer_AcseAuthenticator(InternalAcseAuthenticator);
+                    IedServer_setAuthenticator(self, iedServer_AcseAuthenticator, IntPtr.Zero);
+                }
+            }
+
+            private bool InternalAcseAuthenticator(IntPtr parameter, IntPtr authParameter, IntPtr securityToken, IntPtr appReference)
+            {
+                if (acseAuthenticatorHandler != null && authParameter != IntPtr.Zero && appReference != IntPtr.Zero)
+                {
+                    AcseAuthenticationParameter acseAuthenticationParameter = new AcseAuthenticationParameter(authParameter);
+                    IsoApplicationReference isoApplicationReference = new IsoApplicationReference(appReference);
+                    GCHandle token = GCHandle.FromIntPtr(securityToken);
+                    return acseAuthenticatorHandler(acseAuthenticatorHandlerParameter, acseAuthenticationParameter, token, isoApplicationReference);
+                }
+
+                return false;
             }
 
             public delegate MmsDataAccessError ReadAccessHandler(LogicalDevice ld, LogicalNode ln, DataObject dataObject, FunctionalConstraint fc, ClientConnection connection, object parameter);
@@ -3192,7 +3285,7 @@ namespace IEC61850
 
                 if (internalReadAccessHandler == null)
                 {
-                    internalReadAccessHandler = new IedServer_ReadAccessHandler (InternalReadHandlerImplementation);
+                    internalReadAccessHandler = new IedServer_ReadAccessHandler(InternalReadHandlerImplementation);
 
                     IedServer_setReadAccessHandler(self, internalReadAccessHandler, IntPtr.Zero);
                 }
@@ -3204,14 +3297,14 @@ namespace IEC61850
                 {
                     ClientConnection con = null;
 
-                    this.clientConnections.TryGetValue(connection, out con);
+                    clientConnections.TryGetValue(connection, out con);
 
                     ModelNode ldModelNode = iedModel.GetModelNodeFromNodeRef(ld);
                     ModelNode lnModelNode = iedModel.GetModelNodeFromNodeRef(ln);
                     ModelNode doModelNode = null;
 
-                    if(dataObject != IntPtr.Zero)
-                     doModelNode = iedModel.GetModelNodeFromNodeRef(dataObject);
+                    if (dataObject != IntPtr.Zero)
+                        doModelNode = iedModel.GetModelNodeFromNodeRef(dataObject);
 
                     return readAccessHandler(ldModelNode as LogicalDevice, lnModelNode as LogicalNode, doModelNode as DataObject, (FunctionalConstraint)fc, con, readAccessHandlerParameter);
                 }
@@ -3227,7 +3320,7 @@ namespace IEC61850
                 DIRECTORY_CAT_LOG_LIST
             }
 
-            public delegate bool DirectoryAccessHandler(object parameter, ClientConnection connection, IedServer_DirectoryCategory category,LogicalDevice ld);
+            public delegate bool DirectoryAccessHandler(object parameter, ClientConnection connection, IedServer_DirectoryCategory category, LogicalDevice ld);
 
             private DirectoryAccessHandler directoryAccessHandler = null;
 
@@ -3254,11 +3347,11 @@ namespace IEC61850
                 {
                     ClientConnection con = null;
 
-                    this.clientConnections.TryGetValue(connection, out con);
+                    clientConnections.TryGetValue(connection, out con);
 
                     ModelNode ldModelNode = null;
 
-                    if(logicalDevice != IntPtr.Zero)
+                    if (logicalDevice != IntPtr.Zero)
                         ldModelNode = iedModel.GetModelNodeFromNodeRef(logicalDevice);
 
                     return directoryAccessHandler(directoryAccessHandlerParameter, con, (IedServer_DirectoryCategory)category, ldModelNode as LogicalDevice);
@@ -3268,33 +3361,37 @@ namespace IEC61850
             }
 
 
-            private Dictionary<IntPtr, WriteAccessHandlerInfo> writeAccessHandlers = new Dictionary<IntPtr, WriteAccessHandlerInfo> ();
+            private Dictionary<IntPtr, WriteAccessHandlerInfo> writeAccessHandlers = new Dictionary<IntPtr, WriteAccessHandlerInfo>();
 
-            private void ConnectionIndicationHandlerImpl (IntPtr iedServer, IntPtr clientConnection, bool connected, IntPtr parameter)
+            private void ConnectionIndicationHandlerImpl(IntPtr iedServer, IntPtr clientConnection, bool connected, IntPtr parameter)
             {
-                if (connected == false) {
+                if (connected == false)
+                {
                     ClientConnection con = null;
 
-                    clientConnections.TryGetValue (clientConnection, out con);
+                    clientConnections.TryGetValue(clientConnection, out con);
 
-                    if (con != null) {
-                        
+                    if (con != null)
+                    {
+
                         if (connectionHandler != null)
-                            connectionHandler (this, con, false, connectionHandlerParameter);
+                            connectionHandler(this, con, false, connectionHandlerParameter);
 
-                        clientConnections.Remove (clientConnection);
+                        clientConnections.Remove(clientConnection);
                     }
-                } else {
-                    ClientConnection con = new ClientConnection (clientConnection);
+                }
+                else
+                {
+                    ClientConnection con = new ClientConnection(clientConnection);
 
-                    clientConnections.Add (clientConnection, con);
+                    clientConnections.Add(clientConnection, con);
 
                     if (connectionHandler != null)
-                        connectionHandler (this, con, true, connectionHandlerParameter);
+                        connectionHandler(this, con, true, connectionHandlerParameter);
                 }
             }
 
-            internal Dictionary<IntPtr, ClientConnection> clientConnections = new Dictionary<IntPtr, ClientConnection> ();
+            internal Dictionary<IntPtr, ClientConnection> clientConnections = new Dictionary<IntPtr, ClientConnection>();
 
             /* store IedModel instance to prevent garbage collector */
             private IedModel iedModel = null;
@@ -3311,13 +3408,13 @@ namespace IEC61850
                 if (config != null)
                     nativeConfig = config.self;
 
-                self = IedServer_createWithConfig (iedModel.self, IntPtr.Zero, nativeConfig);
+                self = IedServer_createWithConfig(iedModel.self, IntPtr.Zero, nativeConfig);
             }
 
             public IedServer(IedModel iedModel, TLSConfiguration tlsConfig, IedServerConfig config = null)
             {
                 this.iedModel = iedModel;
-                this.tlsConfiguration = tlsConfig;
+                tlsConfiguration = tlsConfig;
 
                 IntPtr nativeConfig = IntPtr.Zero;
                 IntPtr nativeTLSConfig = IntPtr.Zero;
@@ -3326,9 +3423,9 @@ namespace IEC61850
                     nativeConfig = config.self;
 
                 if (tlsConfig != null)
-                    nativeTLSConfig = tlsConfig.GetNativeInstance ();
+                    nativeTLSConfig = tlsConfig.GetNativeInstance();
 
-                self = IedServer_createWithConfig (iedModel.self, nativeTLSConfig, nativeConfig);
+                self = IedServer_createWithConfig(iedModel.self, nativeTLSConfig, nativeConfig);
             }
 
             private InternalConnectionHandler internalConnectionHandler = null;
@@ -3339,7 +3436,7 @@ namespace IEC61850
             /// <param name="localIpAddress">Local IP address.</param>
             public void SetLocalIpAddress(string localIpAddress)
             {
-                IedServer_setLocalIpAddress (self, localIpAddress);
+                IedServer_setLocalIpAddress(self, localIpAddress);
             }
 
             /// <summary>
@@ -3349,8 +3446,8 @@ namespace IEC61850
             /// <param name="tcpPort">TCP port to use</param>
             public void Start(string localIpAddress, int tcpPort)
             {
-                SetLocalIpAddress (localIpAddress);
-                Start (tcpPort);
+                SetLocalIpAddress(localIpAddress);
+                Start(tcpPort);
             }
 
             /// <summary>Start MMS server</summary>
@@ -3358,15 +3455,15 @@ namespace IEC61850
             public void Start(int tcpPort)
             {
                 if (internalConnectionHandler == null)
-                    internalConnectionHandler = new InternalConnectionHandler (ConnectionIndicationHandlerImpl);                    
+                    internalConnectionHandler = new InternalConnectionHandler(ConnectionIndicationHandlerImpl);
 
-                IedServer_setConnectionIndicationHandler (self, internalConnectionHandler, IntPtr.Zero);
+                IedServer_setConnectionIndicationHandler(self, internalConnectionHandler, IntPtr.Zero);
 
                 IedServer_start(self, tcpPort);
             }
 
             /// <summary>Start MMS server</summary>
-            public void Start ()
+            public void Start()
             {
                 Start(-1);
             }
@@ -3406,8 +3503,8 @@ namespace IEC61850
                         IedServer_destroy(self);
                         self = IntPtr.Zero;
                         internalConnectionHandler = null;
-                        this.iedModel = null;
-                        this.tlsConfiguration = null;
+                        iedModel = null;
+                        tlsConfiguration = null;
                     }
                 }
             }
@@ -3450,51 +3547,52 @@ namespace IEC61850
             {
                 ControlHandlerInfo info;
 
-                controlHandlers.TryGetValue (controlObject, out info);
+                controlHandlers.TryGetValue(controlObject, out info);
 
-                if (info == null) {
-                    info = new ControlHandlerInfo (controlObject);
-                    controlHandlers.Add (controlObject, info);
+                if (info == null)
+                {
+                    info = new ControlHandlerInfo(controlObject);
+                    controlHandlers.Add(controlObject, info);
                 }
 
                 return info;
             }
 
-            public void SetControlHandler (DataObject controlObject, ControlHandler handler, object parameter)
+            public void SetControlHandler(DataObject controlObject, ControlHandler handler, object parameter)
             {
-                ControlHandlerInfo info = GetControlHandlerInfo (controlObject);
+                ControlHandlerInfo info = GetControlHandlerInfo(controlObject);
 
                 info.controlHandler = handler;
                 info.controlHandlerParameter = parameter;
 
                 if (internalControlHandlerRef == null)
-                    internalControlHandlerRef = new InternalControlHandler (InternalControlHandlerImpl);
+                    internalControlHandlerRef = new InternalControlHandler(InternalControlHandlerImpl);
 
                 IedServer_setControlHandler(self, controlObject.self, internalControlHandlerRef, GCHandle.ToIntPtr(info.handle));
             }
 
-            public void SetCheckHandler (DataObject controlObject, CheckHandler handler, object parameter)
+            public void SetCheckHandler(DataObject controlObject, CheckHandler handler, object parameter)
             {
-                ControlHandlerInfo info = GetControlHandlerInfo (controlObject);
+                ControlHandlerInfo info = GetControlHandlerInfo(controlObject);
 
                 info.checkHandler = handler;
                 info.checkHandlerParameter = parameter;
 
                 if (internalControlPerformCheckHandlerRef == null)
-                    internalControlPerformCheckHandlerRef = new InternalControlPerformCheckHandler (InternalCheckHandlerImpl);
+                    internalControlPerformCheckHandlerRef = new InternalControlPerformCheckHandler(InternalCheckHandlerImpl);
 
                 IedServer_setPerformCheckHandler(self, controlObject.self, internalControlPerformCheckHandlerRef, GCHandle.ToIntPtr(info.handle));
             }
 
-            public void SetWaitForExecutionHandler (DataObject controlObject, ControlWaitForExecutionHandler handler, object parameter)
+            public void SetWaitForExecutionHandler(DataObject controlObject, ControlWaitForExecutionHandler handler, object parameter)
             {
-                ControlHandlerInfo info = GetControlHandlerInfo (controlObject);
+                ControlHandlerInfo info = GetControlHandlerInfo(controlObject);
 
                 info.waitForExecHandler = handler;
                 info.waitForExecHandlerParameter = parameter;
 
                 if (internalControlWaitForExecutionHandlerRef == null)
-                    internalControlWaitForExecutionHandlerRef = new InternalControlWaitForExecutionHandler (InternalControlWaitForExecutionHandlerImpl);
+                    internalControlWaitForExecutionHandlerRef = new InternalControlWaitForExecutionHandler(InternalControlWaitForExecutionHandlerImpl);
 
                 IedServer_setWaitForExecutionHandler(self, controlObject.self, internalControlWaitForExecutionHandlerRef, GCHandle.ToIntPtr(info.handle));
             }
@@ -3534,13 +3632,13 @@ namespace IEC61850
             /// <param name="dataAttr">the data attribute to monitor</param>
             /// <param name="handler">the callback function that is invoked if a client tries to write to the monitored data attribute.</param>
             /// <param name="parameter">a user provided parameter that is passed to the WriteAccessHandler when called.</param>
-            public void HandleWriteAccess (DataAttribute dataAttr, WriteAccessHandler handler, object parameter)
+            public void HandleWriteAccess(DataAttribute dataAttr, WriteAccessHandler handler, object parameter)
             {
                 InternalWriteAccessHandler internalHandler = new InternalWriteAccessHandler(WriteAccessHandlerImpl);
- 
-                writeAccessHandlers.Add (dataAttr.self, new WriteAccessHandlerInfo(handler, parameter, dataAttr, internalHandler));
 
-                IedServer_handleWriteAccess (self, dataAttr.self, internalHandler, IntPtr.Zero);
+                writeAccessHandlers.Add(dataAttr.self, new WriteAccessHandlerInfo(handler, parameter, dataAttr, internalHandler));
+
+                IedServer_handleWriteAccess(self, dataAttr.self, internalHandler, IntPtr.Zero);
             }
 
             private void AddHandlerInfoForDataAttributeRecursive(DataAttribute da, WriteAccessHandler handler, object parameter, InternalWriteAccessHandler internalHandler)
@@ -3624,7 +3722,7 @@ namespace IEC61850
             /// <param name="policy">The new default access policy</param>
             public void SetWriteAccessPolicy(FunctionalConstraint fc, AccessPolicy policy)
             {
-                IedServer_setWriteAccessPolicy (self, fc, policy);
+                IedServer_setWriteAccessPolicy(self, fc, policy);
             }
 
             /// <summary>
@@ -3658,7 +3756,7 @@ namespace IEC61850
 
             public void UpdateAttributeValue(DataAttribute dataAttr, MmsValue value)
             {
-                IedServer_updateAttributeValue (self, dataAttr.self, value.valueReference);
+                IedServer_updateAttributeValue(self, dataAttr.self, value.valueReference);
             }
 
             public void UpdateBooleanAttributeValue(DataAttribute dataAttr, bool value)
@@ -3678,7 +3776,7 @@ namespace IEC61850
 
             public void UpdateInt64AttributeValue(DataAttribute dataAttr, Int64 value)
             {
-                IedServer_updateInt64AttributeValue (self, dataAttr.self, value);
+                IedServer_updateInt64AttributeValue(self, dataAttr.self, value);
             }
 
             public void UpdateVisibleStringAttributeValue(DataAttribute dataAttr, string value)
@@ -3699,7 +3797,7 @@ namespace IEC61850
 
             public void UpdateTimestampAttributeValue(DataAttribute dataAttr, Timestamp timestamp)
             {
-                IedServer_updateTimestampAttributeValue (self, dataAttr.self, timestamp.self);
+                IedServer_updateTimestampAttributeValue(self, dataAttr.self, timestamp.self);
             }
 
             public void UpdateQuality(DataAttribute dataAttr, ushort value)
@@ -3709,10 +3807,10 @@ namespace IEC61850
 
             public MmsValue GetAttributeValue(DataAttribute dataAttr)
             {
-                IntPtr mmsValuePtr = IedServer_getAttributeValue (self, dataAttr.self);
+                IntPtr mmsValuePtr = IedServer_getAttributeValue(self, dataAttr.self);
 
                 if (mmsValuePtr != IntPtr.Zero)
-                    return new MmsValue (mmsValuePtr);
+                    return new MmsValue(mmsValuePtr);
                 else
                     return null;
             }
@@ -3829,7 +3927,7 @@ namespace IEC61850
             {
                 goCbEventHandler = handler;
                 goCbEventHandlerParameter = parameter;
-   
+
                 if (internalGoCBEventHandler == null)
                 {
                     internalGoCBEventHandler = new InternalGoCBEventHandler(InternalGoCBEventHandlerImplementation);
@@ -3854,7 +3952,7 @@ namespace IEC61850
 
                     if (connection != IntPtr.Zero)
                     {
-                        this.clientConnections.TryGetValue(connection, out con);
+                        clientConnections.TryGetValue(connection, out con);
                     }
 
                     ReportControlBlock reportControlBlock = null;
