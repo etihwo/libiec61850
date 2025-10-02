@@ -1681,8 +1681,9 @@ namespace IEC61850
             /// <param name='parameter'>
             /// User provided parameter that is passed to the callback handler
             /// </param>
+            /// <returns>Number of bytes received</returns>
             /// <exception cref="IedConnectionException">This exception is thrown if there is a connection or service error</exception>
-            public void GetFile(string fileName, GetFileHandler handler, object parameter)
+            public UInt32 GetFile(string fileName, GetFileHandler handler, object parameter)
             {
                 int error;
 
@@ -1690,13 +1691,14 @@ namespace IEC61850
 
                 GCHandle handle = GCHandle.Alloc(getFileCallback);
 
-                IedConnection_getFile(connection, out error, fileName, new InternalIedClientGetFileHandler(iedClientGetFileHandler),
+                UInt32 byteReceived = IedConnection_getFile(connection, out error, fileName, new InternalIedClientGetFileHandler(iedClientGetFileHandler),
                     GCHandle.ToIntPtr(handle));
 
                 if (error != 0)
                     throw new IedConnectionException("Error reading file", error);
 
                 handle.Free();
+                return byteReceived;
             }
 
             /// <summary>
