@@ -713,7 +713,8 @@ namespace IEC61850
             BR = 16,
             /** Log control blocks */
             LG = 17,
-
+            /** Goose control blocks */
+            GO = 18,
             /** All FCs - wildcard value */
             ALL = 99,
             NONE = -1
