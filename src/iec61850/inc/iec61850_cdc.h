@@ -164,9 +164,6 @@ CAC_ScaledValueConfig_create(const char* name, ModelNode* parent);
 LIB61850_API DataAttribute*
 CAC_Unit_create(const char* name, ModelNode* parent, bool hasMagnitude);
 
-LIB61850_API DataAttribute*
-CDA_OperBoolean(ModelNode* parent, bool isTImeActivated);
-
 /****************************************************
  * Common Data Classes (CDC)
  ***************************************************/

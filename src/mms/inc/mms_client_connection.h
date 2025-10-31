@@ -245,15 +245,6 @@ LIB61850_API void
 MmsConnection_setConnectionLostHandler(MmsConnection self, MmsConnectionLostHandler handler, void* handlerParameter);
 
 /**
- * \brief Set the ISO connection parameters for a MmsConnection instance
- *
- * \param self MmsConnection instance to operate on
- * \param params the ISO client parameters to use
- */
-LIB61850_API void
-MmsConnection_setIsoConnectionParameters(MmsConnection self, IsoConnectionParameters* params);
-
-/**
  * \brief Destroy an MmsConnection instance and release all resources
  *
  * \param self MmsConnection instance to operate on

@@ -603,12 +603,6 @@ LogicalDevice_getChildByMmsVariableName(LogicalDevice* self, const char* mmsVari
 LIB61850_API bool
 LogicalNode_hasFCData(LogicalNode* self, FunctionalConstraint fc);
 
-LIB61850_API bool
-LogicalNode_hasBufferedReports(LogicalNode* self);
-
-LIB61850_API bool
-LogicalNode_hasUnbufferedReports(LogicalNode* self);
-
 /**
  * \brief get a data set instance
  *
