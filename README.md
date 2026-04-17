@@ -1,3 +1,5 @@
+This repository is not updated any more, please refer to https://codeberg.org/etihwo/libiec61850
+
 # README libIEC61850
 
 This file is part of the documentation of **libIEC61850**. More documentation can be found online at http://libiec61850.com.
